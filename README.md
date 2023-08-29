@@ -11,8 +11,8 @@ High-accuracy measurements of the rotation angle of the plane of polarization (R
 are needed in many areas of science and engineering [[1]](#1). 
 Very few institutes around the world are capable of such measurements.
 
-A new polarimeter will be developed at the Metrology department of Instiuto Nacional de Tecnología Industrial (INTI)
-based on the research of All-Russian Research Institute for Optical and Physical Measurements (VNIIOFI).
+A new polarimeter will be developed at the Metrology department of Instiuto Nacional de Tecnología Industrial ([INTI])
+based on the research of All-Russian Research Institute for Optical and Physical Measurements ([VNIIOFI]).
 
 In this setup,
 > The problem of measuring the RAPP thus reduces
