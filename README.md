@@ -22,6 +22,18 @@ In this setup,
 This repository will be used to host code needed to perform the measurements as well as the code
 for the post-processing of the output signals and phase difference computations. 
 
+## How To Contribute
+
+All binary files like images must be stored using GIT LFS (e.g. `git lfs track "*.png"`).
+
+0. Install Git LFS from [here](https://git-lfs.com).
+
+1. Clone the repository: ```git clone https://github.com/INTI-metrologia/rapp```
+
+2. Install dependencies: ```pip install -r requirements.txt```.
+
+3. Enjoy.
+
 
 ## References
 <a id="1">[1]</a> G. N. Vishnyakov, G. G. Levin, and A. G. Lomakin,
