@@ -33,8 +33,10 @@ def plot_signal(signal: tuple, title: str = '', show: bool = False) -> None:
 
     ax.plot(*signal, 'o', ms=4, mfc='None', color='k')
 
-    create_folder(OUTPUT_FOLDER)
+    create_folder(OUTPUT_FOLDER, overwrite=False)
+
     filename = f'{title.lower().replace(" ", "_")}.png'
+
     fig.savefig(os.path.join(OUTPUT_FOLDER, filename))
 
     if show:
@@ -47,7 +49,7 @@ def simulate(A: float = 4, t: int = 1, n: int = 100, awgn: float = None) -> tupl
     """Simulates a harmonic signal.
 
     Args:
-        A: amplitude of the signal.
+        A: amplitude (peak) of the signal.
         t: number of periods.
         n: number of samples.
         awgn: amount of additive white gaussian noise, relative to A.
@@ -70,14 +72,15 @@ def simulate(A: float = 4, t: int = 1, n: int = 100, awgn: float = None) -> tupl
 
 
 def main():
+    create_folder(OUTPUT_FOLDER)
+
     signal = simulate(t=3)
     plot_signal(signal, title='Signal without noise')
 
     awgn = 0.1
     signal_awgn = simulate(t=3, awgn=awgn)
 
-    plot_signal(
-        signal_awgn, title='Signal with additive white gaussian noise', show=True)
+    plot_signal(signal_awgn, title='Signal with AWGN')
 
 
 if __name__ == '__main__':
