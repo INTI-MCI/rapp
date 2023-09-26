@@ -14,6 +14,10 @@ Very few institutes around the world are capable of such measurements.
 A new polarimeter will be developed at the Metrology department of ***Instiuto Nacional de Tecnología Industrial*** ([INTI])
 based on the research of ***All-Russian Research Institute for Optical and Physical Measurements*** ([VNIIOFI]).
 
+<p align="center">
+  <img src="images/diagram.png" />
+</p>
+
 In this setup,
 > The problem of measuring the RAPP thus reduces
   to measuring the phase difference of two one-dimensional
@@ -28,11 +32,29 @@ All binary files like images must be stored using GIT LFS (e.g. `git lfs track "
 
 0. Install Git LFS from [here](https://git-lfs.com).
 
-1. Clone the repository: ```git clone https://github.com/INTI-metrologia/rapp```
+1. Clone the repository: 
 
-2. Install dependencies: ```pip install -r requirements.txt```.
+```bash
+  git clone https://github.com/INTI-metrologia/rapp
+```
 
-3. Enjoy.
+2. Create virtual environment:
+
+```bash
+python -m venv .venv
+. .venv/bin/activate
+```
+
+3. Install dependencies:
+
+```bash
+pip install -r requirements.txt
+```
+
+Then, for example, run the code in the cli:
+```bash
+python cli.py
+```
 
 
 ## References
