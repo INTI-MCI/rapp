@@ -25,7 +25,7 @@ xtick.direction         :   in
 
 xtick.labelsize : 15
 ytick.labelsize : 15
-        
+
 # Increase the major and minor tick-mark lengths 
 xtick.major.size        :   4  # default 3.5
 ytick.major.size        :   4  # default 3.5
@@ -51,3 +51,5 @@ ytick.minor.pad         :   4  # default 3.5
 # Turn off the legend frame and reduce the space between the point and the label  
 legend.frameon          :   True
 legend.handletextpad    :   0.2
+
+axes.labelsize 			:   17

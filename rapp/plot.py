@@ -25,7 +25,7 @@ class Plot:
 
         ax = self._ax
 
-        ax.plot(x_data, y_data, style, ms=4, mfc='None', color=color, label=label)
+        ax.plot(x_data, y_data, style, ms=5, mfc='None', color=color, label=label)
         ax.legend(loc='upper right', fontsize=10)
 
     def save(self, title=None):
