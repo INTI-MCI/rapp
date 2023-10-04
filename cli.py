@@ -23,7 +23,7 @@ def plot_simulations(phi):
     plot.add_data(
         *simulate(t=1, phi=phi, awgn=0.1), style='--', color='k', label=f'φ={round(phi, 2)}'
     )
-    
+
     plot.save(title='Two signals with AWGN noise')
     plot.show()
 
@@ -36,11 +36,11 @@ def main():
     # plot_simulations(phi=PHASE)
 
     print(f"True phase diff: {np.rad2deg(phi)}")
-    
+
     seconds = [30, 60, 90, 120, 150, 180, 210, 240, 270, 300]
     errors = []
 
-    cicles = [] 
+    cicles = []
 
     for t in seconds:
         ts, s1 = simulate(t=t, f=freq, phi=0)
