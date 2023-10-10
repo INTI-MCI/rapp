@@ -1,5 +1,8 @@
 import os
 
+import numpy as np
+
+import matplotlib.ticker as tck
 from matplotlib import pyplot as plt
 
 from rapp.utils import create_folder
@@ -20,22 +23,25 @@ class Plot:
 
         self._folder = folder
 
-    def add_data(self, x_data, y_data, style='o', color='k', label=None):
+    def add_data(self, xs, ys, style='o', color='k', mew=0.8, lw=0.8, label=None, xrad=False):
         """Adds data to the plot."""
 
         ax = self._ax
 
-        ax.plot(x_data, y_data, style, ms=5, mfc='None', color=color, label=label)
-        ax.legend(loc='upper right', fontsize=10)
+        if xrad:
+            xs = xs / np.pi
+            ax.xaxis.set_major_formatter(tck.FormatStrFormatter('%g $\\pi$'))
+            ax.xaxis.set_major_locator(tck.MultipleLocator(base=1.0))
 
-    def save(self, title=None):
-        """Saves the plot. If title is provided, overrides the current plot title."""
-        if title is not None:
-            self._ax.set_title(title)
+        ax.plot(xs, ys, style, ms=5, mfc='None', mew=mew, lw=lw, color=color, label=label)
 
+    def save(self, filename):
+        """Saves the plot."""
         create_folder(self._folder, overwrite=False)
-        filename = f'{self._ax.get_title().lower().replace(" ", "_")}'
         self._fig.savefig(os.path.join(self._folder, filename))
+
+    def legend(self):
+        self._ax.legend(fontsize=10)
 
     def show(self):
         """Shows the plot."""
@@ -43,6 +49,7 @@ class Plot:
 
     def clear(self):
         """Clears the plot."""
+        plt.close()
         title = self._ax.get_title()
         xlabel = self._ax.get_xlabel()
         ylabel = self._ax.get_ylabel()
@@ -51,3 +58,6 @@ class Plot:
         self._ax.set_title(title)
         self._ax.set_xlabel(xlabel)
         self._ax.set_ylabel(ylabel)
+
+    def close(self):
+        plt.close()
