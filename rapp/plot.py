@@ -15,7 +15,7 @@ class Plot:
 
     def __init__(self, title='', ylabel=None, xlabel=None, folder='output'):
         self._fig, self._ax = plt.subplots()
-        self._ax.set_title(title)
+        self._ax.set_title(title, size=12)
 
         if ylabel is not None:
             self._ax.set_ylabel(ylabel)
@@ -23,7 +23,7 @@ class Plot:
 
         self._folder = folder
 
-    def add_data(self, xs, ys, style='o', color='k', mew=0.8, lw=0.8, label=None, xrad=False):
+    def add_data(self, xs, ys, style='o', mew=0.5, xrad=False, **kwargs):
         """Adds data to the plot."""
 
         ax = self._ax
@@ -33,15 +33,15 @@ class Plot:
             ax.xaxis.set_major_formatter(tck.FormatStrFormatter('%g $\\pi$'))
             ax.xaxis.set_major_locator(tck.MultipleLocator(base=1.0))
 
-        ax.plot(xs, ys, style, ms=5, mfc='None', mew=mew, lw=lw, color=color, label=label)
+        ax.plot(xs, ys, style, mfc='None', mew=mew, **kwargs)
 
     def save(self, filename):
         """Saves the plot."""
         create_folder(self._folder, overwrite=False)
         self._fig.savefig(os.path.join(self._folder, filename))
 
-    def legend(self):
-        self._ax.legend(fontsize=10)
+    def legend(self, **kwargs):
+        self._ax.legend(fontsize=10, **kwargs)
 
     def show(self):
         """Shows the plot."""
