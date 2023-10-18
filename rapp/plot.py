@@ -13,9 +13,12 @@ plt.style.use('style.mplstyle')
 class Plot:
     """Encapsulates the creation of plots."""
 
-    def __init__(self, title='', ylabel=None, xlabel=None, folder='output'):
+    def __init__(self, title='', ylabel=None, xlabel=None, ysci=False, folder='output'):
         self._fig, self._ax = plt.subplots()
         self._ax.set_title(title, size=12)
+
+        if ysci:
+            self._ax.ticklabel_format(style='sci', scilimits=(0, 0), axis='y')
 
         if ylabel is not None:
             self._ax.set_ylabel(ylabel)
