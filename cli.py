@@ -62,7 +62,7 @@ def plot_harmonic_signals(phi, awgn=0.05, show=False):
 
 
 def plot_phase_diff_error_vs_cycles(phi, step=0.01, max_n_cycles=20, show=False):
-    print("############ Phase difference error vs # cycles (cosine similarity):")
+    print("\n############ Phase difference error vs # cycles (cosine similarity):")
     fc = samples_per_cycle(step=step)
     cycles = np.arange(1, max_n_cycles + 1, step=1)
 
@@ -78,13 +78,15 @@ def plot_phase_diff_error_vs_cycles(phi, step=0.01, max_n_cycles=20, show=False)
         error = abs(phi - phase_diff)
         error_degrees = np.rad2deg(error)
 
-        print(f"n={n_cycles}, fc={fc}, time={time/60} m, φerr: {error_degrees}.")
+        error_degrees_sci = "{:.2E}".format(error_degrees)
+
+        print(f"n={n_cycles}, fc={fc}, time={round(time/60, 1)} m, φerr: {error_degrees_sci}.")
 
         errors.append(error_degrees)
 
     label = f"fc={fc}. \nstep={step} deg."
 
-    plot = Plot(ylabel="φ error (°)", xlabel="# cycles", title="Cosine Similarity")
+    plot = Plot(ylabel="φ error (°)", xlabel="# cycles", title="Cosine Similarity", ysci=True)
     plot.add_data(cycles, errors, style='o-', color='k', label=label)
     plot._ax.xaxis.set_major_locator(MaxNLocator(integer=True))
 
@@ -99,7 +101,7 @@ def plot_phase_diff_error_vs_cycles(phi, step=0.01, max_n_cycles=20, show=False)
 
 
 def plot_phase_diff_error_vs_step(phi, n_cycles=20, show=False):
-    print("############ Phase difference error vs step (cosine similarity):")
+    print("\n############ Phase difference error vs step (cosine similarity):")
     time = total_time(n_cycles)
 
     steps = np.arange(0.1, 1.1, step=0.1)[::-1]
@@ -114,13 +116,17 @@ def plot_phase_diff_error_vs_step(phi, n_cycles=20, show=False):
         phase_diff = cosine_similarity(s1, s2)
         error_degrees = np.rad2deg(abs(phi - phase_diff))
 
-        print(f"n={n_cycles}, fc={fc}, step={round(step, 1)}, φerr: {error_degrees}.")
+        error_degrees_sci = "{:.2E}".format(error_degrees)
+
+        print(f"n={n_cycles}, fc={fc}, step={round(step, 1)}, φerr: {error_degrees_sci}.")
 
         errors.append(error_degrees)
 
     label = f"# cycles={n_cycles}. \ntime={time/60} min."
 
-    plot = Plot(ylabel="φ error (°)", xlabel="Step (degrees)", title="Cosine Similarity")
+    plot = Plot(
+        ylabel="φ error (°)", xlabel="Step (degrees)", title="Cosine Similarity", ysci=True)
+
     plot.add_data(steps, errors, style='o-', color='k', label=label)
 
     plot.legend()
@@ -134,7 +140,7 @@ def plot_phase_diff_error_vs_step(phi, n_cycles=20, show=False):
 
 
 def plot_signals_and_phase_diff(phi, step=0.01, n_cycles=10, awgn=0.05, show=False):
-    print("############ Phase difference error (sinusoidal fit):")
+    print("\n############ Phase difference error (sinusoidal fit):")
 
     fc = samples_per_cycle(step=step)
 
