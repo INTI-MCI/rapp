@@ -11,20 +11,34 @@ OUTPUT_FOLDER = 'output'
 
 
 ANALYZER_VELOCITY = 4  # Degrees per second.
+PHI = np.pi/4
 
 
-def sine(x, a, phi):
-    return a * np.sin(x + phi)
+def cosine_similarity(s1, s2):
+    return np.arccos(np.dot(s1, s2) / (np.linalg.norm(s1) * np.linalg.norm(s2)))
+
+
+def sine(x, a, phi, c):
+    return a * np.sin(x + phi) + c
+
+
+def samples_per_cycle(step=0.01):
+    # Half cycle (180) of the analyzer is one full cycle of the signal.
+    return int(180 / step)
+
+
+def total_time(n_cycles):
+    return n_cycles * (180 / ANALYZER_VELOCITY)
 
 
 def plot_harmonic_signals(phi, awgn=0.05, show=False):
-    plot = Plot(ylabel="Voltage [V]", xlabel="Angle [rad]")
+    plot = Plot(ylabel="Voltage [V]", xlabel="Angle of analyzer [rad]")
 
     xs, s1 = harmonic_signal()
     _, s2 = harmonic_signal(phi=-phi)
 
-    plot.add_data(xs, s1, color='k', label='φ=0', xrad=True)
-    plot.add_data(xs, s2, color='k', label=f'φ={round(phi, 2)}', xrad=True)
+    plot.add_data(xs, s1, color='k', style='o-', label='φ=0', xrad=True)
+    plot.add_data(xs, s2, color='k', style='o-', label=f'φ={round(phi, 2)}', xrad=True)
 
     plot.save(filename='two_signals_without_awgn_noise')
 
@@ -36,8 +50,8 @@ def plot_harmonic_signals(phi, awgn=0.05, show=False):
     xs, s1 = harmonic_signal(awgn=awgn)
     _, s2 = harmonic_signal(phi=-phi, awgn=awgn)
 
-    plot.add_data(xs, s1, color='k', label='φ=0', xrad=True)
-    plot.add_data(xs, s2, color='k', label=f'φ={round(phi, 2)}', xrad=True)
+    plot.add_data(xs, s1, color='k', style='o-', label='φ=0', xrad=True)
+    plot.add_data(xs, s2, color='k', style='o-', label=f'φ={round(phi, 2)}', xrad=True)
 
     plot.save(filename='two_signals_with_awgn_noise')
 
@@ -47,37 +61,31 @@ def plot_harmonic_signals(phi, awgn=0.05, show=False):
     plot.close()
 
 
-def plot_phase_diff_error_vs_cycles(phi, step=0.01, show=False):
-    max_n_cycles = 10  # Max number of cycles to test
-
-    print(f"MEASUREMENT_STEP: 1 measurement for each {step} degree step.")
-
+def plot_phase_diff_error_vs_cycles(phi, step=0.01, max_n_cycles=20, show=False):
+    print("############ Phase difference error vs # cycles (cosine similarity):")
+    fc = samples_per_cycle(step=step)
     cycles = np.arange(1, max_n_cycles + 1, step=1)
-    fs = int(360 / step)
 
     errors = []
     for n_cycles in cycles:
-        total_time = n_cycles * (360 / ANALYZER_VELOCITY)
+        time = total_time(n_cycles)
 
-        _, s1 = harmonic_signal(N=n_cycles, fs=fs)
-        _, s2 = harmonic_signal(N=n_cycles, fs=fs, phi=-phi)
+        _, s1 = harmonic_signal(n=n_cycles, fc=fc)
+        _, s2 = harmonic_signal(n=n_cycles, fc=fc, phi=-phi)
 
-        phase_diff = np.arccos(np.dot(s1, s2) / (np.linalg.norm(s1) * np.linalg.norm(s2)))
+        phase_diff = cosine_similarity(s1, s2)
 
         error = abs(phi - phase_diff)
         error_degrees = np.rad2deg(error)
 
-        print(f"N={n_cycles}. fs={fs}. time={total_time/60} m. Error: {error_degrees}.")
+        print(f"n={n_cycles}, fc={fc}, time={time/60} m, φerr: {error_degrees}.")
 
         errors.append(error_degrees)
 
-    title = (
-        "Cosine Similarity Test. \n"
-        f"Velocity={ANALYZER_VELOCITY} deg/s. Fs={fs}. Step={step} deg."
-    )
+    label = f"fc={fc}. \nstep={step} deg."
 
-    plot = Plot(ylabel="Error (°)", xlabel="N° of cycles", title=title)
-    plot.add_data(cycles, errors, style='o-', color='k')
+    plot = Plot(ylabel="φ error (°)", xlabel="# cycles", title="Cosine Similarity")
+    plot.add_data(cycles, errors, style='o-', color='k', label=label)
     plot._ax.xaxis.set_major_locator(MaxNLocator(integer=True))
 
     plot.legend()
@@ -90,33 +98,30 @@ def plot_phase_diff_error_vs_cycles(phi, step=0.01, show=False):
     plot.close()
 
 
-def plot_phase_diff_error_vs_step(phi, n_cycles=10, show=False):
-
-    total_time = n_cycles * (360 / ANALYZER_VELOCITY)
+def plot_phase_diff_error_vs_step(phi, n_cycles=20, show=False):
+    print("############ Phase difference error vs step (cosine similarity):")
+    time = total_time(n_cycles)
 
     steps = np.arange(0.1, 1.1, step=0.1)[::-1]
 
     errors = []
     for step in steps:
-        fs = int(360 / step)
+        fc = samples_per_cycle(step=step)
 
-        _, s1 = harmonic_signal(N=n_cycles, fs=fs)
-        _, s2 = harmonic_signal(N=n_cycles, fs=fs, phi=-phi)
+        _, s1 = harmonic_signal(n=n_cycles, fc=fc)
+        _, s2 = harmonic_signal(n=n_cycles, fc=fc, phi=-phi)
 
-        phase_diff = np.arccos(np.dot(s1, s2) / (np.linalg.norm(s1) * np.linalg.norm(s2)))
+        phase_diff = cosine_similarity(s1, s2)
         error_degrees = np.rad2deg(abs(phi - phase_diff))
 
-        print(f"N={n_cycles}. fs={fs}. time={total_time/60} m. Error: {error_degrees}.")
+        print(f"n={n_cycles}, fc={fc}, step={round(step, 1)}, φerr: {error_degrees}.")
 
         errors.append(error_degrees)
 
-    title = (
-        "Cosine Similarity Test. \n"
-        f"Velocity={ANALYZER_VELOCITY} deg/s. Time={total_time/60} min."
-    )
+    label = f"# cycles={n_cycles}. \ntime={time/60} min."
 
-    plot = Plot(ylabel="Error (°)", xlabel="Step (degrees)", title=title)
-    plot.add_data(steps, errors, style='o-', color='k')
+    plot = Plot(ylabel="φ error (°)", xlabel="Step (degrees)", title="Cosine Similarity")
+    plot.add_data(steps, errors, style='o-', color='k', label=label)
 
     plot.legend()
 
@@ -129,14 +134,14 @@ def plot_phase_diff_error_vs_step(phi, n_cycles=10, show=False):
 
 
 def plot_signals_and_phase_diff(phi, step=0.01, n_cycles=10, awgn=0.05, show=False):
-    print(f"MEASUREMENT STEP: {step} degrees.")
+    print("############ Phase difference error (sinusoidal fit):")
 
-    fs = int(360 / step)
+    fc = samples_per_cycle(step=step)
 
-    total_time = n_cycles * (360 / ANALYZER_VELOCITY)
+    xs, s1 = harmonic_signal(n=n_cycles, fc=fc, awgn=awgn, all_positive=True)
+    _, s2 = harmonic_signal(n=n_cycles, fc=fc, phi=-phi, awgn=awgn, all_positive=True)
 
-    xs, s1 = harmonic_signal(N=n_cycles, fs=fs, awgn=awgn)
-    _, s2 = harmonic_signal(N=n_cycles, fs=fs, phi=-phi, awgn=awgn)
+    xs = xs * 2  # The cycle of the polarizer contains two cycles of the signal.
 
     popt1, pcov1 = curve_fit(sine, xs, s1)
     popt2, pcov2 = curve_fit(sine, xs, s2)
@@ -149,7 +154,6 @@ def plot_signals_and_phase_diff(phi, step=0.01, n_cycles=10, awgn=0.05, show=Fal
     phi2 = popt2[1] % (np.pi)
 
     phase_diff = (phi1 - phi2) % (np.pi)
-
     phase_diff_degrees = np.rad2deg(phase_diff)
 
     print(f"Detected phase difference: {phase_diff_degrees}")
@@ -157,34 +161,39 @@ def plot_signals_and_phase_diff(phi, step=0.01, n_cycles=10, awgn=0.05, show=Fal
     error = abs(phi - phase_diff)
     error_degrees = np.rad2deg(error)
 
-    print(f"N={n_cycles}. fs={fs}. time={total_time/60} m. Error: {error_degrees}.")
+    print(f"n={n_cycles}, fc={fc}, step={step}, awgn={awgn}, φerr: {error_degrees}.")
 
-    title = (
-        "Sine Fit Test. \n"
-        f"Velocity={ANALYZER_VELOCITY} deg/s. Fs={fs}. \n"
-        f"Step={step} deg. Time={total_time/60} min. \n"
-        f"φ = |φ1 - φ2| = {round(np.rad2deg(phi))}°."
+    # Go back to the xs angles of the polarizer.
+    xs = xs / 2
+    fitx = fitx / 2
+
+    label = (
+        f"fc={fc}. \n"
+        f"step={step} deg. \n"
+        f"# cycles={n_cycles}. \n"
+        f"|φ1 - φ2| = {round(np.rad2deg(phi))}°. \n"
+        f"AWGN={awgn}"
     )
 
-    plot = Plot(ylabel="Voltage [V]", xlabel="Angle [rad]", title=title)
+    plot = Plot(ylabel="Voltage [V]", xlabel="Angle of analyzer [rad]")
+
+    markevery = int(fc / 180) if fc >= 180 else 1  # for visualization purposes, show less points.
 
     plot.add_data(
         xs, s1,
-        ms=6, color='k', mew=0.5, xrad=True, markevery=200, alpha=0.8,
-        label=f'AWGN={awgn}'
+        ms=6, color='k', mew=0.5, xrad=True, markevery=markevery, alpha=0.8, label=label
     )
 
     plot.add_data(
         xs, s2,
-        ms=6, color='k', mew=0.5, xrad=True, markevery=200,
-        alpha=0.8
+        ms=6, color='k', mew=0.5, xrad=True, markevery=markevery, alpha=0.8
     )
 
-    label = f"|φ' - φ|  = {round(error_degrees, 7)}"
+    label = f"φerr = {round(error_degrees, 5)}."
     plot.add_data(fitx, fity1, style='-', color='k', lw=1.5, xrad=True)
     plot.add_data(fitx, fity2, style='-', color='k', lw=1.5, xrad=True, label=label)
 
-    plot._ax.set_xlim(0, 2)
+    plot._ax.set_xlim(0, 1)
 
     plot.legend(loc='upper right')
 
@@ -199,16 +208,15 @@ def plot_signals_and_phase_diff(phi, step=0.01, n_cycles=10, awgn=0.05, show=Fal
 def main():
     create_folder(OUTPUT_FOLDER)
 
-    phi = np.pi/4
-    print(f"SIMULATED PHASE DIFFERENCE: {np.rad2deg(phi)} degrees.")
+    print(f"SIMULATED PHASE DIFFERENCE: {np.rad2deg(PHI)} degrees.")
     print(f"ANALYZER VELOCITY: {ANALYZER_VELOCITY} degrees per second.")
 
-    plot_harmonic_signals(phi=phi)
+    plot_harmonic_signals(phi=PHI)
 
-    plot_phase_diff_error_vs_cycles(phi=phi)
-    plot_phase_diff_error_vs_step(phi=phi)
+    plot_phase_diff_error_vs_cycles(phi=PHI, show=False)
+    plot_phase_diff_error_vs_step(phi=PHI, show=False)
 
-    plot_signals_and_phase_diff(phi=phi, n_cycles=10, step=0.01, awgn=0.01, show=True)
+    plot_signals_and_phase_diff(phi=PHI, n_cycles=20, step=0.01, awgn=0.01, show=False)
 
 
 if __name__ == '__main__':
