@@ -2,33 +2,40 @@ import numpy as np
 
 
 def harmonic_signal(
-    A: float = 5,
-    N: int = 1,
-    fs: int = 50,
+    A: float = 2,
+    n: int = 1,
+    fc: int = 50,
     phi: float = 0,
-    awgn: float = None
+    awgn: float = None,
+    all_positive: bool = False
 ) -> tuple:
-    """Simulates a harmonic signal.
+    """Simulates a harmonic signal measured with the differential polarizer.
 
     Args:
         A: amplitude (peak) of the signal.
-        N: number of cycles.
-        fs: sampling frequency (samples per cycle).
+        n: number of cycles.
+        fc: samples per cycle.
         phi: phase (radians).
         awgn: amount of additive white gaussian noise, relative to A.
+        all_positive: if true, shifts the signal to the positive axis.
 
     Returns:
-        The signal as an (x, y) tuple.
+        The signal as an (xs, ys) tuple.
     """
 
-    x = np.linspace(0, 2 * np.pi * N, num=N * fs)
+    xs = np.linspace(0, 2 * np.pi * n, num=n * fc)
 
-    signal = A * np.sin(x + phi)
+    signal = A * np.sin(xs + phi)
 
-    noise = np.zeros(x.size)
+    noise = np.zeros(xs.size)
     if awgn is not None:
-        noise = np.random.normal(scale=A * awgn, size=x.size)
+        noise = np.random.normal(scale=A * awgn, size=xs.size)
 
     signal = signal + noise
 
-    return x, signal
+    if all_positive:
+        signal = signal + A
+
+    xs = xs / 2
+
+    return xs, signal
