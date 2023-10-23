@@ -1,8 +1,14 @@
 import serial
+import sys
+import os
+
+
+MEASUREMENT_MODE = 'new_file'
+path = 'test.txt'
 
 FILE_NAME = 'test.txt'
 FILE_HEADER = "ANALYZER ANGLE [°], A0 [V], A1 [V]"
-FILE_ROW = "{angle},{a0},{a1}"
+FILE_ROW = "{},{},{}"
 
 DATA_POINTS_PER_ANGLE = 10
 ANGLES_TO_MEASURE = [0]
@@ -12,12 +18,19 @@ SERIAL_BAUDRATE = 57600
 SERIAL_TIMEOUT = 0.1
 
 
-def main():
+def main(overwrite='n'):
     serialport = serial.Serial(SERIAL_DEVICE, SERIAL_BAUDRATE, timeout=SERIAL_TIMEOUT)
 
-    file = open(FILE_NAME, 'a')
-    file.write(FILE_HEADER)
-    file.write('\n')
+    if os.path.exists(FILE_NAME):
+        if overwrite == 'y':
+            file = open(FILE_NAME, 'w')
+            file.write(FILE_HEADER)
+            file.write('\n')
+        else:
+            print("El archivo ya existe y se optó por no sobreescribir.")
+            exit(0)
+    else:
+        file = open(FILE_NAME, 'a')
 
     for angle in ANGLES_TO_MEASURE:
         # TODO: move analyzer to the angle.
@@ -29,6 +42,7 @@ def main():
             if data_raw:
                 a0, a1 = data_raw.split(",")
                 row = FILE_ROW.format(angle, a0, a1)
+                print(row)
                 file.write(row)
                 file.write('\n')
                 i = i + 1
@@ -38,4 +52,5 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    overwrite = sys.argv[1]
+    main(overwrite=overwrite)
