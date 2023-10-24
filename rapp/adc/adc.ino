@@ -1,6 +1,8 @@
 #include <Wire.h>
 #include <Adafruit_ADS1X15.h>
 
+#define RATE_ADS1115_860SPS (0x00E0)
+
 Adafruit_ADS1115 ads;
 
 const float multiplier = 0.125F;
@@ -17,6 +19,7 @@ void setup(void) {
   // ads.setGain(GAIN_EIGHT);      // +/- 0.512V  1 bit = 0.015625mV
   // ads.setGain(GAIN_SIXTEEN);    // +/- 0.256V  1 bit = 0.0078125mV 
 
+  ads.setDataRate(RATE_ADS1115_860SPS);
   ads.begin();
 }
 
@@ -27,9 +30,9 @@ void loop(void) {
   float value0 = bits2volts(value0_bits);
   float value1 = bits2volts(value1_bits);
 
-  Serial.print(value0);
+  Serial.print(value0, 6);
   Serial.print(',');
-  Serial.println(value1);
+  Serial.println(value1, 6);
  
   delay(1000);
 }
