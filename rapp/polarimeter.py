@@ -7,10 +7,6 @@ from datetime import datetime
 import serial
 
 
-MEASUREMENT_MODE = 'new_file'
-path = 'test.txt'
-
-FILE_NAME = 'test.txt'
 FILE_HEADER = "ANGLE [°], A0 [V], A1 [V], DATETIME"
 FILE_ROW = "{angle}\t{a0}\t{a1}\t{datetime}"
 
