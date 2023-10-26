@@ -1,3 +1,5 @@
+import os
+
 import numpy as np
 
 from rapp.plot import Plot
@@ -211,18 +213,50 @@ def plot_signals_and_phase_diff(phi, step=0.01, n_cycles=10, awgn=0.05, show=Fal
     plot.close()
 
 
+def plot_noise(show=False):
+
+    filenames = [
+        'laser-75-int-alta.txt',
+        'laser-75-encendido-15min.txt',
+        'laser-16-reencendido-1M.txt',
+        'laser-16-75-grados-int-baja.txt',
+        'dark-current.txt'
+    ]
+
+    for filename in filenames:
+        filepath = os.path.join('data', filename)
+
+        plot = Plot(ylabel="Voltage [V]", xlabel="# measurement")
+        plot.set_title(filename[:-4])
+
+        cols = (0, 1, 2)
+        data = np.loadtxt(filepath, delimiter=' ', skiprows=1, usecols=cols, encoding='iso-8859-1')
+        data = data[:, 1]
+        xs = np.arange(1, data.size + 1, step=1)
+
+        plot.add_data(xs, data, style='-', color='k')
+        plot.save(filename=filename[:-4])
+
+        if show:
+            plot.show()
+
+        plot.close()
+
+
 def main():
     create_folder(OUTPUT_FOLDER)
 
     print(f"SIMULATED PHASE DIFFERENCE: {np.rad2deg(PHI)} degrees.")
     print(f"ANALYZER VELOCITY: {ANALYZER_VELOCITY} degrees per second.")
 
-    plot_harmonic_signals(phi=PHI)
+    # plot_harmonic_signals(phi=PHI)
 
-    plot_phase_diff_error_vs_cycles(phi=PHI, show=False)
-    plot_phase_diff_error_vs_step(phi=PHI, show=False)
+    # plot_phase_diff_error_vs_cycles(phi=PHI, show=False)
+    # plot_phase_diff_error_vs_step(phi=PHI, show=False)
 
-    plot_signals_and_phase_diff(phi=PHI, n_cycles=20, step=0.01, awgn=0.01, show=False)
+    # plot_signals_and_phase_diff(phi=PHI, n_cycles=20, step=0.01, awgn=0.01, show=False)
+
+    plot_noise(show=False)
 
 
 if __name__ == '__main__':

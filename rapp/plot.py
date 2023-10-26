@@ -50,6 +50,9 @@ class Plot:
         """Shows the plot."""
         plt.show()
 
+    def set_title(self, title):
+        self._ax.set_title(title, size=12)
+
     def clear(self):
         """Clears the plot."""
         plt.close()
