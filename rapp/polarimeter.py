@@ -4,13 +4,12 @@ import time
 
 from datetime import datetime
 
+from esp import ESP
 import serial
 
 
 FILE_HEADER = "ANGLE [°], A0 [V], A1 [V], DATETIME"
-FILE_ROW = "{angle}\t{a0}\t{a1}\t{datetime}"
-
-ANGLES_TO_MEASURE = [0]
+FILE_ROW = "{angle} {a0} {a1} {datetime}"
 
 SERIAL_DEVICE = 'COM3'
 SERIAL_BAUDRATE = 57600
@@ -18,12 +17,20 @@ SERIAL_TIMEOUT = 0.1
 
 
 class SerialMock:
-    """Mock object to test the code."""
+    """Mock object for serial.Serial."""
     def readline(self):
         return b'3.4567,2.3422'
 
     def close(self):
         pass
+
+
+class ESPMock:
+    """Mock object for esp.ESP."""
+    dev = SerialMock()
+
+    def setpos(self, pos, axis=None):
+        return 0
 
 
 def create_file(filename):
@@ -43,18 +50,24 @@ def create_or_open_file(filename, overwrite):
 
 
 def main(angles, n_points=10, delay=0, filename='test.txt', overwrite=False, verbose=False):
-    # serialport = SerialMock()  # this is just to test when we don't have the device connected.
+    # Mock objects to test when we don't have the device connected.
+    # TODO: create a unit test and use them from there.
+    # serialport = SerialMock()
+    # analyzer = ESPMock()
+
     serialport = serial.Serial(SERIAL_DEVICE, SERIAL_BAUDRATE, timeout=SERIAL_TIMEOUT)
+    analyzer = ESP("COM3", 921600, 1, reset=False)
 
     file = create_or_open_file(filename, overwrite)
 
     for angle in angles:
-        # TODO: move analyzer to the angle.
+        analyzer.setpos(angle)
+
         i = 0
         while i < n_points:
             data_raw = serialport.readline().decode().strip()
 
-            if data_raw:  # TODO: Check if this IF is really needed now that we removed the delay.
+            if data_raw:  # TODO: check this IF is needed now that we removed the arduino delay.
                 a0, a1 = data_raw.split(",")
                 datetime_ = datetime.now().isoformat()
                 row = FILE_ROW.format(angle=angle, a0=a0, a1=a1, datetime=datetime_)
@@ -70,6 +83,7 @@ def main(angles, n_points=10, delay=0, filename='test.txt', overwrite=False, ver
 
     file.close()
     serialport.close()
+    analyzer.dev.close()
 
 
 if __name__ == '__main__':
@@ -82,4 +96,7 @@ if __name__ == '__main__':
     # example:
     # python polarimeter.py 10 0 test.txt 1 0
 
-    main(ANGLES_TO_MEASURE, n_points, delay, filename, overwrite, verbose)
+    # angles = [i % 360 for i in range(0, 360 * 2, 10)]
+
+    angles = [0]
+    main(angles, n_points, delay, filename, overwrite, verbose)
