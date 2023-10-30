@@ -7,6 +7,7 @@ class ESP:
         self.inuse = useaxis
         if (len(self.inuse) == 0):
             self.inuse = [axis]
+
         self.defaxis = axis
         if (reset):
             for n in self.inuse:
@@ -24,6 +25,25 @@ class ESP:
     def reset(self, axis):
         self.dev.write("{0}OR;{0}WS0\r".format(axis).encode())
 
+    def setvel(self, vel=2, axis=None):
+        a = self.defaxis
+        if (axis and axis > 0):
+            a = axis
+
+        print("setting velocity to %f" % vel)
+
+        self.dev.write("{0}VA{1:.4f};{0}TV\r".format(a, vel).encode())
+        return float(self.dev.readline())
+
+    def setacc(self, acc=2, axis=None):
+        a = self.defaxis
+        if (axis and axis > 0):
+            a = axis
+
+        print("setting acceleration to %f" % acc)
+
+        self.dev.write("{0}CA{1:.4f};\r".format(a, acc).encode())
+
     def check_errors(self):
         self.dev.write("TE?\r".encode())
         print("comando enviado")
@@ -38,12 +58,20 @@ class ESP:
         self.dev.write("{0}TP\r".format(a).encode())
         return float(self.dev.readline())
 
-    def setpos(self, pos, axis=None):
+    def setpos(self, pos, ws=0, axis=None, relative=True):
         a = self.defaxis
         if (axis and axis > 0):
             a = axis
         print("setting to %f" % pos)
-        self.dev.write("{0}PA{1:.4f};{0}WS;{0}TP\r".format(a, pos).encode())
+
+        command = "PA"
+        if relative:
+            command = "PR"
+
+        commands = "{0}{c}{1:.4f};{0}WS{ws};{0}WP{1:.4f};{0}TP\r".format(a, pos, c=command, ws=ws)
+        print(commands)
+
+        self.dev.write(commands.encode())
         return float(self.dev.readline())
 
     def position(self, pos=None, axis=None):
