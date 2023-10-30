@@ -4,8 +4,8 @@ import time
 
 from datetime import datetime
 
-from esp import ESP
-import serial
+from esp import ESP  # noqa
+import serial        # noqa
 
 
 FILE_HEADER = "ANGLE [°], A0 [V], A1 [V], DATETIME"
@@ -61,7 +61,8 @@ def main(angles, n_points=10, delay=0, filename='test.txt', verbose=False):
 
     overwrite = False
     if os.path.exists(filename):
-        i = input("El archivo ya existe. Querés borrar el archivo y empezar de nuevo? s/n (ENTER es NO): ")
+        i = input(
+            "El archivo ya existe. Querés borrar el archivo? s/n (ENTER es NO): ")
         if i == 's':
             overwrite = True
 
