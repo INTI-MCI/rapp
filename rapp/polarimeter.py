@@ -49,14 +49,21 @@ def create_or_open_file(filename, overwrite):
     return file
 
 
-def main(angles, n_points=10, delay=0, filename='test.txt', overwrite=False, verbose=False):
+def main(angles, n_points=10, delay=0, filename='test.txt', verbose=False):
+
     # Mock objects to test when we don't have the device connected.
     # TODO: create a unit test and use them from there.
-    # serialport = SerialMock()
-    # analyzer = ESPMock()
+    serialport = SerialMock()
+    analyzer = ESPMock()
 
-    serialport = serial.Serial(SERIAL_DEVICE, SERIAL_BAUDRATE, timeout=SERIAL_TIMEOUT)
-    analyzer = ESP("COM3", 921600, 1, reset=False)
+    # serialport = serial.Serial(SERIAL_DEVICE, SERIAL_BAUDRATE, timeout=SERIAL_TIMEOUT)
+    # analyzer = ESP("COM3", 921600, 1, reset=False)
+
+    overwrite = False
+    if os.path.exists(filename):
+        i = input("El archivo ya existe. Querés borrar el archivo y empezar de nuevo? s/n (ENTER es NO): ")
+        if i == 's':
+            overwrite = True
 
     file = create_or_open_file(filename, overwrite)
 
@@ -90,13 +97,12 @@ if __name__ == '__main__':
     n_points = int(sys.argv[1])          # pass how many points to measure.
     delay = float(sys.argv[2])           # pass the delay (in seconds) between measurements.
     filename = str(sys.argv[3])          # pass the filename.
-    overwrite = bool(int(sys.argv[4]))   # pass 1 (true) or 0 (false).
     verbose = bool(int(sys.argv[5]))     # pass 1 (true) or 0 (false).
 
     # example:
-    # python polarimeter.py 10 0 test.txt 1 0
+    # python polarimeter.py 10 0 test.txt 0
 
     # angles = [i % 360 for i in range(0, 360 * 2, 10)]
 
     angles = [0]
-    main(angles, n_points, delay, filename, overwrite, verbose)
+    main(angles, n_points, delay, filename, verbose)
