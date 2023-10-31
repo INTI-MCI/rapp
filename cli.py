@@ -7,7 +7,10 @@ from rapp.utils import create_folder
 from rapp.simulate import harmonic_signal
 
 from matplotlib.ticker import MaxNLocator
+from matplotlib import pyplot as plt
+
 from scipy.optimize import curve_fit
+
 
 OUTPUT_FOLDER = 'output'
 
@@ -213,7 +216,7 @@ def plot_signals_and_phase_diff(phi, step=0.01, n_cycles=10, awgn=0.05, show=Fal
     plot.close()
 
 
-def plot_noise(show=False):
+def plot_signals_per_n_measurement(show=False):
 
     filenames = [
         'laser-75-int-alta.txt',
@@ -224,6 +227,7 @@ def plot_noise(show=False):
     ]
 
     for filename in filenames:
+        print(f"Graficando {filename}...")
         filepath = os.path.join('data', filename)
 
         plot = Plot(ylabel="Voltage [V]", xlabel="# measurement")
@@ -243,6 +247,71 @@ def plot_noise(show=False):
         plot.close()
 
 
+def plot_signals_per_angle(show=False):
+
+    filenames = ['2-full-cycles.txt', '2-full-cycles-2.txt', '1-full-cycles.txt']
+
+    for filename in filenames:
+        filepath = os.path.join('data', filename)
+
+        plot = Plot(ylabel="Voltage [V]", xlabel="Angle [rad]")
+        plot.set_title(filename[:-4])
+
+        cols = (0, 1, 2)
+        data = np.loadtxt(filepath, delimiter=' ', skiprows=1, usecols=cols, encoding='iso-8859-1')
+        voltage = data[:, 1]
+        angles = data[:, 0] * np.pi / 180
+
+        plot.add_data(angles, voltage, style='o-', color='k', xrad=True)
+        plot.save(filename=filename[:-4])
+
+        if show:
+            plot.show()
+
+        plot.close()
+
+
+def plot_dark_current(show=False):
+
+    filenames = [
+        'dark-current.txt'
+    ]
+
+    for filename in filenames:
+        print(f"Graficando {filename}...")
+        filepath = os.path.join('data', filename)
+
+        plot = Plot(ylabel="Voltage [V]", xlabel="# measurement")
+        plot.set_title(filename[:-4])
+
+        cols = (0, 1, 2)
+        data = np.loadtxt(filepath, delimiter=' ', skiprows=1, usecols=cols, encoding='iso-8859-1')
+        data = data[:, 1]
+        xs = np.arange(1, data.size + 1, step=1)
+
+        plot.add_data(xs, data, style='-', color='k')
+        plot._ax.set_xlim(0, 500)
+
+        plot.save(filename=f"{filename[:-4]}-signal")
+
+        if show:
+            plot.show()
+
+        plot.close()
+
+        plt.figure()
+        plt.title("Dark current")
+        plt.xlabel("Voltage")
+        plt.ylabel("Count")
+        plt.hist(data, bins='auto', color='k')
+        plt.savefig(f"{os.path.join(OUTPUT_FOLDER, filename[:-4])}-histogram")
+
+        if show:
+            plot.show()
+
+        plt.close()
+
+
 def main():
     create_folder(OUTPUT_FOLDER)
 
@@ -256,7 +325,11 @@ def main():
 
     # plot_signals_and_phase_diff(phi=PHI, n_cycles=20, step=0.01, awgn=0.01, show=False)
 
-    plot_noise(show=False)
+    # plot_signals_per_n_measurement(show=False)
+
+    # plot_signals_per_angle(show=False)
+
+    plot_dark_current(show=False)
 
 
 if __name__ == '__main__':
