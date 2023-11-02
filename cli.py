@@ -9,6 +9,8 @@ from rapp.simulate import harmonic_signal
 from matplotlib.ticker import MaxNLocator
 from matplotlib import pyplot as plt
 
+from scipy import signal
+from scipy.stats import norm
 from scipy.optimize import curve_fit
 
 
@@ -55,6 +57,37 @@ def samples_per_cycle(step=0.01):
 
 def total_time(n_cycles):
     return n_cycles * (180 / ANALYZER_VELOCITY)
+
+
+def pol1(x, A, B):
+    return A * x + B
+
+
+def pol2(x, A, B, C):
+    return A * x**2 + B * x + C
+
+
+def pol3(x, A, B, C, D):
+    return A * x**3 + B * x**2 + C * x + D
+
+
+def fit_and_plot(data, n_data, func, n):
+    for i in np.arange(len(func)):
+        popt, pcov = curve_fit(func[i], np.arange(data.size), data)
+        plt.plot(np.arange(data.size), data)
+        plt.plot(n_data, func[i](np.arange(data.size), *popt))
+        plt.title(f'Ajuste deriva Canal {n}')
+        plt.show(block=True)
+        print(popt)
+    return
+
+
+def detrend_poly(data, func):
+    popt, pcov = curve_fit(func, np.arange(data.size), data)
+    # plt.plot(func(np.arange(data.size), *popt))
+    # plt.plot(data)
+    # plt.show()
+    return data - func(np.arange(data.size), *popt)
 
 
 def plot_harmonic_signals(phi, awgn=0.05, show=False):
@@ -271,13 +304,93 @@ def plot_signals_per_angle(show=False):
         voltage = data[:, 1]
         angles = data[:, 0] * np.pi / 180
 
-        plot.add_data(angles, voltage, style='o', color='k', xrad=True)
+        plot.add_data(angles, voltage, style='o-', color='k', xrad=True)
         plot.save(filename=filename[:-4])
 
         if show:
             plot.show()
 
         plot.close()
+
+
+def plot_deriva():
+    file = np.loadtxt(
+        'data/laser-75-int-alta.txt',
+        delimiter=' ', skiprows=1, usecols=(1, 2), encoding='iso-8859-1')
+
+    ch0 = file[:, 0]
+    ch1 = file[:, 1]
+
+    reencendido = np.loadtxt(
+        "data/laser-16-reencendido-1M.txt",
+        delimiter=' ', skiprows=1, usecols=(1, 2), encoding='iso-8859-1')
+
+    r0 = reencendido[:, 0]
+    r1 = reencendido[:, 1]
+
+    # fit_and_plot(r0[200000:], np.arange(r0[200000:].size), [pol1, pol2])
+    # fit_and_plot(r1[200000:], np.arange(r1[200000:].size), [pol1, pol2])
+
+    data_detrend0 = detrend_poly(r0[200000:], pol1)
+    data_detrend1 = detrend_poly(r1[200000:], pol2)
+    
+    plt.figure()
+    fft_data0 = np.fft.fft(data_detrend0)
+    plt.plot(data_detrend0)
+    fft_data1 = np.fft.fft(data_detrend1)
+    plt.plot(data_detrend1)
+    plt.show()
+    plt.figure()
+    plt.semilogy(np.abs(fft_data0))
+    plt.semilogy(np.abs(fft_data1))
+    plt.show()
+    
+    fit_and_plot(ch0, np.arange(ch0.size), [pol1], 0)
+    fit_and_plot(ch1, np.arange(ch1.size), [pol2], 1)
+    
+    data_detrend0 = detrend_poly(ch0, pol1)
+    data_detrend1 = detrend_poly(ch1, pol2)
+    
+    b, a = signal.butter(3, 0.064, btype='highpass')
+    filtered_noise0 = signal.filtfilt(b, a, data_detrend0)
+    filtered_noise1 = signal.filtfilt(b, a, data_detrend1)
+    mu_0 = np.mean(filtered_noise0)
+    std_dev0 = np.std(filtered_noise0)
+    std_dev1 = np.std(filtered_noise1)
+    mu_1 = np.mean(filtered_noise1)    
+    print('Media ch0 = ', mu_0)
+    print('Sigma ch0 = ', std_dev0)
+    print('Media ch1 = ', mu_1)
+    print('Sigma ch1 = ', std_dev1)
+    plt.figure()
+    plt.title('Ruido filtrado')
+    plt.plot(filtered_noise0, label='Canal 0')
+    plt.plot(filtered_noise1, label='Canal 1')
+    plt.legend()
+
+    fig, ax = plt.subplots(1, 2)
+    fig.suptitle('Ruido filtrado')
+    ax[0].hist(filtered_noise0, 100, range=(-0.005, 0.005))
+    ax[0].set_title('Canal 0')
+    ax[1].hist(filtered_noise1, 100, range=(-0.003, 0.003))
+    ax[1].set_title('Canal 1')
+    plt.show()
+    
+    # best fit of data
+    (mu0, sigma0) = norm.fit(filtered_noise0)
+    print('Media canal 0 = ', mu0)
+    print('Sigma canal 0 = ', sigma0)
+    
+    (mu1, sigma1) = norm.fit(filtered_noise1)
+    print('Media canal 1 = ', mu1)
+    print('Sigma canal 1 = ', sigma1)
+    
+    # # add a 'best fit' line
+    # plt.figure()
+    # y = norm.pdf(np.linspace(min(filtered_noise0), max(filtered_noise0)), mu0, sigma0)
+    # plt.hist(filtered_noise0, 100, range=(-0.005, 0.005), density=True)
+    # plt.plot(np.linspace(-0.005, 0.005), y, 'r--', linewidth=2)
+    # plt.show()
 
 
 def plot_dark_current(show=False):
@@ -336,7 +449,9 @@ def main():
 
     # plot_signals_per_n_measurement(show=False)
 
-    plot_signals_per_angle(show=False)
+    plot_deriva()
+
+    # plot_signals_per_angle(show=False)
 
     # plot_dark_current(show=False)
 
