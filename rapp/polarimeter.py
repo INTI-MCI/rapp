@@ -11,9 +11,12 @@ import serial        # noqa
 FILE_HEADER = "ANGLE [°], A0 [V], A1 [V], DATETIME"
 FILE_ROW = "{angle} {a0} {a1} {datetime}"
 
-SERIAL_DEVICE = 'COM3'
-SERIAL_BAUDRATE = 57600
-SERIAL_TIMEOUT = 0.1
+OUTPUT_DIR = "mediciones"
+
+ADC_DEVICE = 'COM4'
+ADC_BAUDRATE = 57600
+ADC_TIMEOUT = 0.1
+ADC_MAX_VAL = 4.096
 
 
 class SerialMock:
@@ -24,13 +27,27 @@ class SerialMock:
     def close(self):
         pass
 
+    def flushInput(self):
+        pass
+
 
 class ESPMock:
     """Mock object for esp.ESP."""
     dev = SerialMock()
 
+    pos = 0
+    vel = 2
+
     def setpos(self, pos, axis=None):
-        return 0
+        self.pos = pos
+        return pos
+
+    def getpos(self, axis=None):
+        return self.pos
+
+    def setvel(self, vel, axis=None):
+        self.vel = vel
+        return vel
 
 
 def create_file(filename):
@@ -49,15 +66,43 @@ def create_or_open_file(filename, overwrite):
     return file
 
 
-def main(angles, n_points=10, delay=0, filename='test.txt', verbose=False):
+def parse_data(data):
+    if not data:
+        raise ValueError("Data is empty!")
+
+    data_list = data.split(",")
+    if len(data_list) != 2:
+        raise ValueError("Expected 2 values! Got {}.".format(len(data_list)))
+
+    a0, a1 = data_list
+
+    if (
+        not (-ADC_MAX_VAL <= float(a0) <= ADC_MAX_VAL) or
+        not (-ADC_MAX_VAL <= float(a1) <= ADC_MAX_VAL)
+    ):
+        raise ValueError('Values out of the range [-{}, {}]'.format(ADC_MAX_VAL, ADC_MAX_VAL))
+
+    return a0, a1
+
+
+def main(n_cycles=1, step=10, n_points=10, delay=0, filename='test', verbose=False):
+
+    angles = [i for i in range(0, 360 * n_cycles, step)]
+    filename = "{}-n_cycles{}-step{}-n_points{}.txt".format(filename, n_cycles, step, n_points)
+
+    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    filename = os.path.join(OUTPUT_DIR, filename)
 
     # Mock objects to test when we don't have the device connected.
     # TODO: create a unit test and use them from there.
     serialport = SerialMock()
     analyzer = ESPMock()
 
-    # serialport = serial.Serial(SERIAL_DEVICE, SERIAL_BAUDRATE, timeout=SERIAL_TIMEOUT)
-    # analyzer = ESP("COM3", 921600, 1, reset=False)
+    # serialport = serial.Serial(ADC_DEVICE, ADC_BAUDRATE, timeout=ADC_TIMEOUT)
+    # analyzer = ESP(dev="COM3", b=921600, axis=1, reset=True)
+
+    time.sleep(2)           # Why this?
+    analyzer.setvel(vel=4)
 
     overwrite = False
     if os.path.exists(filename):
@@ -71,23 +116,33 @@ def main(angles, n_points=10, delay=0, filename='test.txt', verbose=False):
     for angle in angles:
         analyzer.setpos(angle)
 
+        time.sleep(1)  # wait for position to stabilize
+        # TODO: assert that the new position is the expected, up to N decimal positions?
+        print(f"Measuring at position: {analyzer.getpos()}")
+
+        serialport.flushInput()  # Clear buffer. Otherwise messes up measurements at the beginning.
+
         i = 0
         while i < n_points:
-            data_raw = serialport.readline().decode().strip()
+            data = serialport.readline().decode().strip()
 
-            if data_raw:  # TODO: check this IF is needed now that we removed the arduino delay.
-                a0, a1 = data_raw.split(",")
-                datetime_ = datetime.now().isoformat()
-                row = FILE_ROW.format(angle=angle, a0=a0, a1=a1, datetime=datetime_)
+            try:
+                a0, a1 = parse_data(data)
+            except ValueError as e:
+                print("Found error in data: {}. data: {}. Skipping...".format(e, data))
+                continue
 
-                if verbose:
-                    print(row)
+            datetime_ = datetime.now().isoformat()
+            row = FILE_ROW.format(angle=angle, a0=a0, a1=a1, datetime=datetime_)
 
-                file.write(row)
-                file.write('\n')
-                i = i + 1
+            if verbose:
+                print(row)
 
-                time.sleep(delay)
+            file.write(row)
+            file.write('\n')
+            i = i + 1
+
+            time.sleep(delay)
 
     file.close()
     serialport.close()
@@ -95,15 +150,14 @@ def main(angles, n_points=10, delay=0, filename='test.txt', verbose=False):
 
 
 if __name__ == '__main__':
-    n_points = int(sys.argv[1])          # pass how many points to measure.
-    delay = float(sys.argv[2])           # pass the delay (in seconds) between measurements.
-    filename = str(sys.argv[3])          # pass the filename.
-    verbose = bool(int(sys.argv[5]))     # pass 1 (true) or 0 (false).
+    n_cycles = int(sys.argv[1])          # how many cycles.
+    step = int(sys.argv[2])              # every how many degrees to take a measurement.
+    n_points = int(sys.argv[3])          # how many points per angle.
+    delay = float(sys.argv[4])           # the delay (in seconds) between each measurement.
+    filename = str(sys.argv[5])          # the filename.
+    verbose = bool(int(sys.argv[6]))     # whether to print each measurement. 1 (true) - 0 (false).
 
     # example:
-    # python polarimeter.py 10 0 test.txt 0
+    # python polarimeter.py 1 180 10 0 test.txt 0
 
-    # angles = [i % 360 for i in range(0, 360 * 2, 10)]
-
-    angles = [0]
-    main(angles, n_points, delay, filename, verbose)
+    main(n_cycles, step, n_points, delay, filename, verbose)
