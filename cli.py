@@ -23,6 +23,27 @@ def cosine_similarity(s1, s2):
     return np.arccos(np.dot(s1, s2) / (np.linalg.norm(s1) * np.linalg.norm(s2)))
 
 
+def phase_difference(xs, y1, y2):
+    xs = xs * 2  # The cycle of the polarizer contains two cycles of the signal.
+
+    popt1, pcov1 = curve_fit(sine, xs, y1)
+    popt2, pcov2 = curve_fit(sine, xs, y2)
+
+    fitx = np.arange(min(xs), max(xs), step=0.001)
+    fity1 = sine(fitx, *popt1)
+    fity2 = sine(fitx, *popt2)
+
+    phi1 = popt1[1] % (np.pi)
+    phi2 = popt2[1] % (np.pi)
+
+    phase_diff = (phi1 - phi2) % (np.pi)
+    phase_diff_degrees = np.rad2deg(phase_diff)
+
+    fitx = fitx / 2  # The cycle of the polarizer contains two cycles of the signal.
+
+    return phase_diff_degrees, fitx, fity1, fity2
+
+
 def sine(x, a, phi, c):
     return a * np.sin(x + phi) + c
 
@@ -144,7 +165,7 @@ def plot_phase_diff_error_vs_step(phi, n_cycles=20, show=False):
     plot.close()
 
 
-def plot_signals_and_phase_diff(phi, step=0.01, n_cycles=10, awgn=0.05, show=False):
+def plot_sim_signals_and_phase_diff(phi, step=0.01, n_cycles=10, awgn=0.05, show=False):
     print("\n############ Phase difference error (sinusoidal fit):")
 
     fc = samples_per_cycle(step=step)
@@ -152,31 +173,14 @@ def plot_signals_and_phase_diff(phi, step=0.01, n_cycles=10, awgn=0.05, show=Fal
     xs, s1 = harmonic_signal(n=n_cycles, fc=fc, awgn=awgn, all_positive=True)
     _, s2 = harmonic_signal(n=n_cycles, fc=fc, phi=-phi, awgn=awgn, all_positive=True)
 
-    xs = xs * 2  # The cycle of the polarizer contains two cycles of the signal.
+    phase_diff, fitx, fity1, fity2 = phase_difference(xs, s1, s2)
 
-    popt1, pcov1 = curve_fit(sine, xs, s1)
-    popt2, pcov2 = curve_fit(sine, xs, s2)
-
-    fitx = np.arange(min(xs), max(xs), step=0.001)
-    fity1 = sine(fitx, *popt1)
-    fity2 = sine(fitx, *popt2)
-
-    phi1 = popt1[1] % (np.pi)
-    phi2 = popt2[1] % (np.pi)
-
-    phase_diff = (phi1 - phi2) % (np.pi)
-    phase_diff_degrees = np.rad2deg(phase_diff)
-
-    print(f"Detected phase difference: {phase_diff_degrees}")
+    print(f"Detected phase difference: {phase_diff}")
 
     error = abs(phi - phase_diff)
     error_degrees = np.rad2deg(error)
 
     print(f"n={n_cycles}, fc={fc}, step={step}, awgn={awgn}, φerr: {error_degrees}.")
-
-    # Go back to the xs angles of the polarizer.
-    xs = xs / 2
-    fitx = fitx / 2
 
     label = (
         f"fc={fc}. \n"
@@ -248,8 +252,13 @@ def plot_signals_per_n_measurement(show=False):
 
 
 def plot_signals_per_angle(show=False):
-
-    filenames = ['2-full-cycles.txt', '2-full-cycles-2.txt', '1-full-cycles.txt']
+    filenames = [
+        '2-full-cycles.txt',
+        '2-full-cycles-2.txt',
+        '1-full-cycles.txt',
+        'test-clear-buffer.txt',
+        'test-clear-buffer2.txt'
+    ]
 
     for filename in filenames:
         filepath = os.path.join('data', filename)
@@ -262,7 +271,7 @@ def plot_signals_per_angle(show=False):
         voltage = data[:, 1]
         angles = data[:, 0] * np.pi / 180
 
-        plot.add_data(angles, voltage, style='o-', color='k', xrad=True)
+        plot.add_data(angles, voltage, style='o', color='k', xrad=True)
         plot.save(filename=filename[:-4])
 
         if show:
@@ -323,13 +332,13 @@ def main():
     # plot_phase_diff_error_vs_cycles(phi=PHI, show=False)
     # plot_phase_diff_error_vs_step(phi=PHI, show=False)
 
-    # plot_signals_and_phase_diff(phi=PHI, n_cycles=20, step=0.01, awgn=0.01, show=False)
+    # plot_sim_signals_and_phase_diff(phi=PHI, n_cycles=20, step=0.01, awgn=0.01, show=False)
 
     # plot_signals_per_n_measurement(show=False)
 
-    # plot_signals_per_angle(show=False)
+    plot_signals_per_angle(show=False)
 
-    plot_dark_current(show=False)
+    # plot_dark_current(show=False)
 
 
 if __name__ == '__main__':
