@@ -3,3 +3,5 @@ matplotlib~=3.8
 flake8~=6.1
 pyserial~=3.5
 scipy~=1.11
+
+. -e

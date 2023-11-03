@@ -1,5 +1,7 @@
 __pycache__
 
+rapp.egg-info
+
 .venv
 output
 .idea
