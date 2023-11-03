@@ -16,11 +16,24 @@ HELP_TEST = 'whether to run on test mode. No real connection will be established
 
 HELP_VERBOSE = 'whether to run on verbose mode.'
 
+LOG_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+
 
 def setup_logger(verbose=False):
-    logging.basicConfig()
+    logging.basicConfig(
+        level=logging.DEBUG if verbose else logging.INFO,
+        format=LOG_FORMAT
+    )
+
+    """
     root_logger = logging.getLogger()
-    root_logger.setLevel(logging.DEBUG if verbose else logging.INFO)
+
+    handler = logging.StreamHandler()
+    handler.setLevel(logging.DEBUG if verbose else logging.INFO)
+    handler.setFormatter(logging.Formatter(LOG_FORMAT))
+
+    root_logger.addHandler(handler)
+    """
 
 
 def add_polarimeter_subparser(subparsers):

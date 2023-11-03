@@ -109,7 +109,7 @@ def main(
         time.sleep(delay_position)  # wait for position to stabilize
         serialport.flushInput()  # Clear buffer. Otherwise messes up measurements at the beginning.
 
-        logger.info(f"Measuring at position: {analyzer.getpos()}")
+        logger.info(f"Angle: {analyzer.getpos()}")
 
         i = 0
         while i < samples:
@@ -121,10 +121,10 @@ def main(
                 logger.warning("Found error in data: {}. data: {}. Skipping...".format(e, data))
                 continue
 
+            logger.debug("(A0, A1) = ({}, {})".format(a0, a1))
+
             datetime_ = datetime.now().isoformat()
             row = FILE_ROW.format(angle=angle, a0=a0, a1=a1, datetime=datetime_)
-
-            logger.debug(row)
 
             file.write(row)
             file.write('\n')
