@@ -1,6 +1,7 @@
 __pycache__
 
 rapp.egg-info
+build
 
 .venv
 output
