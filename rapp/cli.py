@@ -2,9 +2,8 @@ import sys
 import logging
 import argparse
 
-from rapp import analysis
 from rapp import polarimeter
-
+from rapp.signal import analysis
 
 HELP_CYCLES = 'n° of cycles to run.'
 HELP_STEP = 'every how many degrees to take a measurement.'
@@ -52,6 +51,7 @@ def main():
     add_polarimeter_subparser(subparsers)
 
     args = parser.parse_args(args=sys.argv[1:] or ['--help'])
+
     if args.command == 'analysis':
         analysis.main()
 

@@ -1,10 +1,20 @@
 import setuptools
 
+author = "Alvarez Liliana del Valle, Etchepareborda Pablo G., Link Tomás J., Vargas Camila L."
+author_email = (
+    "ldalvarez@inti.gob.ar, "
+    "petchepareborda@inti.gob.ar, "
+    "tomaslink@gmail.com, "
+    "cami.vargas24@gmail.com"
+)
+
+
 setuptools.setup(
     name="rapp",
     version="0.1.0",
-    author="Tomás Juan Link",
-    author_email="tomaslink@gmail.com",
+    author=author,
+    author_email=author_email,
+    maintainer="Link, Tomás J.",
     description="Tools for measuring the rotation angle of the plane of polarization (RAPP).",
     long_description_content_type="text/markdown",
     url="https://github.com/INTI-metrologia/rapp",

@@ -2,10 +2,6 @@ import os
 
 import numpy as np
 
-from rapp.plot import Plot
-from rapp.utils import create_folder
-from rapp.simulate import harmonic_signal
-
 from matplotlib.ticker import MaxNLocator
 from matplotlib import pyplot as plt
 
@@ -13,6 +9,10 @@ from scipy import signal
 from scipy.stats import norm
 from scipy.optimize import curve_fit
 
+from rapp.utils import create_folder
+
+from rapp.signal.plot import Plot
+from rapp.signal.simulator import harmonic_signal
 
 OUTPUT_FOLDER = 'output'
 
@@ -440,20 +440,20 @@ def main():
     print(f"SIMULATED PHASE DIFFERENCE: {np.rad2deg(PHI)} degrees.")
     print(f"ANALYZER VELOCITY: {ANALYZER_VELOCITY} degrees per second.")
 
-    # plot_harmonic_signals(phi=PHI)
+    plot_harmonic_signals(phi=PHI, show=False)
 
-    # plot_phase_diff_error_vs_cycles(phi=PHI, show=False)
-    # plot_phase_diff_error_vs_step(phi=PHI, show=False)
+    plot_phase_diff_error_vs_cycles(phi=PHI, show=False)
+    plot_phase_diff_error_vs_step(phi=PHI, show=False)
 
-    # plot_sim_signals_and_phase_diff(phi=PHI, n_cycles=20, step=0.01, awgn=0.01, show=False)
+    plot_sim_signals_and_phase_diff(phi=PHI, n_cycles=20, step=0.01, awgn=0.01, show=False)
 
-    # plot_signals_per_n_measurement(show=False)
+    plot_signals_per_n_measurement(show=False)
 
     plot_deriva()
 
-    # plot_signals_per_angle(show=False)
+    plot_signals_per_angle(show=False)
 
-    # plot_dark_current(show=False)
+    plot_dark_current(show=False)
 
 
 if __name__ == '__main__':
