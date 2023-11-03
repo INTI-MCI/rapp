@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 FILE_HEADER = "ANGLE [°], A0 [V], A1 [V], DATETIME"
 FILE_ROW = "{angle} {a0} {a1} {datetime}"
 
-OUTPUT_DIR = "output"
+OUTPUT_DIR = "output-data"
 
 ADC_DEVICE = 'COM4'
 ADC_BAUDRATE = 57600
@@ -25,6 +25,8 @@ ADC_MAX_VAL = 4.096
 ANALYZER_DEVICE = "COM3"
 ANALYZER_BAUDRATE = 921600
 ANALYZER_AXIS = 1
+
+FILENAME_FORMAT = "{prefix}-cycles{cycles}-step{step}-samples{samples}.txt"
 
 
 def create_file(filename):
@@ -75,18 +77,9 @@ def parse_data(data):
 
 def main(
     cycles=1, step=10, samples=10, delay_position=1, delay_angle=0, analyzer_velocity=2,
-    filename='test', test=False
+    prefix='test', test=False
 ):
-
-    filename = "{}-cycles{}-step{}-samples{}.txt".format(filename, cycles, step, samples)
     os.makedirs(OUTPUT_DIR, exist_ok=True)
-    filepath = os.path.join(OUTPUT_DIR, filename)
-    overwrite = ask_for_overwrite(filepath)
-
-    angles = [i for i in frange(0, 360 * cycles, step)]
-
-    logger.debug("Angles to measure: {}".format(angles))
-
     if test:
         # If this happens, we don't use real connections. We use mock objects to test the code.
         # TODO: create a unit test and use the mocks from there.
@@ -98,7 +91,14 @@ def main(
 
     analyzer.setvel(vel=analyzer_velocity)
 
+    filename = FILENAME_FORMAT.format(prefix=prefix, cycles=cycles, step=step, samples=samples)
+    filepath = os.path.join(OUTPUT_DIR, filename)
+    overwrite = ask_for_overwrite(filepath)
     file = create_or_open_file(filepath, overwrite)
+
+    angles = [i for i in frange(0, 360 * cycles, step)]
+    logger.debug("Angles to measure: {}".format(angles))
+
     for angle in angles:
         analyzer.setpos(angle)      # TODO: Try to set exact position desired instead of x.001.
         time.sleep(delay_position)  # wait for position to stabilize

@@ -14,7 +14,7 @@ from rapp.utils import create_folder
 from rapp.signal.plot import Plot
 from rapp.signal.simulator import harmonic_signal
 
-OUTPUT_FOLDER = 'output'
+OUTPUT_FOLDER = 'output-plots'
 
 
 ANALYZER_VELOCITY = 4  # Degrees per second.

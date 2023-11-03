@@ -3,6 +3,8 @@ __pycache__
 rapp.egg-info
 build
 
+output-data
+output-plots
+
 .venv
-output
 .idea

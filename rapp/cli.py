@@ -11,7 +11,7 @@ HELP_SAMPLES = 'n° of samples per angle.'
 HELP_DELAY_POSITION = 'the delay (in seconds) after changing analyzer position.'
 HELP_DELAY_ANGLE = 'the delay (in seconds) after measuring an angle.'
 HELP_ANALYZER_V = 'velocity of the analyzer.'
-HELP_FILENAME = 'filename in which to write results.'
+HELP_PREFIX = 'prefix for the filename in which to write results.'
 HELP_TEST = 'whether to run on test mode. No real connection will be established.'
 
 HELP_VERBOSE = 'whether to run on verbose mode.'
@@ -34,7 +34,7 @@ def add_polarimeter_subparser(subparsers):
     p.add_argument('--delay_position', type=float, default=1, metavar='', help=HELP_DELAY_POSITION)
     p.add_argument('--delay_angle', type=float, default=0, metavar='', help=HELP_DELAY_ANGLE)
     p.add_argument('--analyzer_velocity', type=float, default=4, metavar='', help=HELP_ANALYZER_V)
-    p.add_argument('--filename', type=str, default='test', metavar='', help=HELP_FILENAME)
+    p.add_argument('--prefix', type=str, default='test', metavar='', help=HELP_PREFIX)
     p.add_argument('--test', action='store_true', help=HELP_TEST)
     p.add_argument('-v', '--verbose', action='store_true', help=HELP_VERBOSE)
 
@@ -64,7 +64,7 @@ def main():
             delay_position=args.delay_position,
             delay_angle=args.delay_angle,
             analyzer_velocity=args.analyzer_velocity,
-            filename=args.filename,
+            prefix=args.prefix,
             test=args.test
         )
 
