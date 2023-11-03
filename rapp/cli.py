@@ -1,3 +1,4 @@
+import sys
 import logging
 import argparse
 
@@ -25,16 +26,6 @@ def setup_logger(verbose=False):
         format=LOG_FORMAT
     )
 
-    """
-    root_logger = logging.getLogger()
-
-    handler = logging.StreamHandler()
-    handler.setLevel(logging.DEBUG if verbose else logging.INFO)
-    handler.setFormatter(logging.Formatter(LOG_FORMAT))
-
-    root_logger.addHandler(handler)
-    """
-
 
 def add_polarimeter_subparser(subparsers):
     p = subparsers.add_parser("polarimeter")
@@ -60,14 +51,12 @@ def main():
     subparsers.add_parser("analysis")
     add_polarimeter_subparser(subparsers)
 
-    args = parser.parse_args()
-
-    setup_logger(args.verbose)
-
+    args = parser.parse_args(args=sys.argv[1:] or ['--help'])
     if args.command == 'analysis':
         analysis.main()
 
     if args.command == 'polarimeter':
+        setup_logger(args.verbose)
         polarimeter.main(
             cycles=args.cycles,
             step=args.step,

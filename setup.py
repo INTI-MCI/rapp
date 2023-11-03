@@ -19,13 +19,13 @@ setuptools.setup(
     ],
     entry_points={
         'console_scripts': [
-            'rapp = cli:main',
+            'rapp = rapp.cli:main',
         ]
     },
     install_requires=[
         'numpy<2',
-        'matplotlib<4'
-        'pyserial<4'
+        'matplotlib<4',
+        'pyserial<4',
         'scipy<2'
     ]
 )
