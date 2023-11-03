@@ -51,9 +51,30 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
-Then, for example, run the code in the cli:
+## Usage examples:
+
+rapp provides a command-line interface:
+
 ```bash
-python cli.py
+(.venv) $ rapp polarimeter -h
+usage: RAPP polarimeter [-h] [--cycles CYCLES] [--step STEP] [--samples SAMPLES] [--delay_position DELAY_POSITION] [--delay_angle DELAY_ANGLE] [--analyzer_velocity ANALYZER_VELOCITY] [--filename FILENAME] [-v] [--test]
+
+options:
+  -h, --help            show this help message and exit
+  --cycles              n° of cycles to run.
+  --step                every how many degrees to take a measurement.
+  --samples             n° of samples per angle.
+  --delay_position      the delay (in seconds) after changing analyzer position.
+  --delay_angle         the delay (in seconds) after measuring an angle.
+  --analyzer_velocity   velocity of the analyzer.
+  --filename            filename in which to write results.
+  --test                whether to run on test mode. No real connection will be established.
+  -v, --verbose         whether to run on verbose mode.
+```
+
+Example to make a measurement:
+```bash
+rapp polarimeter --cycles 1 --step 30 --samples 10 --delay_position 0 --test
 ```
 
 
