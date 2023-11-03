@@ -12,8 +12,7 @@ plt.style.use('style.mplstyle')
 
 class Plot:
     """Encapsulates the creation of plots."""
-
-    def __init__(self, title='', ylabel=None, xlabel=None, ysci=False, folder='output'):
+    def __init__(self, title='', ylabel=None, xlabel=None, ysci=False, folder='output-plots'):
         self._fig, self._ax = plt.subplots()
         self._ax.set_title(title, size=12)
 
