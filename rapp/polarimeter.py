@@ -2,13 +2,13 @@ import os
 import time
 import logging
 
-
 from datetime import datetime
 
 import serial        # noqa
+
 from rapp.esp import ESP  # noqa
 from rapp.mocks import SerialMock, ESPMock
-
+from rapp.utils import frange
 
 logger = logging.getLogger(__name__)
 
@@ -73,11 +73,6 @@ def parse_data(data):
     return a0, a1
 
 
-def frange(start, end, step):
-    """A range with float step allowed."""
-    return [p * step for p in range(start, int(end / step))]
-
-
 def main(
     cycles=1, step=10, samples=10, delay_position=1, delay_angle=0, analyzer_velocity=2,
     filename='test', test=False
@@ -105,9 +100,9 @@ def main(
 
     file = create_or_open_file(filepath, overwrite)
     for angle in angles:
-        analyzer.setpos(angle)   # TODO: Try to obtain the exact position desired instead of .0001.
+        analyzer.setpos(angle)      # TODO: Try to set exact position desired instead of x.001.
         time.sleep(delay_position)  # wait for position to stabilize
-        serialport.flushInput()  # Clear buffer. Otherwise messes up measurements at the beginning.
+        serialport.flushInput()     # Clear buffer. Otherwise messes up values at the beginning.
 
         logger.info(f"Angle: {analyzer.getpos()}")
 

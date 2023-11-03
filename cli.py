@@ -10,7 +10,7 @@ HELP_STEP = 'every how many degrees to take a measurement.'
 HELP_SAMPLES = 'n° of samples per angle.'
 HELP_DELAY_POSITION = 'the delay (in seconds) after changing analyzer position.'
 HELP_DELAY_ANGLE = 'the delay (in seconds) after measuring an angle.'
-HELP_ANALYZER_VEL = 'velocity of the analyzer.'
+HELP_ANALYZER_V = 'velocity of the analyzer.'
 HELP_FILENAME = 'filename in which to write results.'
 HELP_TEST = 'whether to run on test mode. No real connection will be established.'
 
@@ -38,13 +38,13 @@ def setup_logger(verbose=False):
 
 def add_polarimeter_subparser(subparsers):
     p = subparsers.add_parser("polarimeter")
-    p.add_argument('--cycles', type=int, default=1, help=HELP_CYCLES)
-    p.add_argument('--step', type=float, default=30, help=HELP_STEP)
-    p.add_argument('--samples', type=int, default=1, help=HELP_SAMPLES)
-    p.add_argument('--delay_position', type=float, default=1, help=HELP_DELAY_POSITION)
-    p.add_argument('--delay_angle', type=float, default=0, help=HELP_DELAY_ANGLE)
-    p.add_argument('--analyzer_velocity', type=float, default=4, help=HELP_ANALYZER_VEL)
-    p.add_argument('--filename', type=str, default='test', help=HELP_FILENAME)
+    p.add_argument('--cycles', type=int, default=1, metavar='', help=HELP_CYCLES)
+    p.add_argument('--step', type=float, default=30, metavar='', help=HELP_STEP)
+    p.add_argument('--samples', type=int, default=1, metavar='', help=HELP_SAMPLES)
+    p.add_argument('--delay_position', type=float, default=1, metavar='', help=HELP_DELAY_POSITION)
+    p.add_argument('--delay_angle', type=float, default=0, metavar='', help=HELP_DELAY_ANGLE)
+    p.add_argument('--analyzer_velocity', type=float, default=4, metavar='', help=HELP_ANALYZER_V)
+    p.add_argument('--filename', type=str, default='test', metavar='', help=HELP_FILENAME)
     p.add_argument('--test', action='store_true', help=HELP_TEST)
     p.add_argument('-v', '--verbose', action='store_true', help=HELP_VERBOSE)
 

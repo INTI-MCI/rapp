@@ -61,17 +61,14 @@ usage: RAPP polarimeter [-h] [--cycles CYCLES] [--step STEP] [--samples SAMPLES]
 
 options:
   -h, --help            show this help message and exit
-  --cycles CYCLES       n° of cycles to run.
-  --step STEP           every how many degrees to take a measurement.
-  --samples SAMPLES     n° of samples per angle.
-  --delay_position DELAY_POSITION
-                        the delay (in seconds) after changing analyzer position.
-  --delay_angle DELAY_ANGLE
-                        the delay (in seconds) after measuring an angle.
-  --analyzer_velocity ANALYZER_VELOCITY
-                        velocity of the analyzer.
-  --filename FILENAME   filename in which to write results.
-  --test                whether to run on test mode.
+  --cycles              n° of cycles to run.
+  --step                every how many degrees to take a measurement.
+  --samples             n° of samples per angle.
+  --delay_position      the delay (in seconds) after changing analyzer position.
+  --delay_angle         the delay (in seconds) after measuring an angle.
+  --analyzer_velocity   velocity of the analyzer.
+  --filename            filename in which to write results.
+  --test                whether to run on test mode. No real connection will be established.
   -v, --verbose         whether to run on verbose mode.
 ```
 
