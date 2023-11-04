@@ -1,9 +1,9 @@
 import time
 from datetime import datetime
 
-import esp
+from rapp import esp
 
-controller = esp.esp("COM3", 921600, 1, reset=False)
+controller = esp.ESP("COM3", 921600, 1, reset=False)
 
 value = controller.setpos(0)
 time.sleep(1)
