@@ -1,7 +1,10 @@
 class SerialMock:
     """Mock object for serial.Serial."""
     def readline(self):
-        return b'3.4567,2.3422'
+        return b'1340'
+
+    def write(self, v):
+        pass
 
     def close(self):
         pass
