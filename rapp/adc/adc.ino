@@ -42,21 +42,35 @@ void measure_sps() {
     Serial.println(N);
 }
 
+void read_n_samples_from_channel(short n_samples, byte channel, byte skip_values){
+    ads.startADCReading(MUX_BY_CHANNEL[channel], ADS_READING_MODE_CONTINUOUS);
+    delay(3);  // Time we need to wait so ADC goes out of suspension
+    short i = 0;
+    while (i < n_samples + skip_values) {
+        short data = ads.getLastConversionResults();
+        if (i > skip_values - 1)
+            Serial.println(data, DEC);
+        i = i + 1;
+        delayMicroseconds(ADS_CONTINUOUS_MODE_DELAY_MUS);
+    };
+}
+
+void read_n_samples_from_channel_without_print(short n_samples, byte channel){
+    ads.startADCReading(MUX_BY_CHANNEL[channel], ADS_READING_MODE_CONTINUOUS);
+
+    short i = 0;
+    while (i < n_samples) {
+        short data = ads.getLastConversionResults();
+        i = i + 1;
+        delayMicroseconds(ADS_CONTINUOUS_MODE_DELAY_MUS);
+    };
+}
+
 void loop(void) {
-
     if (Serial.available() > 0) {  // Wait to recieve a signal.
-
-        ads.startADCReading(MUX_BY_CHANNEL[0], ADS_READING_MODE_CONTINUOUS);
-        short samples = Serial.parseInt();
-
-        short i = 0;
-        while (i < samples) {
-            short a0 = ads.getLastConversionResults();
-            Serial.println(a0, DEC);
-            i = i + 1;
-            delayMicroseconds(ADS_CONTINUOUS_MODE_DELAY_MUS);
-        };
-
-        Serial.flush();  // waits for the output data to be transmitted before continue.
+        short n_samples = Serial.parseInt();
+        
+        read_n_samples_from_channel(n_samples, 0, 0);      
+        read_n_samples_from_channel(n_samples, 1, 0);
     }
 }

@@ -21,6 +21,7 @@ ADC_DEVICE = 'COM4'
 ADC_BAUDRATE = 57600
 ADC_TIMEOUT = 0.1
 ADC_MAX_VAL = 4.096
+ADC_MULTIPLIER_mV = 0.125
 
 ANALYZER_DEVICE = "COM3"
 ANALYZER_BAUDRATE = 921600
@@ -56,6 +57,39 @@ def ask_for_overwrite(filename):
     return overwrite
 
 
+def bits_to_volts(value):
+    return value * ADC_MULTIPLIER_mV / 1000
+
+
+def read_data(adc, n_samples):
+    data = []
+    while len(data) < n_samples:
+        try:
+            value = adc.readline().decode().strip()
+            if value:
+                value = int(value)
+                value = bits_to_volts(value)
+                data.append(value)
+        except (ValueError, UnicodeDecodeError) as e:
+            print(e)
+
+    return data
+
+
+def acquire(adc, n_samples):
+    adc.write(bytes(str(n_samples), 'utf-8'))
+    # Sending directly the numerical value didn't work.
+    # See: https://stackoverflow.com/questions/69317581/sending-serial-data-to-arduino-works-in-serial-monitor-but-not-in-python  # noqa
+
+    a0 = read_data(adc, n_samples)
+    a1 = read_data(adc, n_samples)
+
+    data = zip(a0, a1)
+
+    return data
+
+
+"""
 def parse_data(data):
     if not data:
         raise ValueError("Data is empty!")
@@ -73,6 +107,7 @@ def parse_data(data):
         raise ValueError('Values out of the range [-{}, {}]'.format(ADC_MAX_VAL, ADC_MAX_VAL))
 
     return a0, a1
+"""
 
 
 def main(
@@ -83,10 +118,10 @@ def main(
     if test:
         # If this happens, we don't use real connections. We use mock objects to test the code.
         # TODO: create a unit test and use the mocks from there.
-        serialport = SerialMock()
+        adc = SerialMock()
         analyzer = ESPMock()
     else:
-        serialport = serial.Serial(ADC_DEVICE, ADC_BAUDRATE, timeout=ADC_TIMEOUT)
+        adc = serial.Serial(ADC_DEVICE, ADC_BAUDRATE, timeout=ADC_TIMEOUT)
         analyzer = ESP(dev=ANALYZER_DEVICE, b=ANALYZER_BAUDRATE, axis=ANALYZER_AXIS, reset=True)
 
     analyzer.setvel(vel=analyzer_velocity)
@@ -102,31 +137,21 @@ def main(
     for angle in angles:
         analyzer.setpos(angle)      # TODO: Try to set exact position desired instead of x.001.
         time.sleep(delay_position)  # wait for position to stabilize
-        serialport.flushInput()     # Clear buffer. Otherwise messes up values at the beginning.
+        adc.flushInput()            # Clear buffer. Otherwise messes up values at the beginning.
 
         logger.info(f"Angle: {analyzer.getpos()}")
 
-        i = 0
-        while i < samples:
-            data = serialport.readline().decode().strip()
+        data = acquire(adc, samples)
 
-            try:
-                a0, a1 = parse_data(data)
-            except ValueError as e:
-                logger.warning("Found error in data: {}. data: {}. Skipping...".format(e, data))
-                continue
-
+        for a0, a1 in data:
             logger.debug("(A0, A1) = ({}, {})".format(a0, a1))
-
             datetime_ = datetime.now().isoformat()
             row = FILE_ROW.format(angle=angle, a0=a0, a1=a1, datetime=datetime_)
-
             file.write(row)
             file.write('\n')
-            i = i + 1
 
-            time.sleep(delay_angle)
+        time.sleep(delay_angle)
 
     file.close()
-    serialport.close()
+    adc.close()
     analyzer.dev.close()
