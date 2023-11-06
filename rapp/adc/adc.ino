@@ -51,10 +51,8 @@ void loop(void) {
 
         short i = 0;
         while (i < samples) {
-            short value0_bits = ads.getLastConversionResults();
-            float value0_volts = ads.computeVolts(value0_bits);
-            
-            Serial.println(value0_volts, 6);
+            short a0 = ads.getLastConversionResults();
+            Serial.println(a0, DEC);
             i = i + 1;
             delayMicroseconds(ADS_CONTINUOUS_MODE_DELAY_MUS);
         };

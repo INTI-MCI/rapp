@@ -9,8 +9,13 @@ ADC_DEVICE = '/dev/ttyACM0'
 
 ADC_BAUDRATE = 57600
 ADC_TIMEOUT = 0.1
+ADC_MULTIPLIER_mV = 0.125
 
 WAIT_TIME_AFTER_CONNECTION = 2
+
+
+def bits_to_volts(value):
+    return value * ADC_MULTIPLIER_mV / 1000
 
 
 @timing
@@ -22,8 +27,9 @@ def acquire(adc, n_samples):
     data = []
     while len(data) < n_samples:
         try:
-            value = adc.readline().decode().strip()
+            value = int(adc.readline().decode().strip())
             if value:
+                value = bits_to_volts(value)
                 print("A0: {}".format(value))
                 data.append(value)
         except (ValueError, UnicodeDecodeError) as e:
@@ -32,6 +38,7 @@ def acquire(adc, n_samples):
 
 def main():
     adc = serial.Serial(ADC_DEVICE, ADC_BAUDRATE, timeout=ADC_TIMEOUT)
+    adc.flushInput()
 
     print("Waiting {} seconds...".format(WAIT_TIME_AFTER_CONNECTION))
     # Arduino resets when a new serial connection is made.
