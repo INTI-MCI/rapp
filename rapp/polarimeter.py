@@ -12,8 +12,6 @@ from rapp.utils import frange
 
 logger = logging.getLogger(__name__)
 
-FILE_HEADER = "ANGLE [°], A0 [V], A1 [V], DATETIME"
-FILE_ROW = "{angle} {a0} {a1} {datetime}"
 
 OUTPUT_DIR = "output-data"
 
@@ -28,6 +26,10 @@ ANALYZER_BAUDRATE = 921600
 ANALYZER_AXIS = 1
 
 FILENAME_FORMAT = "{prefix}-cycles{cycles}-step{step}-samples{samples}.txt"
+
+EXPAND_TABS = 10
+FILE_HEADER = "ANGLE{d}A0{d}A1{d}DATETIME".format(d="\t").expandtabs(EXPAND_TABS)
+FILE_ROW = "{angle}\t{a0}\t{a1}\t{datetime}"
 
 
 def create_file(filename):
@@ -51,7 +53,7 @@ def ask_for_overwrite(filename):
     if os.path.exists(filename):
         i = input(
             "File already exists. Do you want to erase it? y/n (default is NO): ")
-        if i == 's':
+        if i == 'y':
             overwrite = True
 
     return overwrite
@@ -67,11 +69,10 @@ def read_data(adc, n_samples):
         try:
             value = adc.readline().decode().strip()
             if value:
-                value = int(value)
-                value = bits_to_volts(value)
+                value = bits_to_volts(int(value))
                 data.append(value)
         except (ValueError, UnicodeDecodeError) as e:
-            print(e)
+            logger.warning(e)
 
     return data
 
@@ -89,30 +90,8 @@ def acquire(adc, n_samples):
     return data
 
 
-"""
-def parse_data(data):
-    if not data:
-        raise ValueError("Data is empty!")
-
-    data_list = data.split(",")
-    if len(data_list) != 2:
-        raise ValueError("Expected 2 values! Got {}.".format(len(data_list)))
-
-    a0, a1 = data_list
-
-    if (
-        not (-ADC_MAX_VAL <= float(a0) <= ADC_MAX_VAL) or
-        not (-ADC_MAX_VAL <= float(a1) <= ADC_MAX_VAL)
-    ):
-        raise ValueError('Values out of the range [-{}, {}]'.format(ADC_MAX_VAL, ADC_MAX_VAL))
-
-    return a0, a1
-"""
-
-
 def main(
-    cycles=1, step=10, samples=10, delay_position=1, delay_angle=0, analyzer_velocity=2,
-    prefix='test', test=False
+    cycles=1, step=10, samples=10, delay_position=1, analyzer_velocity=2, prefix='test', test=False
 ):
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     if test:
@@ -124,6 +103,7 @@ def main(
         adc = serial.Serial(ADC_DEVICE, ADC_BAUDRATE, timeout=ADC_TIMEOUT)
         analyzer = ESP(dev=ANALYZER_DEVICE, b=ANALYZER_BAUDRATE, axis=ANALYZER_AXIS, reset=True)
 
+    logger.info("Setting analyzer velocity to {} deg/s.".format(analyzer_velocity))
     analyzer.setvel(vel=analyzer_velocity)
 
     filename = FILENAME_FORMAT.format(prefix=prefix, cycles=cycles, step=step, samples=samples)
@@ -139,7 +119,7 @@ def main(
         time.sleep(delay_position)  # wait for position to stabilize
         adc.flushInput()            # Clear buffer. Otherwise messes up values at the beginning.
 
-        logger.info(f"Angle: {analyzer.getpos()}")
+        logger.info("Angle: {}".format(analyzer.getpos()))
 
         data = acquire(adc, samples)
 
@@ -147,10 +127,8 @@ def main(
             logger.debug("(A0, A1) = ({}, {})".format(a0, a1))
             datetime_ = datetime.now().isoformat()
             row = FILE_ROW.format(angle=angle, a0=a0, a1=a1, datetime=datetime_)
-            file.write(row)
+            file.write(row.expandtabs(EXPAND_TABS))
             file.write('\n')
-
-        time.sleep(delay_angle)
 
     file.close()
     adc.close()
