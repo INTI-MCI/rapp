@@ -9,7 +9,7 @@ HELP_CYCLES = 'n° of cycles to run.'
 HELP_STEP = 'every how many degrees to take a measurement.'
 HELP_SAMPLES = 'n° of samples per angle.'
 HELP_DELAY_POSITION = 'delay (in seconds) after changing analyzer position (default: %(default)s).'
-HELP_ANALYZER_V = 'velocity of the analyzer (default: %(default)s).'
+HELP_ANALYZER_V = 'velocity of the analyzer in deg/s (default: %(default)s).'
 HELP_PREFIX = 'prefix for the filename in which to write results (default: %(default)s).'
 HELP_TEST = 'run on test mode. No real connections will be established (default: %(default)s).'
 
