@@ -1,7 +1,9 @@
 import os
+import math
 import shutil
 
-import math
+from time import time
+from functools import wraps
 
 
 def create_folder(folder, overwrite=True):
@@ -19,3 +21,15 @@ def round_to_n(number, n):
 def frange(start, end, step):
     """A range with float step allowed."""
     return [p * step for p in range(start, int(end / step))]
+
+
+def timing(f):
+    @wraps(f)
+    def wrap(*args, **kw):
+        ts = time()
+        result = f(*args, **kw)
+        te = time()
+        elapsed_time = te-ts
+        print('func: {} took: {} sec'.format(f.__name__, round(elapsed_time, 4)))
+        return result, elapsed_time
+    return wrap

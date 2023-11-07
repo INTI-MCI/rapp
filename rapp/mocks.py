@@ -1,7 +1,13 @@
+import random
+
+
 class SerialMock:
     """Mock object for serial.Serial."""
     def readline(self):
-        return b'3.4567,2.3422'
+        return '{}'.format(random.randint(0, 30e3)).encode('utf-8')
+
+    def write(self, v):
+        pass
 
     def close(self):
         pass
