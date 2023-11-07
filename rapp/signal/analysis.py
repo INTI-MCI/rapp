@@ -290,7 +290,8 @@ def plot_signals_per_angle(show=False):
         '2-full-cycles-2.txt',
         '1-full-cycles.txt',
         'test-clear-buffer.txt',
-        'test-clear-buffer2.txt'
+        'test-clear-buffer2.txt',
+        'test-cycles2-step1.0-samples50.txt'
     ]
 
     for filename in filenames:
@@ -300,12 +301,12 @@ def plot_signals_per_angle(show=False):
         plot.set_title(filename[:-4])
 
         cols = (0, 1, 2)
-        data = np.loadtxt(filepath, delimiter=' ', skiprows=1, usecols=cols, encoding='iso-8859-1')
+        data = np.loadtxt(filepath, skiprows=1, usecols=cols, encoding='iso-8859-1')
         voltage = data[:, 1]
         angles = data[:, 0] * np.pi / 180
 
         plot.add_data(angles, voltage, style='o-', color='k', xrad=True)
-        plot.save(filename=filename[:-4])
+        plot.save(filename=f"{filename[:-4]}.png")
 
         if show:
             plot.show()
@@ -313,7 +314,7 @@ def plot_signals_per_angle(show=False):
         plot.close()
 
 
-def plot_deriva():
+def plot_drift():
     file = np.loadtxt(
         'data/laser-75-int-alta.txt',
         delimiter=' ', skiprows=1, usecols=(1, 2), encoding='iso-8859-1')
@@ -440,6 +441,7 @@ def main():
     print(f"SIMULATED PHASE DIFFERENCE: {np.rad2deg(PHI)} degrees.")
     print(f"ANALYZER VELOCITY: {ANALYZER_VELOCITY} degrees per second.")
 
+    """
     plot_harmonic_signals(phi=PHI, show=False)
 
     plot_phase_diff_error_vs_cycles(phi=PHI, show=False)
@@ -449,11 +451,11 @@ def main():
 
     plot_signals_per_n_measurement(show=False)
 
-    plot_deriva()
-
+    plot_drift()
+    """
     plot_signals_per_angle(show=False)
 
-    plot_dark_current(show=False)
+    # plot_dark_current(show=False)
 
 
 if __name__ == '__main__':
