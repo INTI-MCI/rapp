@@ -198,7 +198,7 @@ def plot_phi_error_vs_step(phi, cycles=20, show=False):
 
 def plot_phase_diff(phi, cycles=10, step=0.01, show=False):
     print("")
-    logger.info("PHASE DIFFERENCE OF TWO SIGNALS")
+    logger.info("PHASE DIFFERENCE OF TWO SIMULATED SIGNALS")
 
     fc = samples_per_cycle(step=step)
 
@@ -260,6 +260,7 @@ def main(sim, show=False):
     logger.info(f"PHASE DIFFERENCE: {np.rad2deg(PHI)} degrees.")
     logger.info(f"ANALYZER VELOCITY: {ANALYZER_VELOCITY} degrees per second.")
 
+    # TODO: add another subparser and split these options in different commands with parameters
     if sim not in ['all', 'error_vs_cycles', 'error_vs_step', 'phase_diff']:
         raise ValueError(f"Simulation with name {sim} not implemented")
 
