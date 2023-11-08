@@ -4,6 +4,11 @@ import argparse
 
 from rapp import polarimeter
 from rapp.signal import analysis
+from rapp.signal import simulator
+
+
+HELP_POLARIMETER = "Tool for measuring signals with the polarimeter."
+HELP_SIM = "Tool for making numerical simulations."
 
 HELP_CYCLES = 'n° of cycles to run.'
 HELP_STEP = 'every how many degrees to take a measurement.'
@@ -18,6 +23,19 @@ HELP_VERBOSE = 'whether to run with DEBUG log level (default: %(default)s).'
 LOG_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 
 
+HELP_SIM_NAME = (
+    'name of the simulation. '
+    'One of [all, two_signals, error_vs_cycles, error_vs_step, phase_diff].'
+)
+HELP_SHOW = 'whether to show the plot.'
+
+EXAMPLE_POLARIMETER = "rapp polarimeter --cycles 1 --step 30 --samples 10 --delay_position 0"
+EXAMPLE_SIM = "rapp sim error_vs_cycles --show"
+
+EPILOG_POLARIMETER = "Example: {}".format(EXAMPLE_POLARIMETER)
+EPILOG_SIM = "Example: {}".format(EXAMPLE_SIM)
+
+
 def setup_logger(verbose=False):
     logging.basicConfig(
         level=logging.DEBUG if verbose else logging.INFO,
@@ -26,7 +44,8 @@ def setup_logger(verbose=False):
 
 
 def add_polarimeter_subparser(subparsers):
-    p = subparsers.add_parser("polarimeter")
+    p = subparsers.add_parser("polarimeter", help=HELP_POLARIMETER, epilog=EPILOG_POLARIMETER)
+
     p.add_argument('--cycles', type=int, required=True, help=HELP_CYCLES)
     p.add_argument('--step', type=float, required=True, help=HELP_STEP)
     p.add_argument('--samples', type=int, required=True, help=HELP_SAMPLES)
@@ -37,33 +56,49 @@ def add_polarimeter_subparser(subparsers):
     p.add_argument('-v', '--verbose', action='store_true', help=HELP_VERBOSE)
 
 
+def add_sim_subparser(subparsers):
+    p = subparsers.add_parser("sim", help=HELP_SIM, epilog=EPILOG_SIM)
+
+    p.add_argument('name', type=str, help=HELP_SIM_NAME)
+    p.add_argument('--show', action='store_true', help=HELP_SHOW)
+
+
 def main():
     parser = argparse.ArgumentParser(
         prog='RAPP',
         description='Tools for measuring the rotation angle of the plane of polarization (RAPP).',
-        epilog='Text at the bottom of help'
+        # epilog='Text at the bottom of help'
     )
 
     subparsers = parser.add_subparsers(dest='command', help='available commands')
     subparsers.add_parser("analysis")
+
     add_polarimeter_subparser(subparsers)
+    add_sim_subparser(subparsers)
 
     args = parser.parse_args(args=sys.argv[1:] or ['--help'])
 
-    if args.command == 'analysis':
-        analysis.main()
+    try:
+        if args.command == 'analysis':
+            analysis.main()
 
-    if args.command == 'polarimeter':
-        setup_logger(args.verbose)
-        polarimeter.main(
-            cycles=args.cycles,
-            step=args.step,
-            samples=args.samples,
-            delay_position=args.delay_position,
-            analyzer_velocity=args.analyzer_velocity,
-            prefix=args.prefix,
-            test=args.test
-        )
+        if args.command == 'sim':
+            setup_logger()
+            simulator.main(args.name, show=args.show)
+
+        if args.command == 'polarimeter':
+            setup_logger(args.verbose)
+            polarimeter.main(
+                cycles=args.cycles,
+                step=args.step,
+                samples=args.samples,
+                delay_position=args.delay_position,
+                analyzer_velocity=args.analyzer_velocity,
+                prefix=args.prefix,
+                test=args.test
+            )
+    except ValueError as e:
+        print("ERROR: {}".format(e))
 
 
 if __name__ == '__main__':
