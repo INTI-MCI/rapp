@@ -2,61 +2,20 @@ import os
 
 import numpy as np
 
-from matplotlib.ticker import MaxNLocator
+
+# from matplotlib.ticker import MaxNLocator
 from matplotlib import pyplot as plt
 
 from scipy import signal
 from scipy.stats import norm
 from scipy.optimize import curve_fit
 
-from rapp.utils import create_folder
+from rapp.utils import create_folder, round_to_n
 
 from rapp.signal.plot import Plot
-from rapp.signal.simulator import harmonic_signal
 
 OUTPUT_FOLDER = 'output-plots'
-
-
-ANALYZER_VELOCITY = 4  # Degrees per second.
-PHI = np.pi/4
-
-
-def cosine_similarity(s1, s2):
-    return np.arccos(np.dot(s1, s2) / (np.linalg.norm(s1) * np.linalg.norm(s2)))
-
-
-def phase_difference(xs, y1, y2):
-    xs = xs * 2  # The cycle of the polarizer contains two cycles of the signal.
-
-    popt1, pcov1 = curve_fit(sine, xs, y1)
-    popt2, pcov2 = curve_fit(sine, xs, y2)
-
-    fitx = np.arange(min(xs), max(xs), step=0.001)
-    fity1 = sine(fitx, *popt1)
-    fity2 = sine(fitx, *popt2)
-
-    phi1 = popt1[1] % (np.pi)
-    phi2 = popt2[1] % (np.pi)
-
-    phase_diff = (phi1 - phi2) % (np.pi)
-    phase_diff_degrees = np.rad2deg(phase_diff)
-
-    fitx = fitx / 2  # The cycle of the polarizer contains two cycles of the signal.
-
-    return phase_diff_degrees, fitx, fity1, fity2
-
-
-def sine(x, a, phi, c):
-    return a * np.sin(x + phi) + c
-
-
-def samples_per_cycle(step=0.01):
-    # Half cycle (180) of the analyzer is one full cycle of the signal.
-    return int(180 / step)
-
-
-def total_time(n_cycles):
-    return n_cycles * (180 / ANALYZER_VELOCITY)
+INPUT_FOLDER = 'data'
 
 
 def pol1(x, A, B):
@@ -90,177 +49,12 @@ def detrend_poly(data, func):
     return data - func(np.arange(data.size), *popt)
 
 
-def plot_harmonic_signals(phi, awgn=0.05, show=False):
-    plot = Plot(ylabel="Voltage [V]", xlabel="Angle of analyzer [rad]")
-
-    xs, s1 = harmonic_signal()
-    _, s2 = harmonic_signal(phi=-phi)
-
-    plot.add_data(xs, s1, color='k', style='o-', label='φ=0', xrad=True)
-    plot.add_data(xs, s2, color='k', style='o-', label=f'φ={round(phi, 2)}', xrad=True)
-
-    plot.save(filename='two_signals_without_awgn_noise')
-
-    if show:
-        plot.show()
-
-    plot.clear()
-
-    xs, s1 = harmonic_signal(awgn=awgn)
-    _, s2 = harmonic_signal(phi=-phi, awgn=awgn)
-
-    plot.add_data(xs, s1, color='k', style='o-', label='φ=0', xrad=True)
-    plot.add_data(xs, s2, color='k', style='o-', label=f'φ={round(phi, 2)}', xrad=True)
-
-    plot.save(filename='two_signals_with_awgn_noise')
-
-    if show:
-        plot.show()
-
-    plot.close()
-
-
-def plot_phase_diff_error_vs_cycles(phi, step=0.01, max_n_cycles=20, show=False):
-    print("\n############ Phase difference error vs # cycles (cosine similarity):")
-    fc = samples_per_cycle(step=step)
-    cycles = np.arange(1, max_n_cycles + 1, step=1)
-
-    errors = []
-    for n_cycles in cycles:
-        time = total_time(n_cycles)
-
-        _, s1 = harmonic_signal(n=n_cycles, fc=fc)
-        _, s2 = harmonic_signal(n=n_cycles, fc=fc, phi=-phi)
-
-        phase_diff = cosine_similarity(s1, s2)
-
-        error = abs(phi - phase_diff)
-        error_degrees = np.rad2deg(error)
-
-        error_degrees_sci = "{:.2E}".format(error_degrees)
-
-        print(f"n={n_cycles}, fc={fc}, time={round(time/60, 1)} m, φerr: {error_degrees_sci}.")
-
-        errors.append(error_degrees)
-
-    label = f"fc={fc}. \nstep={step} deg."
-
-    plot = Plot(ylabel="φ error (°)", xlabel="# cycles", title="Cosine Similarity", ysci=True)
-    plot.add_data(cycles, errors, style='o-', color='k', label=label)
-    plot._ax.xaxis.set_major_locator(MaxNLocator(integer=True))
-
-    plot.legend()
-
-    plot.save(filename="phase_diff_error_vs_cycles")
-
-    if show:
-        plot.show()
-
-    plot.close()
-
-
-def plot_phase_diff_error_vs_step(phi, n_cycles=20, show=False):
-    print("\n############ Phase difference error vs step (cosine similarity):")
-    time = total_time(n_cycles)
-
-    steps = np.arange(0.1, 1.1, step=0.1)[::-1]
-
-    errors = []
-    for step in steps:
-        fc = samples_per_cycle(step=step)
-
-        _, s1 = harmonic_signal(n=n_cycles, fc=fc)
-        _, s2 = harmonic_signal(n=n_cycles, fc=fc, phi=-phi)
-
-        phase_diff = cosine_similarity(s1, s2)
-        error_degrees = np.rad2deg(abs(phi - phase_diff))
-
-        error_degrees_sci = "{:.2E}".format(error_degrees)
-
-        print(f"n={n_cycles}, fc={fc}, step={round(step, 1)}, φerr: {error_degrees_sci}.")
-
-        errors.append(error_degrees)
-
-    label = f"# cycles={n_cycles}. \ntime={time/60} min."
-
-    plot = Plot(
-        ylabel="φ error (°)", xlabel="Step (degrees)", title="Cosine Similarity", ysci=True)
-
-    plot.add_data(steps, errors, style='o-', color='k', label=label)
-
-    plot.legend()
-
-    plot.save(filename="phase_diff_error_vs_step")
-
-    if show:
-        plot.show()
-
-    plot.close()
-
-
-def plot_sim_signals_and_phase_diff(phi, step=0.01, n_cycles=10, awgn=0.05, show=False):
-    print("\n############ Phase difference error (sinusoidal fit):")
-
-    fc = samples_per_cycle(step=step)
-
-    xs, s1 = harmonic_signal(n=n_cycles, fc=fc, awgn=awgn, all_positive=True)
-    _, s2 = harmonic_signal(n=n_cycles, fc=fc, phi=-phi, awgn=awgn, all_positive=True)
-
-    phase_diff, fitx, fity1, fity2 = phase_difference(xs, s1, s2)
-
-    print(f"Detected phase difference: {phase_diff}")
-
-    error = abs(phi - phase_diff)
-    error_degrees = np.rad2deg(error)
-
-    print(f"n={n_cycles}, fc={fc}, step={step}, awgn={awgn}, φerr: {error_degrees}.")
-
-    label = (
-        f"fc={fc}. \n"
-        f"step={step} deg. \n"
-        f"# cycles={n_cycles}. \n"
-        f"|φ1 - φ2| = {round(np.rad2deg(phi))}°. \n"
-        f"AWGN={awgn}"
-    )
-
-    plot = Plot(ylabel="Voltage [V]", xlabel="Angle of analyzer [rad]")
-
-    markevery = int(fc / 180) if fc >= 180 else 1  # for visualization purposes, show less points.
-
-    plot.add_data(
-        xs, s1,
-        ms=6, color='k', mew=0.5, xrad=True, markevery=markevery, alpha=0.8, label=label
-    )
-
-    plot.add_data(
-        xs, s2,
-        ms=6, color='k', mew=0.5, xrad=True, markevery=markevery, alpha=0.8
-    )
-
-    label = f"φerr = {round(error_degrees, 5)}."
-    plot.add_data(fitx, fity1, style='-', color='k', lw=1.5, xrad=True)
-    plot.add_data(fitx, fity2, style='-', color='k', lw=1.5, xrad=True, label=label)
-
-    plot._ax.set_xlim(0, 1)
-
-    plot.legend(loc='upper right')
-
-    plot.save(filename="phase_diff_sine_fit")
-
-    if show:
-        plot.show()
-
-    plot.close()
-
-
 def plot_signals_per_n_measurement(show=False):
-
     filenames = [
         'laser-75-int-alta.txt',
         'laser-75-encendido-15min.txt',
         'laser-16-reencendido-1M.txt',
-        'laser-16-75-grados-int-baja.txt',
-        'dark-current.txt'
+        'laser-16-75-grados-int-baja.txt'
     ]
 
     for filename in filenames:
@@ -314,7 +108,7 @@ def plot_signals_per_angle(show=False):
         plot.close()
 
 
-def plot_drift():
+def plot_drift(show=False):
     file = np.loadtxt(
         'data/laser-75-int-alta.txt',
         delimiter=' ', skiprows=1, usecols=(1, 2), encoding='iso-8859-1')
@@ -395,67 +189,76 @@ def plot_drift():
 
 
 def plot_dark_current(show=False):
+    print("Processing dark current...")
 
-    filenames = [
-        'dark-current.txt'
-    ]
+    filename = 'dark-current.txt'
+    filepath = os.path.join(INPUT_FOLDER, filename)
 
-    for filename in filenames:
-        print(f"Graficando {filename}...")
-        filepath = os.path.join('data', filename)
+    base_output_fname = f"{os.path.join(OUTPUT_FOLDER, filename[:-4])}"
 
-        plot = Plot(ylabel="Voltage [V]", xlabel="# measurement")
-        plot.set_title(filename[:-4])
+    cols = (0, 1, 2)
+    data = np.loadtxt(filepath, delimiter=' ', skiprows=1, usecols=cols, encoding='iso-8859-1')
 
-        cols = (0, 1, 2)
-        data = np.loadtxt(filepath, delimiter=' ', skiprows=1, usecols=cols, encoding='iso-8859-1')
-        data = data[:, 1]
-        xs = np.arange(1, data.size + 1, step=1)
+    f, axs = plt.subplots(1, 2, figsize=(8, 4), sharey=True)
+    for i, ax in enumerate(axs):
+        channel_data = data[:, i + 1]
+        ax.set_ylabel("Voltaje [V]")
+        ax.set_xlabel("# muestra")
+        ax.set_title("Canal A{}".format(i))
+        ax.plot(channel_data, '-', color='k')
+        # ax.set_xlim(0, 500)
 
-        plot.add_data(xs, data, style='-', color='k')
-        plot._ax.set_xlim(0, 500)
+    # Hide x labels and tick labels for top plots and y ticks for right plots.
+    for ax in axs.flat:
+        ax.label_outer()
 
-        plot.save(filename=f"{filename[:-4]}-signal")
+    f.savefig(f"{base_output_fname}-signal")
 
-        if show:
-            plot.show()
+    plt.close()
 
-        plot.close()
+    f, axs = plt.subplots(1, 2, figsize=(8, 4), sharey=False)
+    for i, ax in enumerate(axs):
+        channel_data = data[:, i + 1]
 
-        plt.figure()
-        plt.title("Dark current")
-        plt.xlabel("Voltage")
-        plt.ylabel("Count")
-        plt.hist(data, bins='auto', color='k')
-        plt.savefig(f"{os.path.join(OUTPUT_FOLDER, filename[:-4])}-histogram")
+        if i == 0:
+            ax.set_ylabel("Cuentas")
 
-        if show:
-            plot.show()
+        ax.set_xlabel("Voltaje [V]")
+        ax.set_title("Canal A{}".format(i))
+        ax.hist(channel_data, color='k', alpha=0.4, edgecolor='k', density=True)
+        ax.ticklabel_format(style='sci', scilimits=(0, 0), axis='y')
 
-        plt.close()
+        # Plot the PDF.
+        mu, sigma = norm.fit(channel_data)
+
+        mu_rounded = round_to_n(mu, 1)
+        sigma_rounded = round_to_n(sigma, 1)
+
+        print(f"A{i} noise (mu, sigma) = ({mu_rounded}, {sigma_rounded})")
+
+        xmin, xmax = ax.get_xlim()
+        fit_xs = np.linspace(xmin, xmax, 100)
+        fit_ys = norm.pdf(fit_xs, mu, sigma)
+        fit_label = f"µ = {mu_rounded}.\nσ = {sigma_rounded, 1}."
+
+        ax.plot(fit_xs, fit_ys, 'k', linewidth=2, label=fit_label)
+        ax.legend(loc='upper right', fontsize=10)
+
+    f.savefig(f"{base_output_fname}-histogram")
+
+    if show:
+        plt.show()
+
+    plt.close()
 
 
 def main():
     create_folder(OUTPUT_FOLDER)
 
-    print(f"SIMULATED PHASE DIFFERENCE: {np.rad2deg(PHI)} degrees.")
-    print(f"ANALYZER VELOCITY: {ANALYZER_VELOCITY} degrees per second.")
-
-    """
-    plot_harmonic_signals(phi=PHI, show=False)
-
-    plot_phase_diff_error_vs_cycles(phi=PHI, show=False)
-    plot_phase_diff_error_vs_step(phi=PHI, show=False)
-
-    plot_sim_signals_and_phase_diff(phi=PHI, n_cycles=20, step=0.01, awgn=0.01, show=False)
-
+    plot_dark_current(show=False)
     plot_signals_per_n_measurement(show=False)
-
-    plot_drift()
-    """
+    plot_drift(show=False)
     plot_signals_per_angle(show=False)
-
-    # plot_dark_current(show=False)
 
 
 if __name__ == '__main__':
