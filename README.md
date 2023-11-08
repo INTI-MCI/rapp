@@ -104,7 +104,7 @@ options:
   -h, --help  show this help message and exit
   --show      whether to show the plot.
 
-
+Example: rapp sim error_vs_cycles --show
 ```
 
 
