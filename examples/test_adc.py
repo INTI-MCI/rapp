@@ -3,7 +3,7 @@ import time
 import serial
 
 from rapp.utils import timing
-
+from rapp.polarimeter import read_data
 
 # ADC_DEVICE = 'COM4'
 ADC_DEVICE = '/dev/ttyACM1'
@@ -19,29 +19,14 @@ def bits_to_volts(value):
     return value * ADC_MULTIPLIER_mV / 1000
 
 
-def read_data(adc, n_samples):
-    data = []
-    while len(data) < n_samples:
-        try:
-            value = adc.readline().decode().strip()
-            if value:
-                value = int(value)
-                value = bits_to_volts(value)
-                data.append(value)
-        except (ValueError, UnicodeDecodeError) as e:
-            print(e)
-
-    return data
-
-
 @timing
-def acquire(adc, n_samples):
+def acquire(adc, n_samples, **kwargs):
     adc.write(bytes(str(n_samples), 'utf-8'))
     # Sending directly the numerical value didn't work.
     # See: https://stackoverflow.com/questions/69317581/sending-serial-data-to-arduino-works-in-serial-monitor-but-not-in-python  # noqa
 
-    a0 = read_data(adc, n_samples)
-    a1 = read_data(adc, n_samples)
+    a0 = read_data(adc, n_samples, **kwargs)
+    a1 = read_data(adc, n_samples, **kwargs)
 
     data = zip(a0, a1)
 
@@ -60,7 +45,7 @@ def main(n_samples=5):
     time.sleep(WAIT_TIME_AFTER_CONNECTION)
 
     print("Acquiring...")
-    data, elapsed_time = acquire(adc, n_samples=n_samples)
+    data, elapsed_time = acquire(adc, n_samples=n_samples, in_bytes=True)
 
     for d in data:
         print("(A0, A1) = {}".format(d))

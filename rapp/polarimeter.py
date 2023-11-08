@@ -63,27 +63,32 @@ def bits_to_volts(value):
     return value * ADC_MULTIPLIER_mV / 1000
 
 
-def read_data(adc, n_samples):
+def read_data(adc, n_samples, in_bytes=True):
     data = []
     while len(data) < n_samples:
         try:
-            value = adc.readline().decode().strip()
-            if value:
-                value = bits_to_volts(int(value))
-                data.append(value)
+            if in_bytes:
+                value = adc.read(2)
+                value = int.from_bytes(value, byteorder='big', signed=True)
+            else:
+                value = adc.readline().decode().strip()
+                value = int(value)
+
+            value = bits_to_volts(value)
+            data.append(value)
         except (ValueError, UnicodeDecodeError) as e:
             logger.warning(e)
 
     return data
 
 
-def acquire(adc, n_samples):
+def adc_acquire(adc, n_samples, **kwargs):
     adc.write(bytes(str(n_samples), 'utf-8'))
     # Sending directly the numerical value didn't work.
     # See: https://stackoverflow.com/questions/69317581/sending-serial-data-to-arduino-works-in-serial-monitor-but-not-in-python  # noqa
 
-    a0 = read_data(adc, n_samples)
-    a1 = read_data(adc, n_samples)
+    a0 = read_data(adc, n_samples, **kwargs)
+    a1 = read_data(adc, n_samples, **kwargs)
 
     data = zip(a0, a1)
 
@@ -121,7 +126,7 @@ def main(
 
         logger.info("Angle: {}".format(analyzer.getpos()))
 
-        data = acquire(adc, samples)
+        data = adc_acquire(adc, samples, in_bytes=True)
 
         for a0, a1 in data:
             logger.debug("(A0, A1) = ({}, {})".format(a0, a1))
