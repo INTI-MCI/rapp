@@ -53,8 +53,25 @@ pip install -r requirements.txt
 
 ## Usage examples:
 
-rapp provides a command-line interface:
+rapp provides a command-line interface with different commands:
 
+```bash
+(.venv) $ rapp
+usage: RAPP [-h] {analysis,polarimeter,sim} ...
+
+Tools for measuring the rotation angle of the plane of polarization (RAPP).
+
+positional arguments:
+  {analysis,polarimeter,sim}
+                        available commands
+    polarimeter         Tool for measuring signals with the polarimeter.
+    sim                 Tool for making numerical simulations.
+
+options:
+  -h, --help            show this help message and exit
+```
+
+The polarimeter command:
 ```bash
 (.venv) $ rapp polarimeter -h
 usage: RAPP polarimeter [-h] --cycles CYCLES --step STEP --samples SAMPLES [--delay_position] [--analyzer_velocity] [--prefix] [--test] [-v]
@@ -69,11 +86,25 @@ options:
   --prefix              prefix for the filename in which to write results (default: test).
   --test                run on test mode. No real connections will be established (default: False).
   -v, --verbose         whether to run with DEBUG log level (default: False).
+
+Example: rapp polarimeter --cycles 1 --step 30 --samples 10 --delay_position 0
 ```
 
-Example:
+The sim command:
+
 ```bash
-rapp polarimeter --cycles 1 --step 30 --samples 10 --delay_position 0 --test
+The sim command:
+(.venv) [tlink@tlink rapp]$ rapp sim -h
+usage: RAPP sim [-h] [--show] name
+
+positional arguments:
+  name        name of the simulation. One of [all, two_signals, error_vs_cycle, error_vs_step, phase_diff].
+
+options:
+  -h, --help  show this help message and exit
+  --show      whether to show the plot.
+
+
 ```
 
 
