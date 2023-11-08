@@ -30,6 +30,9 @@ class Plot:
 
         ax = self._ax
 
+        if xs is None:
+            xs = np.arange(1, ys.size + 1, step=1)
+
         if xrad:
             xs = xs / np.pi
             ax.xaxis.set_major_formatter(tck.FormatStrFormatter('%g $\\pi$'))
@@ -42,8 +45,8 @@ class Plot:
         create_folder(self._folder, overwrite=False)
         self._fig.savefig(os.path.join(self._folder, filename))
 
-    def legend(self, **kwargs):
-        self._ax.legend(fontsize=10, **kwargs)
+    def legend(self, fontsize=10, **kwargs):
+        self._ax.legend(fontsize=fontsize, **kwargs)
 
     def show(self):
         """Shows the plot."""
