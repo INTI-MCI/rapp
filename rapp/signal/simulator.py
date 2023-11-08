@@ -12,8 +12,13 @@ ANALYZER_VELOCITY = 4  # Degrees per second.
 PHI = np.pi/4
 
 # Noise measured from dark current
-A0_NOISE = (-0.0004, 0.0003)
-A1_NOISE = (-0.003, 0.0001)
+# A0_NOISE = (-0.0004, 0.0003)
+# A1_NOISE = (-0.003, 0.0001)
+
+# Noise measured with laser ON
+A0_NOISE = (1.9e-07, 0.00092)
+A1_NOISE = (-1.7e-07, 0.00037)
+
 
 VOLTAGE_LABEL = "Voltaje [V]"
 ANGLE_LABEL = "Ángulo del rotador [rad]"

@@ -17,6 +17,11 @@ from rapp.signal.plot import Plot
 OUTPUT_FOLDER = 'output-plots'
 INPUT_FOLDER = 'data'
 
+LABEL_VOLTAGE = "Voltaje [V]"
+LABEL_ANGLE = "Ángulo del rotador [rad]"
+LABEL_N_SAMPLE = "No. de muestra"
+LABEL_COUNTS = "Cuentas"
+
 
 def pol1(x, A, B):
     return A * x + B
@@ -30,13 +35,14 @@ def pol3(x, A, B, C, D):
     return A * x**3 + B * x**2 + C * x + D
 
 
-def fit_and_plot(data, n_data, func, n):
+def fit_and_plot(data, n_data, func, n, show=False):
     for i in np.arange(len(func)):
         popt, pcov = curve_fit(func[i], np.arange(data.size), data)
         plt.plot(np.arange(data.size), data)
         plt.plot(n_data, func[i](np.arange(data.size), *popt))
         plt.title(f'Ajuste deriva Canal {n}')
-        plt.show(block=True)
+        if show:
+            plt.show(block=True)
         print(popt)
     return
 
@@ -61,7 +67,7 @@ def plot_signals_per_n_measurement(show=False):
         print(f"Graficando {filename}...")
         filepath = os.path.join('data', filename)
 
-        plot = Plot(ylabel="Voltage [V]", xlabel="# measurement")
+        plot = Plot(ylabel=LABEL_VOLTAGE, xlabel="# measurement")
         plot.set_title(filename[:-4])
 
         cols = (0, 1, 2)
@@ -91,7 +97,7 @@ def plot_signals_per_angle(show=False):
     for filename in filenames:
         filepath = os.path.join('data', filename)
 
-        plot = Plot(ylabel="Voltage [V]", xlabel="Angle [rad]")
+        plot = Plot(ylabel=LABEL_VOLTAGE, xlabel=LABEL_ANGLE)
         plot.set_title(filename[:-4])
 
         cols = (0, 1, 2)
@@ -123,9 +129,6 @@ def plot_drift(show=False):
     r0 = reencendido[:, 0]
     r1 = reencendido[:, 1]
 
-    # fit_and_plot(r0[200000:], np.arange(r0[200000:].size), [pol1, pol2])
-    # fit_and_plot(r1[200000:], np.arange(r1[200000:].size), [pol1, pol2])
-
     data_detrend0 = detrend_poly(r0[200000:], pol1)
     data_detrend1 = detrend_poly(r1[200000:], pol2)
 
@@ -134,14 +137,23 @@ def plot_drift(show=False):
     plt.plot(data_detrend0)
     fft_data1 = np.fft.fft(data_detrend1)
     plt.plot(data_detrend1)
-    plt.show()
+
+    if show:
+        plt.show()
+
+    plt.close()
+
     plt.figure()
     plt.semilogy(np.abs(fft_data0))
     plt.semilogy(np.abs(fft_data1))
-    plt.show()
 
-    fit_and_plot(ch0, np.arange(ch0.size), [pol1], 0)
-    fit_and_plot(ch1, np.arange(ch1.size), [pol2], 1)
+    if show:
+        plt.show()
+
+    plt.close()
+
+    fit_and_plot(ch0, np.arange(ch0.size), [pol1], 0, show=show)
+    fit_and_plot(ch1, np.arange(ch1.size), [pol2], 1, show=show)
 
     data_detrend0 = detrend_poly(ch0, pol1)
     data_detrend1 = detrend_poly(ch1, pol2)
@@ -149,29 +161,19 @@ def plot_drift(show=False):
     b, a = signal.butter(3, 0.064, btype='highpass')
     filtered_noise0 = signal.filtfilt(b, a, data_detrend0)
     filtered_noise1 = signal.filtfilt(b, a, data_detrend1)
+
+    print("Ruido usando np.mean y np.std")
     mu_0 = np.mean(filtered_noise0)
     std_dev0 = np.std(filtered_noise0)
     std_dev1 = np.std(filtered_noise1)
     mu_1 = np.mean(filtered_noise1)
-    print('Media ch0 = ', mu_0)
-    print('Sigma ch0 = ', std_dev0)
-    print('Media ch1 = ', mu_1)
-    print('Sigma ch1 = ', std_dev1)
-    plt.figure()
-    plt.title('Ruido filtrado')
-    plt.plot(filtered_noise0, label='Canal 0')
-    plt.plot(filtered_noise1, label='Canal 1')
-    plt.legend()
 
-    fig, ax = plt.subplots(1, 2)
-    fig.suptitle('Ruido filtrado')
-    ax[0].hist(filtered_noise0, 100, range=(-0.005, 0.005))
-    ax[0].set_title('Canal 0')
-    ax[1].hist(filtered_noise1, 100, range=(-0.003, 0.003))
-    ax[1].set_title('Canal 1')
-    plt.show()
+    print('Media ch0 = ', round_to_n(mu_0, 2))
+    print('Sigma ch0 = ', round_to_n(std_dev0, 2))
+    print('Media ch1 = ', round_to_n(mu_1, 2))
+    print('Sigma ch1 = ', round_to_n(std_dev1, 2))
 
-    # best fit of data
+    print("Ruido usando norm.fit")
     (mu0, sigma0) = norm.fit(filtered_noise0)
     print('Media canal 0 = ', mu0)
     print('Sigma canal 0 = ', sigma0)
@@ -179,6 +181,28 @@ def plot_drift(show=False):
     (mu1, sigma1) = norm.fit(filtered_noise1)
     print('Media canal 1 = ', mu1)
     print('Sigma canal 1 = ', sigma1)
+
+    plt.figure()
+    plt.title('Ruido filtrado')
+    plt.plot(filtered_noise0, label='Canal 0')
+    plt.plot(filtered_noise1, label='Canal 1')
+    plt.legend()
+    if show:
+        plt.show()
+
+    plt.close()
+
+    fig, ax = plt.subplots(1, 2, figsize=(8, 4))
+    fig.suptitle('Ruido filtrado')
+    ax[0].hist(filtered_noise0, 100, range=(-0.005, 0.005))
+    ax[0].set_title('Canal 0')
+    ax[1].hist(filtered_noise1, 100, range=(-0.003, 0.003))
+    ax[1].set_title('Canal 1')
+
+    if show:
+        plt.show()
+
+    plt.close()
 
     # # add a 'best fit' line
     # plt.figure()
@@ -202,8 +226,8 @@ def plot_dark_current(show=False):
     f, axs = plt.subplots(1, 2, figsize=(8, 4), sharey=True)
     for i, ax in enumerate(axs):
         channel_data = data[:, i + 1]
-        ax.set_ylabel("Voltaje [V]")
-        ax.set_xlabel("# muestra")
+        ax.set_ylabel(LABEL_VOLTAGE)
+        ax.set_xlabel(LABEL_N_SAMPLE)
         ax.set_title("Canal A{}".format(i))
         ax.plot(channel_data, '-', color='k')
         # ax.set_xlim(0, 500)
@@ -221,9 +245,9 @@ def plot_dark_current(show=False):
         channel_data = data[:, i + 1]
 
         if i == 0:
-            ax.set_ylabel("Cuentas")
+            ax.set_ylabel(LABEL_COUNTS)
 
-        ax.set_xlabel("Voltaje [V]")
+        ax.set_xlabel(LABEL_VOLTAGE)
         ax.set_title("Canal A{}".format(i))
         ax.hist(channel_data, color='k', alpha=0.4, edgecolor='k', density=True)
         ax.ticklabel_format(style='sci', scilimits=(0, 0), axis='y')
@@ -255,10 +279,11 @@ def plot_dark_current(show=False):
 def main():
     create_folder(OUTPUT_FOLDER)
 
-    plot_dark_current(show=False)
-    plot_signals_per_n_measurement(show=False)
+    # plot_dark_current(show=False)
     plot_drift(show=False)
-    plot_signals_per_angle(show=False)
+
+    # plot_signals_per_n_measurement(show=False)
+    # plot_signals_per_angle(show=False)
 
 
 if __name__ == '__main__':
