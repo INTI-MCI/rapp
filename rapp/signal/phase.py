@@ -1,5 +1,4 @@
 import logging
-from dataclasses import dataclass
 
 import numpy as np
 
@@ -18,12 +17,12 @@ def sine(x, a, phi, c):
     return a * np.sin(x + phi) + c
 
 
-@dataclass
 class PhaseDifferenceResult:
-    phase_diff: float
-    fitx: np.array = None
-    fits1: np.array = None
-    fits2: np.array = None
+    def __init__(self, phase_diff, fitx=None, fits1=None, fits2=None):
+        self.phase_diff = phase_diff
+        self.fitx = fitx
+        self.fits1 = fits1
+        self.fits2 = fits2
 
 
 def cosine_similarity(s1, s2):
