@@ -7,7 +7,7 @@ from matplotlib import pyplot as plt
 
 from rapp.utils import create_folder
 
-plt.style.use('style.mplstyle')
+#plt.style.use('style.mplstyle')
 
 
 class Plot:
