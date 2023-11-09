@@ -1,6 +1,7 @@
+flake8~=6.1
 numpy~=1.26
 matplotlib~=3.8
-flake8~=6.1
+pandas~=2.1
 pyserial~=3.5
 scipy~=1.11
 
