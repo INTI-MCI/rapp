@@ -4,8 +4,10 @@
 Adafruit_ADS1115 ads;
 const unsigned short int SERIAL_BAUDRATE = 57600;
 const bool ADS_READING_MODE_CONTINUOUS = true;
-const unsigned long ADS_CONTINUOUS_MODE_DELAY_MUS = 580; // This gives ~855 SPS.
-const byte ADS_READING_DELAY = 5;                        // Time we need to wait so ADC goes out of suspension
+const byte ADS_READING_DELAY = 5; // Time we need to wait so ADC goes out of suspension
+
+// 600 gives ~812 SPS when using serial_write_short(), 580 gives ~855 SPS when using println().
+const unsigned long ADS_CONTINUOUS_MODE_DELAY_MUS = 600;
 
 void setup(void) {
     Serial.begin(SERIAL_BAUDRATE);
@@ -43,6 +45,13 @@ void measure_sps() {
     Serial.println(N);
 }
 
+void serial_write_short(short data){
+    uint8_t buffer[2];
+    buffer[0] = data >> 8;
+    buffer[1] = data & 0xFF;
+    Serial.write(buffer, 2);  
+}
+
 void read_n_samples_from_channel(short n_samples, byte channel){
     ads.startADCReading(MUX_BY_CHANNEL[channel], ADS_READING_MODE_CONTINUOUS);
     delay(ADS_READING_DELAY);
@@ -50,7 +59,8 @@ void read_n_samples_from_channel(short n_samples, byte channel){
     short i = 0;
     while (i < n_samples) {
         short data = ads.getLastConversionResults();
-        Serial.println(data, DEC);
+        //Serial.println(data, DEC);
+        serial_write_short(data)
         i = i + 1;
         delayMicroseconds(ADS_CONTINUOUS_MODE_DELAY_MUS);
     };

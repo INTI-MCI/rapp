@@ -9,6 +9,9 @@ class SerialMock:
     def write(self, v):
         pass
 
+    def read(self, n_bytes):
+        return bytes(range(n_bytes))
+
     def close(self):
         pass
 
