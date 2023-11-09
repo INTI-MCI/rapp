@@ -308,17 +308,19 @@ def plot_phase_difference(filepath, show=False):
     s2 = np.array(data['A1'])
 
     res = phase_difference(xs * 2, s1, s2, method='fit')
-    phase_diff_rad_rounded = round_to_n(res.phase_diff, 3)
 
-    phase_diff_deg = np.rad2deg(res.phase_diff)
-    phase_diff_deg_rounded = round_to_n(phase_diff_deg, 3)
+    phase_diff_deg = np.rad2deg(res.value)
+    phase_diff_deg_rounded = round_to_n(phase_diff_deg, 1)
+
+    error_deg = np.rad2deg(res.error)
+    error_deg_rounded = round_to_n(error_deg, 1)
 
     title = "cycles={}, step={}, samples={}.".format(cycles, step, samples)
-    label = "φ={} deg.".format(phase_diff_deg_rounded)
+    phi_label = "φ=({} ± {})°.".format(phase_diff_deg_rounded, error_deg_rounded)
 
     logger.info(
-        "Detected phase difference: {} deg. {} rad."
-        .format(phase_diff_deg_rounded, phase_diff_rad_rounded)
+        "Detected phase difference: {}"
+        .format(phi_label)
     )
 
     logger.info(title)
@@ -331,7 +333,7 @@ def plot_phase_difference(filepath, show=False):
     fitx = res.fitx / 2
 
     if res.fitx is not None:
-        plot.add_data(fitx, res.fits1, style='-', color='k', lw=1.5, xrad=True, label=label)
+        plot.add_data(fitx, res.fits1, style='-', color='k', lw=1.5, xrad=True, label=phi_label)
         plot.add_data(fitx, res.fits2, style='-', color='k', lw=1.5, xrad=True)
 
     # plot._ax.set_xlim(0, 1)

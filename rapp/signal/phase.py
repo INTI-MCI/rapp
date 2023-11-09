@@ -18,8 +18,9 @@ def sine(x, a, phi, c):
 
 
 class PhaseDifferenceResult:
-    def __init__(self, phase_diff, fitx=None, fits1=None, fits2=None):
-        self.phase_diff = phase_diff
+    def __init__(self, value, error=None, fitx=None, fits1=None, fits2=None):
+        self.value = value
+        self.error = error
         self.fitx = fitx
         self.fits1 = fits1
         self.fits2 = fits2
@@ -43,10 +44,17 @@ def phase_difference(xs, s1, s2, method='cossim') -> PhaseDifferenceResult:
         popt1, pcov1 = curve_fit(sine, xs, s1)
         popt2, pcov2 = curve_fit(sine, xs, s2)
 
+        errors1 = np.sqrt(np.diag(pcov1))
+        errors2 = np.sqrt(np.diag(pcov2))
+
         phi1 = popt1[1]
         phi2 = popt2[1]
 
+        phi1_error = errors1[1]
+        phi2_error = errors2[2]
+
         phase_diff = abs(abs(phi1) - abs(phi2))
+        phase_diff_error = np.sqrt(phi1_error**2 + phi2_error**2)
 
         logger.debug("φ1 = {}".format(round_to_n(phi1, 3)))
         logger.debug("φ2 = {}".format(round_to_n(phi2, 3)))
@@ -57,4 +65,4 @@ def phase_difference(xs, s1, s2, method='cossim') -> PhaseDifferenceResult:
         fity1 = sine(fitx, *popt1)
         fity2 = sine(fitx, *popt2)
 
-        return PhaseDifferenceResult(phase_diff, fitx, fity1, fity2)
+        return PhaseDifferenceResult(phase_diff, phase_diff_error, fitx, fity1, fity2)
