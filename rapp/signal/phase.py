@@ -44,10 +44,10 @@ def phase_difference(xs, s1, s2, method='cossim') -> PhaseDifferenceResult:
         popt1, pcov1 = curve_fit(sine, xs, s1)
         popt2, pcov2 = curve_fit(sine, xs, s2)
 
-        phi1 = popt1[1] % (np.pi)
-        phi2 = popt2[1] % (np.pi)
+        phi1 = popt1[1]
+        phi2 = popt2[1]
 
-        phase_diff = abs(phi1 - phi2)
+        phase_diff = abs(abs(phi1) - abs(phi2))
 
         logger.debug("φ1 = {}".format(round_to_n(phi1, 3)))
         logger.debug("φ2 = {}".format(round_to_n(phi2, 3)))
