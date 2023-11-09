@@ -211,7 +211,7 @@ def plot_phase_diff(phi, cycles=10, step=0.01, show=False):
     error = abs(phi - res.phase_diff)
     error_degrees = np.rad2deg(error)
 
-    logger.info(f"Detected phase difference (sinusoidal fit): {np.rad2deg(res.phase_diff)}")
+    logger.info(f"Detected phase difference: {np.rad2deg(res.phase_diff)}")
     logger.info(f"cycles={cycles}, fc={fc}, step={step}, φerr: {error_degrees}.")
 
     label = (

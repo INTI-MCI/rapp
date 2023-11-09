@@ -70,6 +70,7 @@ def add_sim_subparser(subparsers):
 
     p.add_argument('name', type=str, help=HELP_SIM_NAME)
     p.add_argument('--show', action='store_true', help=HELP_SHOW)
+    p.add_argument('-v', '--verbose', action='store_true', help=HELP_VERBOSE)
 
 
 def add_phase_diff_subparser(subparsers):
@@ -106,7 +107,7 @@ def main():
             analysis.main()
 
         if args.command == 'sim':
-            setup_logger()
+            setup_logger(args.verbose)
             simulator.main(args.name, show=args.show)
 
         if args.command == 'polarimeter':
