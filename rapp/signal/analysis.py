@@ -1,7 +1,9 @@
 import os
+import re
+import logging
 
 import numpy as np
-
+import pandas as pd
 
 # from matplotlib.ticker import MaxNLocator
 from matplotlib import pyplot as plt
@@ -11,6 +13,7 @@ from scipy.stats import norm
 from scipy.optimize import curve_fit
 
 from rapp.utils import create_folder, round_to_n
+from rapp.signal.phase import phase_difference
 
 from rapp.signal.plot import Plot
 
@@ -21,6 +24,9 @@ LABEL_VOLTAGE = "Voltaje [V]"
 LABEL_ANGLE = "Ángulo del rotador [rad]"
 LABEL_N_SAMPLE = "No. de muestra"
 LABEL_COUNTS = "Cuentas"
+
+
+logger = logging.getLogger(__name__)
 
 
 def pol1(x, A, B):
@@ -43,7 +49,7 @@ def fit_and_plot(data, n_data, func, n, show=False):
         plt.title(f'Ajuste deriva Canal {n}')
         if show:
             plt.show(block=True)
-        print(popt)
+        logger.info(popt)
     return
 
 
@@ -56,6 +62,9 @@ def detrend_poly(data, func):
 
 
 def plot_signals_per_n_measurement(show=False):
+    print("")
+    logger.info("PLOTTING SIGNALS VS # OF MEASUREMENT.")
+
     filenames = [
         'laser-75-int-alta.txt',
         'laser-75-encendido-15min.txt',
@@ -64,8 +73,8 @@ def plot_signals_per_n_measurement(show=False):
     ]
 
     for filename in filenames:
-        print(f"Graficando {filename}...")
         filepath = os.path.join('data', filename)
+        logger.info(f"Filepath: {filepath}")
 
         plot = Plot(ylabel=LABEL_VOLTAGE, xlabel="# measurement")
         plot.set_title(filename[:-4])
@@ -85,6 +94,9 @@ def plot_signals_per_n_measurement(show=False):
 
 
 def plot_signals_per_angle(show=False):
+    print("")
+    logger.info("PLOTTING SIGNALS VS ANALYZER ANGLE...")
+
     filenames = [
         '2-full-cycles.txt',
         '2-full-cycles-2.txt',
@@ -97,15 +109,17 @@ def plot_signals_per_angle(show=False):
     for filename in filenames:
         filepath = os.path.join('data', filename)
 
-        plot = Plot(ylabel=LABEL_VOLTAGE, xlabel=LABEL_ANGLE)
-        plot.set_title(filename[:-4])
+        logger.info(f"Filepath: {filepath}")
 
         cols = (0, 1, 2)
         data = np.loadtxt(filepath, skiprows=1, usecols=cols, encoding='iso-8859-1')
         voltage = data[:, 1]
-        angles = data[:, 0] * np.pi / 180
+        angles = np.deg2rad(data[:, 0])
 
+        plot = Plot(ylabel=LABEL_VOLTAGE, xlabel=LABEL_ANGLE, title=filename[:-4])
         plot.add_data(angles, voltage, style='o-', color='k', xrad=True)
+        plot._ax.xaxis.set_major_locator(plt.MaxNLocator(5))
+
         plot.save(filename=f"{filename[:-4]}.png")
 
         if show:
@@ -115,6 +129,9 @@ def plot_signals_per_angle(show=False):
 
 
 def plot_drift(show=False):
+    print("")
+    logger.info("PROCESSING LASER DRIFT...")
+
     file = np.loadtxt(
         'data/laser-75-int-alta.txt',
         delimiter=' ', skiprows=1, usecols=(1, 2), encoding='iso-8859-1')
@@ -134,8 +151,8 @@ def plot_drift(show=False):
 
     plt.figure()
     fft_data0 = np.fft.fft(data_detrend0)
-    plt.plot(data_detrend0)
     fft_data1 = np.fft.fft(data_detrend1)
+    plt.plot(data_detrend0)
     plt.plot(data_detrend1)
 
     if show:
@@ -162,31 +179,22 @@ def plot_drift(show=False):
     filtered_noise0 = signal.filtfilt(b, a, data_detrend0)
     filtered_noise1 = signal.filtfilt(b, a, data_detrend1)
 
-    print("Ruido usando np.mean y np.std")
     mu_0 = np.mean(filtered_noise0)
     std_dev0 = np.std(filtered_noise0)
     std_dev1 = np.std(filtered_noise1)
     mu_1 = np.mean(filtered_noise1)
 
-    print('Media ch0 = ', round_to_n(mu_0, 2))
-    print('Sigma ch0 = ', round_to_n(std_dev0, 2))
-    print('Media ch1 = ', round_to_n(mu_1, 2))
-    print('Sigma ch1 = ', round_to_n(std_dev1, 2))
-
-    print("Ruido usando norm.fit")
-    (mu0, sigma0) = norm.fit(filtered_noise0)
-    print('Media canal 0 = ', mu0)
-    print('Sigma canal 0 = ', sigma0)
-
-    (mu1, sigma1) = norm.fit(filtered_noise1)
-    print('Media canal 1 = ', mu1)
-    print('Sigma canal 1 = ', sigma1)
+    logger.info('Media ch0 = {}'.format(round_to_n(mu_0, 2)))
+    logger.info('Sigma ch0 = {}'.format(round_to_n(std_dev0, 2)))
+    logger.info('Media ch1 = {}'.format(round_to_n(mu_1, 2)))
+    logger.info('Sigma ch1 = {}'.format(round_to_n(std_dev1, 2)))
 
     plt.figure()
     plt.title('Ruido filtrado')
     plt.plot(filtered_noise0, label='Canal 0')
     plt.plot(filtered_noise1, label='Canal 1')
     plt.legend()
+
     if show:
         plt.show()
 
@@ -213,7 +221,8 @@ def plot_drift(show=False):
 
 
 def plot_dark_current(show=False):
-    print("Processing dark current...")
+    print("")
+    logger.info("PROCESSING DARK CURRENT...")
 
     filename = 'dark-current.txt'
     filepath = os.path.join(INPUT_FOLDER, filename)
@@ -258,7 +267,7 @@ def plot_dark_current(show=False):
         mu_rounded = round_to_n(mu, 1)
         sigma_rounded = round_to_n(sigma, 1)
 
-        print(f"A{i} noise (mu, sigma) = ({mu_rounded}, {sigma_rounded})")
+        logger.info(f"A{i} noise (mu, sigma) = ({mu_rounded}, {sigma_rounded})")
 
         xmin, xmax = ax.get_xlim()
         fit_xs = np.linspace(xmin, xmax, 100)
@@ -276,14 +285,74 @@ def plot_dark_current(show=False):
     plt.close()
 
 
-def main():
+def plot_phase_difference(filepath, show=False):
+    logger.info(f"Calculating phase difference for {filepath}...")
+
+    # TODO: maybe we can write these parameters in the header of the file,
+    # TODO: so we don't have to parse them form the filename...
+    cycles, step, samples = re. findall(r'\d+(?:\.\d+)?', filepath)
+
+    cols = (0, 1, 2)
+
+    # data = np.loadtxt(filepath, delimiter=' ', skiprows=1, usecols=cols, encoding='iso-8859-1')
+    data = pd.read_csv(filepath, delimiter=' ', header=0, usecols=cols, encoding='iso-8859-1')
+    data = data.groupby(['ANGLE']).mean().reset_index()
+
+    if len(data.index) == 1:
+        raise ValueError("This is a file with only one angle!.")
+
+    xs = np.deg2rad(data['ANGLE'].to_numpy())
+    s1 = data['A0'].to_numpy()
+    s2 = data['A1'].to_numpy()
+
+    res = phase_difference(xs * 2, s1, s2, method='fit')
+    phase_diff_rad_rounded = round_to_n(res.phase_diff, 3)
+
+    phase_diff_deg = np.rad2deg(res.phase_diff)
+    phase_diff_deg_rounded = round_to_n(phase_diff_deg, 3)
+
+    title = f"cycles={cycles}, step={step}, samples={samples}."
+    label = f"φ={phase_diff_deg_rounded} deg."
+
+    logger.info(
+        "Detected phase difference: {} deg. {} rad."
+        .format(phase_diff_deg_rounded, phase_diff_rad_rounded)
+    )
+
+    logger.info(title)
+
+    plot = Plot(ylabel=LABEL_VOLTAGE, xlabel=LABEL_ANGLE, title=title)
+
+    plot.add_data(xs, s1, ms=6, color='k', mew=0.5, xrad=True, markevery=5, alpha=0.8)
+    plot.add_data(xs, s2, ms=6, color='k', mew=0.5, xrad=True, markevery=5, alpha=0.8)
+
+    fitx = res.fitx / 2
+
+    if res.fitx is not None:
+        plot.add_data(fitx, res.fits1, style='-', color='k', lw=1.5, xrad=True, label=label)
+        plot.add_data(fitx, res.fits2, style='-', color='k', lw=1.5, xrad=True)
+
+    # plot._ax.set_xlim(0, 1)
+    plot._ax.xaxis.set_major_locator(plt.MaxNLocator(5))
+    plot.legend(loc='upper right')
+    basename = os.path.basename(filepath)
+    plot.save(filename=f"{basename[:-4]}.png")
+
+    if show:
+        plot.show()
+
+    plot.close()
+
+    return phase_diff_deg
+
+
+def main(show):
     create_folder(OUTPUT_FOLDER)
 
-    # plot_dark_current(show=False)
-    plot_drift(show=False)
-
-    # plot_signals_per_n_measurement(show=False)
-    # plot_signals_per_angle(show=False)
+    plot_dark_current(show=show)
+    plot_drift(show=show)
+    plot_signals_per_n_measurement(show=show)
+    plot_signals_per_angle(show=show)
 
 
 if __name__ == '__main__':
