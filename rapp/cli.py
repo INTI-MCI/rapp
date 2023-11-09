@@ -54,7 +54,6 @@ def setup_logger(verbose=False):
 
 def add_polarimeter_subparser(subparsers):
     p = subparsers.add_parser("polarimeter", help=HELP_POLARIMETER, epilog=EPILOG_POLARIMETER)
-
     p.add_argument('--cycles', type=int, required=True, help=HELP_CYCLES)
     p.add_argument('--step', type=float, required=True, help=HELP_STEP)
     p.add_argument('--samples', type=int, required=True, help=HELP_SAMPLES)
@@ -67,7 +66,6 @@ def add_polarimeter_subparser(subparsers):
 
 def add_sim_subparser(subparsers):
     p = subparsers.add_parser("sim", help=HELP_SIM, epilog=EPILOG_SIM)
-
     p.add_argument('name', type=str, help=HELP_SIM_NAME)
     p.add_argument('--show', action='store_true', help=HELP_SHOW)
     p.add_argument('-v', '--verbose', action='store_true', help=HELP_VERBOSE)
@@ -75,8 +73,13 @@ def add_sim_subparser(subparsers):
 
 def add_phase_diff_subparser(subparsers):
     p = subparsers.add_parser("phase_diff", help=HELP_PHASE_DIFF, epilog=EPILOG_PHASE_DIFF)
-
     p.add_argument('filepath', type=str, help=HELP_FILEPATH)
+    p.add_argument('--show', action='store_true', help=HELP_SHOW)
+    p.add_argument('-v', '--verbose', action='store_true', help=HELP_VERBOSE)
+
+
+def add_analysis_subparser(subparsers):
+    p = subparsers.add_parser("analysis")
     p.add_argument('--show', action='store_true', help=HELP_SHOW)
     p.add_argument('-v', '--verbose', action='store_true', help=HELP_VERBOSE)
 
@@ -89,10 +92,10 @@ def main():
     )
 
     subparsers = parser.add_subparsers(dest='command', help='available commands')
-    subparsers.add_parser("analysis")
 
     add_polarimeter_subparser(subparsers)
     add_sim_subparser(subparsers)
+    add_analysis_subparser(subparsers)
     add_phase_diff_subparser(subparsers)
 
     args = parser.parse_args(args=sys.argv[1:] or ['--help'])
@@ -100,11 +103,11 @@ def main():
     try:
         if args.command == 'phase_diff':
             setup_logger(args.verbose)
-
             analysis.plot_phase_difference(args.filepath, show=args.show)
 
         if args.command == 'analysis':
-            analysis.main()
+            setup_logger(args.verbose)
+            analysis.main(show=args.show)
 
         if args.command == 'sim':
             setup_logger(args.verbose)
