@@ -132,7 +132,7 @@ def plot_phi_error_vs_cycles(phi, step=0.01, max_cycles=20, show=False):
             xs, s1, s2 = polarimeter_signal(cycles, fc, phi, A0_NOISE, A1_NOISE)
             res = phase_difference(xs * 2, s1, s2, method=method)
 
-            error = abs(phi - res.phase_diff)
+            error = abs(phi - res.value)
             error_degrees = np.rad2deg(error)
             error_degrees_sci = "{:.2E}".format(error_degrees)
 
@@ -177,7 +177,7 @@ def plot_phi_error_vs_step(phi, cycles=20, show=False):
             xs, s1, s2 = polarimeter_signal(cycles, fc, phi, A0_NOISE, A1_NOISE)
             res = phase_difference(xs * 2, s1, s2, method=method)
 
-            error_degrees = np.rad2deg(abs(phi - res.phase_diff))
+            error_degrees = np.rad2deg(abs(phi - res.value))
             error_degrees_sci = "{:.2E}".format(error_degrees)
 
             errors.append(error_degrees)
@@ -212,10 +212,10 @@ def plot_phase_diff(phi, cycles=10, step=0.01, show=False):
     logger.info("Calculating phase difference...")
     res = phase_difference(xs * 2, s1, s2, method='fit')
 
-    error = abs(phi - res.phase_diff)
+    error = abs(phi - res.value)
     error_degrees = np.rad2deg(error)
 
-    logger.info("Detected phase difference: {}".format(np.rad2deg(res.phase_diff)))
+    logger.info("Detected phase difference: {}".format(np.rad2deg(res.value)))
     logger.info("cycles={}, fc={}, step={}, φerr: {}.".format(cycles, fc, step, error_degrees))
 
     label = (
