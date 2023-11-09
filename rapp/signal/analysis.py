@@ -46,7 +46,7 @@ def fit_and_plot(data, n_data, func, n, show=False):
         popt, pcov = curve_fit(func[i], np.arange(data.size), data)
         plt.plot(np.arange(data.size), data)
         plt.plot(n_data, func[i](np.arange(data.size), *popt))
-        plt.title(f'Ajuste deriva Canal {n}')
+        plt.title('Ajuste deriva Canal {}'.format(n))
         if show:
             plt.show(block=True)
         logger.info(popt)
@@ -74,7 +74,7 @@ def plot_signals_per_n_measurement(show=False):
 
     for filename in filenames:
         filepath = os.path.join('data', filename)
-        logger.info(f"Filepath: {filepath}")
+        logger.info("Filepath: {}".format(filepath))
 
         plot = Plot(ylabel=LABEL_VOLTAGE, xlabel="# measurement")
         plot.set_title(filename[:-4])
@@ -109,7 +109,7 @@ def plot_signals_per_angle(show=False):
     for filename in filenames:
         filepath = os.path.join('data', filename)
 
-        logger.info(f"Filepath: {filepath}")
+        logger.info("Filepath: {}".format(filepath))
 
         cols = (0, 1, 2)
         data = np.loadtxt(filepath, skiprows=1, usecols=cols, encoding='iso-8859-1')
@@ -120,7 +120,7 @@ def plot_signals_per_angle(show=False):
         plot.add_data(angles, voltage, style='o-', color='k', xrad=True)
         plot._ax.xaxis.set_major_locator(plt.MaxNLocator(5))
 
-        plot.save(filename=f"{filename[:-4]}.png")
+        plot.save(filename="{}.png".format(filename[:-4]))
 
         if show:
             plot.show()
@@ -227,7 +227,7 @@ def plot_dark_current(show=False):
     filename = 'dark-current.txt'
     filepath = os.path.join(INPUT_FOLDER, filename)
 
-    base_output_fname = f"{os.path.join(OUTPUT_FOLDER, filename[:-4])}"
+    base_output_fname = "{}".format(os.path.join(OUTPUT_FOLDER, filename[:-4]))
 
     cols = (0, 1, 2)
     data = np.loadtxt(filepath, delimiter=' ', skiprows=1, usecols=cols, encoding='iso-8859-1')
@@ -245,7 +245,7 @@ def plot_dark_current(show=False):
     for ax in axs.flat:
         ax.label_outer()
 
-    f.savefig(f"{base_output_fname}-signal")
+    f.savefig("{}-signal".format(base_output_fname))
 
     plt.close()
 
@@ -267,17 +267,19 @@ def plot_dark_current(show=False):
         mu_rounded = round_to_n(mu, 1)
         sigma_rounded = round_to_n(sigma, 1)
 
-        logger.info(f"A{i} noise (mu, sigma) = ({mu_rounded}, {sigma_rounded})")
+        logger.info(
+            "A{} noise (mu, sigma) = ({}, {})"
+            .format(i, mu_rounded, sigma_rounded))
 
         xmin, xmax = ax.get_xlim()
         fit_xs = np.linspace(xmin, xmax, 100)
         fit_ys = norm.pdf(fit_xs, mu, sigma)
-        fit_label = f"µ = {mu_rounded}.\nσ = {sigma_rounded, 1}."
+        fit_label = "µ = {}.\nσ = {}.".format(mu_rounded, sigma_rounded)
 
         ax.plot(fit_xs, fit_ys, 'k', linewidth=2, label=fit_label)
         ax.legend(loc='upper right', fontsize=10)
 
-    f.savefig(f"{base_output_fname}-histogram")
+    f.savefig("{}-histogram".format(base_output_fname))
 
     if show:
         plt.show()
@@ -286,7 +288,7 @@ def plot_dark_current(show=False):
 
 
 def plot_phase_difference(filepath, show=False):
-    logger.info(f"Calculating phase difference for {filepath}...")
+    logger.info("Calculating phase difference for {}...".format(filepath))
 
     # TODO: maybe we can write these parameters in the header of the file,
     # TODO: so we don't have to parse them form the filename...
@@ -301,9 +303,9 @@ def plot_phase_difference(filepath, show=False):
     if len(data.index) == 1:
         raise ValueError("This is a file with only one angle!.")
 
-    xs = np.deg2rad(data['ANGLE'].to_numpy())
-    s1 = data['A0'].to_numpy()
-    s2 = data['A1'].to_numpy()
+    xs = np.deg2rad(np.array(data['ANGLE']))
+    s1 = np.array(data['A0'])
+    s2 = np.array(data['A1'])
 
     res = phase_difference(xs * 2, s1, s2, method='fit')
     phase_diff_rad_rounded = round_to_n(res.phase_diff, 3)
@@ -311,8 +313,8 @@ def plot_phase_difference(filepath, show=False):
     phase_diff_deg = np.rad2deg(res.phase_diff)
     phase_diff_deg_rounded = round_to_n(phase_diff_deg, 3)
 
-    title = f"cycles={cycles}, step={step}, samples={samples}."
-    label = f"φ={phase_diff_deg_rounded} deg."
+    title = "cycles={}, step={}, samples={}.".format(cycles, step, samples)
+    label = "φ={} deg.".format(phase_diff_deg_rounded)
 
     logger.info(
         "Detected phase difference: {} deg. {} rad."
@@ -336,7 +338,7 @@ def plot_phase_difference(filepath, show=False):
     plot._ax.xaxis.set_major_locator(plt.MaxNLocator(5))
     plot.legend(loc='upper right')
     basename = os.path.basename(filepath)
-    plot.save(filename=f"{basename[:-4]}.png")
+    plot.save(filename="{}.png".format(basename[:-4]))
 
     if show:
         plot.show()

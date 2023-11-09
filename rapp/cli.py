@@ -10,6 +10,7 @@ from rapp.signal import simulator
 HELP_POLARIMETER = "Tool for measuring signals with the polarimeter."
 HELP_SIM = "Tool for making numerical simulations."
 HELP_PHASE_DIFF = 'Tool for calculating phase difference between two harmonic signals.'
+HELP_ANALYSYS = "Tool for analyzing signals: noise, drift, etc."
 
 HELP_CYCLES = 'n° of cycles to run.'
 HELP_STEP = 'every how many degrees to take a measurement.'
@@ -79,7 +80,7 @@ def add_phase_diff_subparser(subparsers):
 
 
 def add_analysis_subparser(subparsers):
-    p = subparsers.add_parser("analysis")
+    p = subparsers.add_parser("analysis", help=HELP_ANALYSYS)
     p.add_argument('--show', action='store_true', help=HELP_SHOW)
     p.add_argument('-v', '--verbose', action='store_true', help=HELP_VERBOSE)
 
@@ -94,9 +95,9 @@ def main():
     subparsers = parser.add_subparsers(dest='command', help='available commands')
 
     add_polarimeter_subparser(subparsers)
-    add_sim_subparser(subparsers)
-    add_analysis_subparser(subparsers)
     add_phase_diff_subparser(subparsers)
+    add_analysis_subparser(subparsers)
+    add_sim_subparser(subparsers)
 
     args = parser.parse_args(args=sys.argv[1:] or ['--help'])
 
