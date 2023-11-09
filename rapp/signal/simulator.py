@@ -121,11 +121,11 @@ def plot_phi_error_vs_cycles(phi, step=0.01, max_cycles=20, show=False):
 
     plot = Plot(
         ylabel=PHI_ERR_LABEL, xlabel=N_CYCLES_LABEL,
-        title=f"\nfc={fc}, step={step} deg", ysci=True
+        title="\nfc={}, step={} deg".format(fc, step), ysci=True
     )
 
     for method in PHASE_DIFFERENCE_METHODS:
-        logger.info(f"Method: {method}")
+        logger.info("Method: {}".format(method))
 
         errors = []
         for cycles in cycles_list:
@@ -139,9 +139,11 @@ def plot_phi_error_vs_cycles(phi, step=0.01, max_cycles=20, show=False):
             errors.append(error_degrees)
 
             time = total_time(cycles) / 60
-            logger.info(f"cycles={cycles}, fc={fc}, time={time} m, φerr: {error_degrees_sci}.")
+            logger.info(
+                "cycles={}, fc={}, time={} m, φerr: {}."
+                .format(cycles, fc, time, error_degrees_sci))
 
-        plot.add_data(cycles_list, errors, style='o-', label=f"{method}.")
+        plot.add_data(cycles_list, errors, style='o-', label=method)
 
     plot.legend()
 
@@ -164,10 +166,10 @@ def plot_phi_error_vs_step(phi, cycles=20, show=False):
 
     plot = Plot(
         ylabel=PHI_ERR_LABEL, xlabel=STEP_LABEL,
-        title=f"cycles={cycles}, time={time_min} min.", ysci=True)
+        title="cycles={}, time={} min.".format(cycles, time_min), ysci=True)
 
     for method in PHASE_DIFFERENCE_METHODS:
-        logger.info(f"Method: {method}")
+        logger.info("Method: {}".format(method))
 
         errors = []
         for step in steps:
@@ -180,9 +182,11 @@ def plot_phi_error_vs_step(phi, cycles=20, show=False):
 
             errors.append(error_degrees)
             step = round(step, 1)
-            logger.info(f"cycles={cycles}, fc={fc}, step={step}, φerr: {error_degrees_sci}.")
+            logger.info(
+                "cycles={}, fc={}, step={}, φerr: {}."
+                .format(cycles, fc, step, error_degrees_sci))
 
-        plot.add_data(steps, errors, style='o-', label=f"{method}.")
+        plot.add_data(steps, errors, style='o-', label=method)
 
     plot.legend()
 
@@ -211,14 +215,14 @@ def plot_phase_diff(phi, cycles=10, step=0.01, show=False):
     error = abs(phi - res.phase_diff)
     error_degrees = np.rad2deg(error)
 
-    logger.info(f"Detected phase difference: {np.rad2deg(res.phase_diff)}")
-    logger.info(f"cycles={cycles}, fc={fc}, step={step}, φerr: {error_degrees}.")
+    logger.info("Detected phase difference: {}".format(np.rad2deg(res.phase_diff)))
+    logger.info("cycles={}, fc={}, step={}, φerr: {}.".format(cycles, fc, step, error_degrees))
 
     label = (
-        f"fc={fc}. \n"
-        f"step={step} deg. \n"
-        f"# cycles={cycles}. \n"
-        f"|φ1 - φ2| = {round(np.rad2deg(phi))}°. \n"
+        "fc={}. \n".format(fc),
+        "step={} deg. \n".format(step),
+        "# cycles={}. \n".format(cycles),
+        "|φ1 - φ2| = {}°. \n".format(round(np.rad2deg(phi)))
     )
 
     plot = Plot(ylabel=VOLTAGE_LABEL, xlabel=ANGLE_LABEL)
@@ -235,7 +239,7 @@ def plot_phase_diff(phi, cycles=10, step=0.01, show=False):
         ms=6, color='k', mew=0.5, xrad=True, markevery=markevery, alpha=0.8
     )
 
-    label = f"φerr = {round(error_degrees, 5)}."
+    label = "φerr = {}.".format(round(error_degrees, 5))
     plot.add_data(res.fitx / 2, res.fits1, style='-', color='k', lw=1.5, xrad=True)
     plot.add_data(res.fitx / 2, res.fits2, style='-', color='k', lw=1.5, xrad=True, label=label)
 
@@ -257,12 +261,12 @@ def main(sim, show=False):
     print("")
     logger.info("STARTING SIMULATIONS...")
 
-    logger.info(f"PHASE DIFFERENCE: {np.rad2deg(PHI)} degrees.")
-    logger.info(f"ANALYZER VELOCITY: {ANALYZER_VELOCITY} degrees per second.")
+    logger.info("PHASE DIFFERENCE: {} degrees.".format(np.rad2deg(PHI)))
+    logger.info("ANALYZER VELOCITY: {} degrees per second.".format(ANALYZER_VELOCITY))
 
     # TODO: add another subparser and split these options in different commands with parameters
-    if sim not in ['all', 'error_vs_cycles', 'error_vs_step', 'phase_diff']:
-        raise ValueError(f"Simulation with name {sim} not implemented")
+    if sim not in ['all', 'two_signals', 'error_vs_cycles', 'error_vs_step', 'phase_diff']:
+        raise ValueError("Simulation with name {} not implemented".format(sim))
 
     if sim in ['all', 'two_signals']:
         plot_two_signals(phi=PHI, s1_noise=A0_NOISE, s2_noise=A1_NOISE, show=show)

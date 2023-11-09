@@ -1,8 +1,8 @@
-flake8~=6.1
-numpy~=1.26
-matplotlib~=3.8
-pandas~=2.1
-pyserial~=3.5
-scipy~=1.11
+flake8<7
+numpy<2
+matplotlib<4
+pandas<3
+pyserial<4
+scipy<2
 
 -e .
