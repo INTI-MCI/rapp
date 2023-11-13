@@ -60,7 +60,7 @@ void read_n_samples_from_channel(short n_samples, byte channel){
     while (i < n_samples) {
         short data = ads.getLastConversionResults();
         //Serial.println(data, DEC);
-        serial_write_short(data)
+        serial_write_short(data);
         i = i + 1;
         delayMicroseconds(ADS_CONTINUOUS_MODE_DELAY_MUS);
     };

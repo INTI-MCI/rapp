@@ -90,31 +90,33 @@ def adc_acquire(adc, n_samples, **kwargs):
     a0 = read_data(adc, n_samples, **kwargs)
     a1 = read_data(adc, n_samples, **kwargs)
 
-    data = zip(a0, a1)
-
-    return data
+    return a0, a1
 
 
 def main(
     cycles=1, step=10, samples=10, delay_position=1, analyzer_velocity=2, prefix='test', test=False
 ):
     os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+    filename = FILENAME_FORMAT.format(prefix=prefix, cycles=cycles, step=step, samples=samples)
+    filepath = os.path.join(OUTPUT_DIR, filename)
+    overwrite = ask_for_overwrite(filepath)
+    file = create_or_open_file(filepath, overwrite)
+
     if test:
         # If this happens, we don't use real connections. We use mock objects to test the code.
         # TODO: create a unit test and use the mocks from there.
         adc = SerialMock()
         analyzer = ESPMock()
     else:
+        logger.info("Connecting to ADC...")
         adc = serial.Serial(ADC_DEVICE, ADC_BAUDRATE, timeout=ADC_TIMEOUT)
+        logger.info("Connecting to ESP...")
         analyzer = ESP(dev=ANALYZER_DEVICE, b=ANALYZER_BAUDRATE, axis=ANALYZER_AXIS, reset=True)
 
     logger.info("Setting analyzer velocity to {} deg/s.".format(analyzer_velocity))
     analyzer.setvel(vel=analyzer_velocity)
-
-    filename = FILENAME_FORMAT.format(prefix=prefix, cycles=cycles, step=step, samples=samples)
-    filepath = os.path.join(OUTPUT_DIR, filename)
-    overwrite = ask_for_overwrite(filepath)
-    file = create_or_open_file(filepath, overwrite)
+    analyzer.sethomevel(vel=analyzer_velocity)
 
     angles = [i for i in frange(0, 360 * cycles, step)]
     logger.debug("Angles to measure: {}".format(angles))
@@ -126,9 +128,10 @@ def main(
 
         logger.info("Angle: {}".format(analyzer.getpos()))
 
-        data = adc_acquire(adc, samples, in_bytes=True)
+        a0, a1 = adc_acquire(adc, samples, in_bytes=True)
+        data_tuples = zip(a0, a1)
 
-        for a0, a1 in data:
+        for a0, a1 in data_tuples:
             logger.debug("(A0, A1) = ({}, {})".format(a0, a1))
             datetime_ = datetime.now().isoformat()
             row = FILE_ROW.format(angle=angle, a0=a0, a1=a1, datetime=datetime_)
@@ -138,3 +141,10 @@ def main(
     file.close()
     adc.close()
     analyzer.dev.close()
+
+    from rapp.signal.plot import Plot
+    LABEL_VOLTAGE = "Voltaje [V]"
+    LABEL_ANGLE = "Ángulo del rotador [rad]"
+
+    plot = Plot(ylabel=LABEL_VOLTAGE, xlabel=LABEL_ANGLE)
+    plot.add_data(a0)

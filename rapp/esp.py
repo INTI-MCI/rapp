@@ -12,7 +12,6 @@ class ESP:
         if (reset):
             for n in self.inuse:
                 self.reset(n)
-                print("check error")
                 r = self.check_errors()
                 if (r != 0):
                     print("Error while setting up controller, error # %d" % r)
@@ -35,6 +34,18 @@ class ESP:
         self.dev.write("{0}VA{1:.4f};{0}TV\r".format(a, vel).encode())
         return float(self.dev.readline())
 
+    def sethomevel(self, vel=2, axis=None):
+        a = self.defaxis
+        if (axis and axis > 0):
+            a = axis
+
+        print("setting home velocity to %f" % vel)
+
+        self.dev.write("{0}OL{1}\r".format(a, vel).encode())
+        self.dev.write("{0}OH{1}; {0}OH?\r".format(a, vel).encode())
+
+        return float(self.dev.readline())
+
     def setacc(self, acc=2, axis=None):
         a = self.defaxis
         if (axis and axis > 0):
@@ -46,9 +57,7 @@ class ESP:
 
     def check_errors(self):
         self.dev.write("TE?\r".encode())
-        print("comando enviado")
         output = float(self.dev.readline())
-        print("respuesta recibida")
         return output
 
     def getpos(self, axis=None):
