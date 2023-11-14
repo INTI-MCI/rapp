@@ -27,6 +27,8 @@ class PhaseDifferenceResult:
 
 
 def cosine_similarity(s1, s2):
+    s1 -= s1.mean()
+    s2 -= s2.mean()
     return np.arccos(np.dot(s1, s2) / (np.linalg.norm(s1) * np.linalg.norm(s2)))
 
 

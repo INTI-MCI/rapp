@@ -10,6 +10,11 @@ logger = logging.getLogger(__name__)
 
 ANALYZER_VELOCITY = 4  # Degrees per second.
 PHI = np.pi/4
+AMPLITUDE_SIGNALS = 2   # Peak to peak amplitude
+FACTOR_QUANTIZATION = 4
+BITS_QUANTIZATION = 16  # Use signed values with this level of quantization
+SAMPLES_PER_POSITION = 50
+REPETITIONS_SIM = 20    # Repeat simulations to estimate error values
 
 # Noise measured from dark current
 # A0_NOISE = (-0.0004, 0.0003)
@@ -68,10 +73,49 @@ def harmonic(
     return xs, signal
 
 
+def quantize(values, max_value, bits, average_samples=1, signed=True):
+    """Quantization of (simulated) values.
+
+    Args:
+        values: ndarray with float values
+        max_value: maximum value of the scale
+        bits: number of bits for quantization
+        signed: allow using negative values
+
+    Returns:
+        Quantized values
+    """
+    max_q = 2 ** (bits - 1 if signed else bits)
+    quantum = max_value / max_q
+    quantum /= average_samples
+    max_q *= average_samples
+    q_values = np.round(values / quantum)
+    q_values[q_values >= max_q - average_samples] = max_q - average_samples
+    if signed:
+        q_values[q_values < -max_q] = -max_q
+    return q_values * quantum
+
+
 def polarimeter_signal(cycles, fc, phi=0, a0_noise=None, a1_noise=None, **kwargs):
     """Simulates a pair of signals measured by the polarimeter."""
-    xs, s1 = harmonic(n=cycles, fc=fc, noise=a0_noise, **kwargs)
-    _, s2 = harmonic(n=cycles, fc=fc, phi=-phi, noise=a1_noise, **kwargs)
+    if SAMPLES_PER_POSITION > 1:
+        a0_noise = np.array(a0_noise)
+        a0_noise[1] /= np.sqrt(SAMPLES_PER_POSITION)
+        a1_noise = np.array(a1_noise)
+        a1_noise[1] /= np.sqrt(SAMPLES_PER_POSITION)
+
+    xs, s1 = harmonic(A=AMPLITUDE_SIGNALS / 2, n=cycles, fc=fc, noise=a0_noise, **kwargs)
+    _, s2 = harmonic(A=AMPLITUDE_SIGNALS / 2, n=cycles, fc=fc, phi=-phi, noise=a1_noise, **kwargs)
+
+    # Use quantized values
+    s1 = quantize(
+        s1,
+        max_value=FACTOR_QUANTIZATION, bits=BITS_QUANTIZATION, average_samples=SAMPLES_PER_POSITION
+    )
+    s2 = quantize(
+        s2,
+        max_value=FACTOR_QUANTIZATION, bits=BITS_QUANTIZATION, average_samples=SAMPLES_PER_POSITION
+    )
 
     # We divide angles by 2 because one cycle of the analyzer contains two cycles of the signal.
     return xs / 2, s1, s2
@@ -129,10 +173,19 @@ def plot_phi_error_vs_cycles(phi, step=0.01, max_cycles=20, show=False):
 
         errors = []
         for cycles in cycles_list:
-            xs, s1, s2 = polarimeter_signal(cycles, fc, phi, A0_NOISE, A1_NOISE)
-            res = phase_difference(xs * 2, s1, s2, method=method)
+            # Find RMSE using a number of repetitions of the simulation
+            error = 0
+            for rep in range(REPETITIONS_SIM):
+                xs, s1, s2 = polarimeter_signal(
+                    cycles, fc, phi, A0_NOISE, A1_NOISE, all_positive=True
+                )
 
-            error = abs(phi - res.value)
+                res = phase_difference(xs * 2, s1, s2, method=method)
+
+                error += abs(phi - res.value) ** 2
+            error /= REPETITIONS_SIM
+            error = np.sqrt(error)
+
             error_degrees = np.rad2deg(error)
             error_degrees_sci = "{:.2E}".format(error_degrees)
 
@@ -282,4 +335,4 @@ def main(sim, show=False):
 
 
 if __name__ == '__main__':
-    main()
+    main(sim='error_vs_cycles', show=True)
