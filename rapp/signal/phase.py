@@ -30,7 +30,9 @@ def cosine_similarity(s1, s2):
     return np.arccos(np.dot(s1, s2) / (np.linalg.norm(s1) * np.linalg.norm(s2)))
 
 
-def phase_difference(xs, s1, s2, method='cossim') -> PhaseDifferenceResult:
+def phase_difference(
+    xs, s1, s2, s1_sigma=None, s2_sigma=None, method='cossim'
+) -> PhaseDifferenceResult:
     """Computes phase difference between two harmonic signals (xs, s1) and (xs, s2)."""
 
     if method not in PHASE_DIFFERENCE_METHODS:
@@ -41,8 +43,8 @@ def phase_difference(xs, s1, s2, method='cossim') -> PhaseDifferenceResult:
         return PhaseDifferenceResult(phase_diff)
 
     if method == 'fit':
-        popt1, pcov1 = curve_fit(sine, xs, s1)
-        popt2, pcov2 = curve_fit(sine, xs, s2)
+        popt1, pcov1 = curve_fit(sine, xs, s1, sigma=s1_sigma, absolute_sigma=s1_sigma is not None)
+        popt2, pcov2 = curve_fit(sine, xs, s2, sigma=s2_sigma, absolute_sigma=s2_sigma is not None)
 
         errors1 = np.sqrt(np.diag(pcov1))
         errors2 = np.sqrt(np.diag(pcov2))

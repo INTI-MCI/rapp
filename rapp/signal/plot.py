@@ -38,7 +38,7 @@ class Plot:
             ax.xaxis.set_major_formatter(tck.FormatStrFormatter('%g $\\pi$'))
             ax.xaxis.set_major_locator(tck.MultipleLocator(base=1.0))
 
-        ax.plot(xs, ys, style, mfc='None', mew=mew, **kwargs)
+        ax.errorbar(xs, ys, fmt=style, mfc='None', mew=mew, **kwargs)
 
     def save(self, filename):
         """Saves the plot."""
