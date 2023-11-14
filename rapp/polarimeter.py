@@ -10,6 +10,8 @@ from rapp.esp import ESP  # noqa
 from rapp.mocks import SerialMock, ESPMock
 from rapp.utils import frange
 
+from rapp.signal.analysis import plot_two_signals
+
 logger = logging.getLogger(__name__)
 
 
@@ -27,9 +29,9 @@ ANALYZER_AXIS = 1
 
 FILENAME_FORMAT = "{prefix}-cycles{cycles}-step{step}-samples{samples}.txt"
 
-EXPAND_TABS = 10
-FILE_HEADER = "ANGLE{d}A0{d}A1{d}DATETIME".format(d="\t").expandtabs(EXPAND_TABS)
-FILE_ROW = "{angle}\t{a0}\t{a1}\t{datetime}"
+FILE_DELIMITER = "\t"
+FILE_HEADER = "ANGLE{d}A0{d}A1{d}DATETIME".format(d=FILE_DELIMITER)
+FILE_ROW = "{angle}{d}{a0}{d}{a1}{d}{datetime}"
 
 
 def create_file(filename):
@@ -129,22 +131,17 @@ def main(
         logger.info("Angle: {}".format(analyzer.getpos()))
 
         a0, a1 = adc_acquire(adc, samples, in_bytes=True)
-        data_tuples = zip(a0, a1)
 
-        for a0, a1 in data_tuples:
+        for a0, a1 in zip(a0, a1):
             logger.debug("(A0, A1) = ({}, {})".format(a0, a1))
             datetime_ = datetime.now().isoformat()
-            row = FILE_ROW.format(angle=angle, a0=a0, a1=a1, datetime=datetime_)
-            file.write(row.expandtabs(EXPAND_TABS))
+            row = FILE_ROW.format(angle=angle, a0=a0, a1=a1, datetime=datetime_, d=FILE_DELIMITER)
+            file.write(row)
             file.write('\n')
 
     file.close()
     adc.close()
     analyzer.dev.close()
 
-    from rapp.signal.plot import Plot
-    LABEL_VOLTAGE = "Voltaje [V]"
-    LABEL_ANGLE = "Ángulo del rotador [rad]"
-
-    plot = Plot(ylabel=LABEL_VOLTAGE, xlabel=LABEL_ANGLE)
-    plot.add_data(a0)
+    logger.info("Plotting result...")
+    plot_two_signals(filepath, delimiter=FILE_DELIMITER, usecols=(0, 1, 2), show=True)
