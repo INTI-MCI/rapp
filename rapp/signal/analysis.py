@@ -25,6 +25,7 @@ LABEL_ANGLE = "Ángulo del rotador [rad]"
 LABEL_N_SAMPLE = "No. de muestra"
 LABEL_COUNTS = "Cuentas"
 
+ENCONDIG = 'iso-8859-1'
 
 logger = logging.getLogger(__name__)
 
@@ -110,22 +111,28 @@ def plot_signals_per_angle(show=False):
         filepath = os.path.join('data', filename)
 
         logger.info("Filepath: {}".format(filepath))
+        plot_two_signals(filepath, delimiter=' ', show=show)
 
-        cols = (0, 1, 2)
-        data = np.loadtxt(filepath, skiprows=1, usecols=cols, encoding='iso-8859-1')
-        voltage = data[:, 1]
-        angles = np.deg2rad(data[:, 0])
 
-        plot = Plot(ylabel=LABEL_VOLTAGE, xlabel=LABEL_ANGLE, title=filename[:-4])
-        plot.add_data(angles, voltage, style='o-', color='k', xrad=True)
-        plot._ax.xaxis.set_major_locator(plt.MaxNLocator(5))
+def plot_two_signals(filepath, delimiter='\t', usecols=(0, 1, 2), show=False):
+    data = pd.read_csv(filepath, delimiter=delimiter, header=0, usecols=usecols, encoding=ENCONDIG)
+    data = data.groupby(['ANGLE']).mean().reset_index()
 
-        plot.save(filename="{}.png".format(filename[:-4]))
+    xs = np.deg2rad(np.array(data['ANGLE']))
+    s1 = np.array(data['A0'])
+    s2 = np.array(data['A1'])
 
-        if show:
-            plot.show()
+    plot = Plot(ylabel=LABEL_VOLTAGE, xlabel=LABEL_ANGLE)
+    plot.add_data(xs, s1, color='k', style='o-', alpha=1, mew=1)
+    plot.add_data(xs, s2, color='k', style='o-', alpha=1, mew=1)
+    plot._ax.xaxis.set_major_locator(plt.MaxNLocator(5))
 
-        plot.close()
+    plot.save(filename="{}.png".format(os.path.basename(filepath)[:-4]))
+
+    if show:
+        plot.show()
+
+    plot.close()
 
 
 def plot_drift(show=False):
@@ -337,10 +344,10 @@ def plot_phase_difference(filepath, show=False):
         plot.add_data(fitx, res.fits2, style='-', color='k', lw=1.5, xrad=True)
 
     # plot._ax.set_xlim(0, 1)
-    plot._ax.xaxis.set_major_locator(plt.MaxNLocator(5))
     plot.legend(loc='upper right')
-    basename = os.path.basename(filepath)
-    plot.save(filename="{}.png".format(basename[:-4]))
+    plot._ax.xaxis.set_major_locator(plt.MaxNLocator(5))
+
+    plot.save(filename="{}.png".format(os.path.basename(filepath)[:-4]))
 
     if show:
         plot.show()

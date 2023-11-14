@@ -10,6 +10,8 @@ from rapp.esp import ESP  # noqa
 from rapp.mocks import SerialMock, ESPMock
 from rapp.utils import frange
 
+from rapp.signal.analysis import plot_two_signals
+
 logger = logging.getLogger(__name__)
 
 
@@ -27,9 +29,9 @@ ANALYZER_AXIS = 1
 
 FILENAME_FORMAT = "{prefix}-cycles{cycles}-step{step}-samples{samples}.txt"
 
-EXPAND_TABS = 10
-FILE_HEADER = "ANGLE{d}A0{d}A1{d}DATETIME".format(d="\t").expandtabs(EXPAND_TABS)
-FILE_ROW = "{angle}\t{a0}\t{a1}\t{datetime}"
+FILE_DELIMITER = "\t"
+FILE_HEADER = "ANGLE{d}A0{d}A1{d}DATETIME".format(d=FILE_DELIMITER)
+FILE_ROW = "{angle}{d}{a0}{d}{a1}{d}{datetime}"
 
 
 def create_file(filename):
@@ -90,31 +92,33 @@ def adc_acquire(adc, n_samples, **kwargs):
     a0 = read_data(adc, n_samples, **kwargs)
     a1 = read_data(adc, n_samples, **kwargs)
 
-    data = zip(a0, a1)
-
-    return data
+    return a0, a1
 
 
 def main(
     cycles=1, step=10, samples=10, delay_position=1, analyzer_velocity=2, prefix='test', test=False
 ):
     os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+    filename = FILENAME_FORMAT.format(prefix=prefix, cycles=cycles, step=step, samples=samples)
+    filepath = os.path.join(OUTPUT_DIR, filename)
+    overwrite = ask_for_overwrite(filepath)
+    file = create_or_open_file(filepath, overwrite)
+
     if test:
         # If this happens, we don't use real connections. We use mock objects to test the code.
         # TODO: create a unit test and use the mocks from there.
         adc = SerialMock()
         analyzer = ESPMock()
     else:
+        logger.info("Connecting to ADC...")
         adc = serial.Serial(ADC_DEVICE, ADC_BAUDRATE, timeout=ADC_TIMEOUT)
+        logger.info("Connecting to ESP...")
         analyzer = ESP(dev=ANALYZER_DEVICE, b=ANALYZER_BAUDRATE, axis=ANALYZER_AXIS, reset=True)
 
     logger.info("Setting analyzer velocity to {} deg/s.".format(analyzer_velocity))
     analyzer.setvel(vel=analyzer_velocity)
-
-    filename = FILENAME_FORMAT.format(prefix=prefix, cycles=cycles, step=step, samples=samples)
-    filepath = os.path.join(OUTPUT_DIR, filename)
-    overwrite = ask_for_overwrite(filepath)
-    file = create_or_open_file(filepath, overwrite)
+    analyzer.sethomevel(vel=analyzer_velocity)
 
     angles = [i for i in frange(0, 360 * cycles, step)]
     logger.debug("Angles to measure: {}".format(angles))
@@ -126,15 +130,18 @@ def main(
 
         logger.info("Angle: {}".format(analyzer.getpos()))
 
-        data = adc_acquire(adc, samples, in_bytes=True)
+        a0, a1 = adc_acquire(adc, samples, in_bytes=True)
 
-        for a0, a1 in data:
+        for a0, a1 in zip(a0, a1):
             logger.debug("(A0, A1) = ({}, {})".format(a0, a1))
             datetime_ = datetime.now().isoformat()
-            row = FILE_ROW.format(angle=angle, a0=a0, a1=a1, datetime=datetime_)
-            file.write(row.expandtabs(EXPAND_TABS))
+            row = FILE_ROW.format(angle=angle, a0=a0, a1=a1, datetime=datetime_, d=FILE_DELIMITER)
+            file.write(row)
             file.write('\n')
 
     file.close()
     adc.close()
     analyzer.dev.close()
+
+    logger.info("Plotting result...")
+    plot_two_signals(filepath, delimiter=FILE_DELIMITER, usecols=(0, 1, 2), show=True)
