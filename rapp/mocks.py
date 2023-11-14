@@ -36,3 +36,6 @@ class ESPMock:
     def setvel(self, vel, axis=None):
         self.vel = vel
         return vel
+
+    def sethomevel(self, vel, axis=None):
+        pass
