@@ -1,5 +1,6 @@
 import os
 import re
+import decimal
 import logging
 
 import numpy as np
@@ -303,24 +304,35 @@ def plot_phase_difference(filepath, show=False):
 
     cols = (0, 1, 2)
 
-    # data = np.loadtxt(filepath, delimiter=' ', skiprows=1, usecols=cols, encoding='iso-8859-1')
     data = pd.read_csv(filepath, delimiter=' ', header=0, usecols=cols, encoding='iso-8859-1')
-    data = data.groupby(['ANGLE']).mean().reset_index()
+    data = data.groupby(['ANGLE'], as_index=False).agg({
+        'A0': ['mean', 'std'],
+        'A1': ['mean', 'std']
+    })
 
     if len(data.index) == 1:
         raise ValueError("This is a file with only one angle!.")
 
     xs = np.deg2rad(np.array(data['ANGLE']))
-    s1 = np.array(data['A0'])
-    s2 = np.array(data['A1'])
+    s1 = np.array(data['A0']['mean'])
+    s2 = np.array(data['A1']['mean'])
 
-    res = phase_difference(xs * 2, s1, s2, method='fit')
+    s1_sigma = np.array(data['A0']['std'])
+    s2_sigma = np.array(data['A1']['std'])
 
-    phase_diff_deg = np.rad2deg(res.value)
-    phase_diff_deg_rounded = round_to_n(phase_diff_deg, 1)
+    s1err = s1_sigma / np.sqrt(int(samples))
+    s2err = s2_sigma / np.sqrt(int(samples))
+
+    res = phase_difference(xs * 2, s1, s2, s1_sigma=s1_sigma, s2_sigma=s2_sigma, method='fit')
 
     error_deg = np.rad2deg(res.error)
-    error_deg_rounded = round_to_n(error_deg, 1)
+    error_deg_rounded = round_to_n(error_deg, 2)
+
+    # Obtain number of decimal places of the error:
+    d = abs(decimal.Decimal(str(error_deg_rounded)).as_tuple().exponent)
+
+    phase_diff_deg = np.rad2deg(res.value)
+    phase_diff_deg_rounded = round(phase_diff_deg, d)
 
     title = "cycles={}, step={}, samples={}.".format(cycles, step, samples)
     phi_label = "φ=({} ± {})°.".format(phase_diff_deg_rounded, error_deg_rounded)
@@ -334,8 +346,8 @@ def plot_phase_difference(filepath, show=False):
 
     plot = Plot(ylabel=LABEL_VOLTAGE, xlabel=LABEL_ANGLE, title=title)
 
-    plot.add_data(xs, s1, ms=6, color='k', mew=0.5, xrad=True, markevery=5, alpha=0.8)
-    plot.add_data(xs, s2, ms=6, color='k', mew=0.5, xrad=True, markevery=5, alpha=0.8)
+    plot.add_data(xs, s1, yerr=s1err, ms=6, color='k', mew=0.5, xrad=True, markevery=5, alpha=0.8)
+    plot.add_data(xs, s2, yerr=s2err, ms=6, color='k', mew=0.5, xrad=True, markevery=5, alpha=0.8)
 
     fitx = res.fitx / 2
 
