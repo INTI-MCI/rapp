@@ -5,6 +5,7 @@ Adafruit_ADS1115 ads;
 const unsigned short int SERIAL_BAUDRATE = 57600;
 const bool ADS_READING_MODE_CONTINUOUS = true;
 const byte ADS_READING_DELAY = 5; // Time we need to wait so ADC goes out of suspension
+const bool SEND_DATA_AS_STRING = false;
 
 // 600 gives ~812 SPS when using serial_write_short(), 580 gives ~855 SPS when using println().
 const unsigned long ADS_CONTINUOUS_MODE_DELAY_MUS = 600;
@@ -13,8 +14,8 @@ void setup(void) {
     Serial.begin(SERIAL_BAUDRATE);
 
     // Change scale factor:
-    // ads.setGain(GAIN_TWOTHIRDS);  // +/- 6.144V  1 bit = 0.1875mV (default)
-    ads.setGain(GAIN_ONE);        // +/- 4.096V  1 bit = 0.125mV
+    ads.setGain(GAIN_TWOTHIRDS);  // +/- 6.144V  1 bit = 0.1875mV (default)
+    // ads.setGain(GAIN_ONE);        // +/- 4.096V  1 bit = 0.125mV
     // ads.setGain(GAIN_TWO);        // +/- 2.048V  1 bit = 0.0625mV
     // ads.setGain(GAIN_FOUR);       // +/- 1.024V  1 bit = 0.03125mV
     // ads.setGain(GAIN_EIGHT);      // +/- 0.512V  1 bit = 0.015625mV
@@ -59,8 +60,10 @@ void read_n_samples_from_channel(short n_samples, byte channel){
     short i = 0;
     while (i < n_samples) {
         short data = ads.getLastConversionResults();
-        //Serial.println(data, DEC);
-        serial_write_short(data);
+        if (SEND_DATA_AS_STRING)
+          Serial.println(data, DEC);
+        else
+          serial_write_short(data);
         i = i + 1;
         delayMicroseconds(ADS_CONTINUOUS_MODE_DELAY_MUS);
     };
