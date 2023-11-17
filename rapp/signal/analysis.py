@@ -72,7 +72,7 @@ def plot_signals_per_n_measurement(output_folder, show=False):
         plot.set_title(filename[:-4])
 
         cols = (0, 1, 2)
-        data = np.loadtxt(filepath, delimiter=' ', skiprows=1, usecols=cols, encoding='iso-8859-1')
+        data = np.loadtxt(filepath, delimiter=' ', skiprows=1, usecols=cols, encoding=ct.ENCONDIG)
         data = data[:, 1]
         xs = np.arange(1, data.size + 1, step=1)
 
@@ -106,7 +106,10 @@ def plot_signals_per_angle(output_folder, show=False):
 
 
 def plot_two_signals(filepath, output_folder, delimiter='\t', usecols=(0, 1, 2), show=False):
-    data = pd.read_csv(filepath, delimiter=delimiter, header=0, usecols=usecols, encoding=ct.ENCONDIG)
+    data = pd.read_csv(
+        filepath, delimiter=delimiter, header=0, usecols=usecols, encoding=ct.ENCONDIG
+    )
+
     data = data.groupby(['ANGLE']).mean().reset_index()
 
     xs = np.deg2rad(np.array(data['ANGLE']))
@@ -132,14 +135,14 @@ def plot_drift(output_folder, show=False):
 
     file = np.loadtxt(
         'data/laser-75-int-alta.txt',
-        delimiter=' ', skiprows=1, usecols=(1, 2), encoding='iso-8859-1')
+        delimiter=' ', skiprows=1, usecols=(1, 2), encoding=ct.ENCONDIG)
 
     ch0 = file[:, 0]
     ch1 = file[:, 1]
 
     reencendido = np.loadtxt(
         "data/laser-16-reencendido-1M.txt",
-        delimiter=' ', skiprows=1, usecols=(1, 2), encoding='iso-8859-1')
+        delimiter=' ', skiprows=1, usecols=(1, 2), encoding=ct.ENCONDIG)
 
     r0 = reencendido[:, 0]
     r1 = reencendido[:, 1]
@@ -228,7 +231,7 @@ def plot_dark_current(output_folder, show=False):
     base_output_fname = "{}".format(os.path.join(output_folder, filename[:-4]))
 
     cols = (0, 1, 2)
-    data = np.loadtxt(filepath, delimiter=' ', skiprows=1, usecols=cols, encoding='iso-8859-1')
+    data = np.loadtxt(filepath, delimiter=' ', skiprows=1, usecols=cols, encoding=ct.ENCONDIG)
 
     f, axs = plt.subplots(1, 2, figsize=(8, 4), sharey=True)
     for i, ax in enumerate(axs):
@@ -293,8 +296,7 @@ def plot_phase_difference(filepath, show=False):
     cycles, step, samples = re. findall(r'\d+(?:\.\d+)?', filepath)
 
     cols = (0, 1, 2)
-
-    data = pd.read_csv(filepath, delimiter=' ', header=0, usecols=cols, encoding='iso-8859-1')
+    data = pd.read_csv(filepath, delimiter=' ', header=0, usecols=cols, encoding=ct.ENCONDIG)
     data = data.groupby(['ANGLE'], as_index=False).agg({
         'A0': ['mean', 'std'],
         'A1': ['mean', 'std']
