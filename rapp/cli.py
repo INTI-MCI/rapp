@@ -72,6 +72,7 @@ def add_polarimeter_subparser(subparsers):
 def add_sim_subparser(subparsers):
     p = subparsers.add_parser("sim", help=HELP_SIM, epilog=EPILOG_SIM)
     p.add_argument('name', type=str, help=HELP_SIM_NAME)
+    p.add_argument('--samples', type=int, default=50, help=HELP_SAMPLES)
     p.add_argument('--reps', type=int, default=1, help=HELP_SIM_REPS)
     p.add_argument('--show', action='store_true', help=HELP_SHOW)
     p.add_argument('-v', '--verbose', action='store_true', help=HELP_VERBOSE)
