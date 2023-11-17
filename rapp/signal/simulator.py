@@ -16,7 +16,6 @@ ANALYZER_VELOCITY = 4  # Degrees per second.
 SIGNAL_AMPLITUD = 2   # Peak to peak amplitude
 QUANTIZATION_FACTOR = 4
 QUANTIZATION_BITS = 16  # Use signed values with this level of quantization
-SAMPLES_PER_POSITION = 50
 
 # Noise measured from dark current
 # A0_NOISE = (-0.0004, 0.0003)
@@ -92,25 +91,23 @@ def quantize(values, max_value, bits, average_samples=1, signed=True):
     return q_values * quantum
 
 
-def polarimeter_signal(cycles, fc, phi=0, a0_noise=None, a1_noise=None, **kwargs):
+def polarimeter_signal(cycles, fc, phi=0, samples=50, a0_noise=None, a1_noise=None, **kwargs):
     """Simulates a pair of signals measured by the polarimeter."""
-    if SAMPLES_PER_POSITION > 1:
+    if samples > 1:
         a0_noise = np.array(a0_noise)
-        a0_noise[1] /= np.sqrt(SAMPLES_PER_POSITION)
+        a0_noise[1] /= np.sqrt(samples)
         a1_noise = np.array(a1_noise)
-        a1_noise[1] /= np.sqrt(SAMPLES_PER_POSITION)
+        a1_noise[1] /= np.sqrt(samples)
 
     xs, s1 = harmonic(A=SIGNAL_AMPLITUD / 2, n=cycles, fc=fc, noise=a0_noise, **kwargs)
     _, s2 = harmonic(A=SIGNAL_AMPLITUD / 2, n=cycles, fc=fc, phi=-phi, noise=a1_noise, **kwargs)
 
     # Use quantized values
     s1 = quantize(
-        s1,
-        max_value=QUANTIZATION_FACTOR, bits=QUANTIZATION_BITS, average_samples=SAMPLES_PER_POSITION
+        s1, max_value=QUANTIZATION_FACTOR, bits=QUANTIZATION_BITS, average_samples=samples
     )
     s2 = quantize(
-        s2,
-        max_value=QUANTIZATION_FACTOR, bits=QUANTIZATION_BITS, average_samples=SAMPLES_PER_POSITION
+        s2, max_value=QUANTIZATION_FACTOR, bits=QUANTIZATION_BITS, average_samples=samples
     )
 
     # We divide angles by 2 because one cycle of the analyzer contains two cycles of the signal.
@@ -152,7 +149,7 @@ def plot_two_signals(phi, folder, s1_noise=None, s2_noise=None, show=False):
     logger.info("Done.")
 
 
-def plot_error_vs_cycles(phi, folder, step=0.01, max_cycles=20, reps=1, show=False):
+def plot_error_vs_cycles(phi, folder, samples=50, max_cycles=20, step=0.01, reps=1, show=False):
     print("")
     logger.info("PHASE DIFFERENCE VS # OF CYCLES")
 
@@ -174,7 +171,7 @@ def plot_error_vs_cycles(phi, folder, step=0.01, max_cycles=20, reps=1, show=Fal
             error = 0
             for rep in range(reps):
                 xs, s1, s2 = polarimeter_signal(
-                    cycles, fc, phi, A0_NOISE, A1_NOISE, all_positive=True
+                    cycles, fc, phi, samples, A0_NOISE, A1_NOISE, all_positive=True
                 )
 
                 res = phase_difference(xs * 2, s1, s2, method=method)
@@ -207,7 +204,7 @@ def plot_error_vs_cycles(phi, folder, step=0.01, max_cycles=20, reps=1, show=Fal
     logger.info("Done.")
 
 
-def plot_error_vs_step(phi, folder, cycles=20, show=False):
+def plot_error_vs_step(phi, folder, samples=50, cycles=20, show=False):
     print("")
     logger.info("PHASE DIFFERENCE ERROR VS STEP")
     time_min = total_time(cycles) / 60
@@ -224,7 +221,7 @@ def plot_error_vs_step(phi, folder, cycles=20, show=False):
         errors = []
         for step in steps:
             fc = samples_per_cycle(step=step)
-            xs, s1, s2 = polarimeter_signal(cycles, fc, phi, A0_NOISE, A1_NOISE)
+            xs, s1, s2 = polarimeter_signal(cycles, fc, phi, samples, A0_NOISE, A1_NOISE)
             res = phase_difference(xs * 2, s1, s2, method=method)
 
             error_degrees = np.rad2deg(abs(phi - res.value))
@@ -250,14 +247,15 @@ def plot_error_vs_step(phi, folder, cycles=20, show=False):
     logger.info("Done.")
 
 
-def plot_phase_diff(phi, folder, cycles=10, step=0.01, show=False):
+def plot_phase_diff(phi, folder, samples=50, cycles=10, step=0.01, show=False):
     print("")
     logger.info("PHASE DIFFERENCE OF TWO SIMULATED SIGNALS")
 
     fc = samples_per_cycle(step=step)
 
     logger.info("Simulating signals...")
-    xs, s1, s2 = polarimeter_signal(cycles, fc, phi, A0_NOISE, A1_NOISE, all_positive=True)
+    xs, s1, s2 = polarimeter_signal(
+        cycles, fc, phi, samples, A0_NOISE, A1_NOISE, all_positive=True)
 
     logger.info("Calculating phase difference...")
     res = phase_difference(xs * 2, s1, s2, method='fit')
@@ -269,11 +267,11 @@ def plot_phase_diff(phi, folder, cycles=10, step=0.01, show=False):
     logger.info("cycles={}, fc={}, step={}, φerr: {}.".format(cycles, fc, step, error_degrees))
 
     label = (
-        "fc={}. \n".format(fc),
-        "step={} deg. \n".format(step),
-        "# cycles={}. \n".format(cycles),
-        "|φ1 - φ2| = {}°. \n".format(round(np.rad2deg(phi)))
-    )
+        "fc={}. \n"
+        "step={} deg. \n"
+        "# cycles={}. \n"
+        "|φ1 - φ2| = {}°. \n"
+    ).format(fc, step, cycles, round(np.rad2deg(phi)))
 
     plot = Plot(ylabel=ct.LABEL_VOLTAGE, xlabel=ct.LABEL_ANGLE, folder=folder)
 
@@ -307,7 +305,7 @@ def plot_phase_diff(phi, folder, cycles=10, step=0.01, show=False):
     logger.info("Done.")
 
 
-def main(sim, reps=1, show=False):
+def main(sim, reps=1, samples=50, show=False):
     print("")
     logger.info("STARTING SIMULATIONS...")
 
@@ -325,13 +323,14 @@ def main(sim, reps=1, show=False):
         plot_two_signals(PHI, output_folder, s1_noise=A0_NOISE, s2_noise=A1_NOISE, show=show)
 
     if sim in ['all', 'error_vs_cycles']:
-        plot_error_vs_cycles(PHI, output_folder, max_cycles=20, step=0.01, reps=reps, show=show)
+        plot_error_vs_cycles(
+            PHI, output_folder, samples, max_cycles=20, step=0.01, reps=reps, show=show)
 
     if sim in ['all', 'error_vs_step']:
-        plot_error_vs_step(PHI, output_folder, cycles=20, show=show)
+        plot_error_vs_step(PHI, output_folder, samples, cycles=10, show=show)
 
     if sim in ['all', 'phase_diff']:
-        plot_phase_diff(PHI, output_folder, cycles=10, step=0.01, show=show)
+        plot_phase_diff(PHI, output_folder, samples, cycles=10, step=0.01, show=show)
 
 
 if __name__ == '__main__':
