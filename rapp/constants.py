@@ -1,8 +1,8 @@
+"""File to declare constants shared by different modules."""
+
 WORK_DIR = 'workdir'
 OUTPUT_FOLDER = 'output-plots'
-
 INPUT_DIR = 'data'
-WORK_DIR = 'workdir'
 
 OUTPUT_FOLDER_PLOTS = 'output-plots'
 OUTPUT_FOLDER_DATA = 'output-data'
