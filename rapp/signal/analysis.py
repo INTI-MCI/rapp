@@ -365,7 +365,7 @@ def plot_phase_difference(filepath, show=False):
 
 
 def main(show):
-    output_folder = os.path.join(ct.WORK_DIR, ct.OUTPUT_FOLDER)
+    output_folder = os.path.join(ct.WORK_DIR, ct.OUTPUT_FOLDER_PLOTS)
     create_folder(output_folder)
 
     plot_dark_current(output_folder, show=show)

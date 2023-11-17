@@ -314,7 +314,7 @@ def main(sim, reps=1, show=False):
     logger.info("PHASE DIFFERENCE: {} degrees.".format(np.rad2deg(PHI)))
     logger.info("ANALYZER VELOCITY: {} degrees per second.".format(ANALYZER_VELOCITY))
 
-    output_folder = os.path.join(ct.WORK_DIR, ct.OUTPUT_FOLDER)
+    output_folder = os.path.join(ct.WORK_DIR, ct.OUTPUT_FOLDER_PLOTS)
     create_folder(output_folder)
 
     # TODO: add another subparser and split these options in different commands with parameters

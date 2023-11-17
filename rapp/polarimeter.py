@@ -4,18 +4,16 @@ import logging
 
 from datetime import datetime
 
-from rapp.esp import ESP
-from rapp.mocks import ADCMock, ESPMock
-from rapp.utils import frange
-from rapp.adc import ADC
+from rapp import constants as ct
 
+from rapp.esp import ESP
+from rapp.adc import ADC
+from rapp.utils import frange
+from rapp.mocks import ADCMock, ESPMock
 from rapp.signal.analysis import plot_two_signals
 
 logger = logging.getLogger(__name__)
 
-
-WORK_DIR = "workdir"
-OUTPUT_DIR = "output-data"
 
 ADC_DEVICE = 'COM4'
 ADC_BAUDRATE = 57600
@@ -64,7 +62,7 @@ def main(
     cycles=1, step=10, samples=10, delay_position=1, analyzer_velocity=2, prefix='test',
     test=False, plot=False
 ):
-    output_dir = os.path.join(WORK_DIR, OUTPUT_DIR)
+    output_dir = os.path.join(ct.WORK_DIR, ct.OUTPUT_FOLDER_DATA)
     os.makedirs(output_dir, exist_ok=True)
 
     filename = FILENAME_FORMAT.format(prefix=prefix, cycles=cycles, step=step, samples=samples)
