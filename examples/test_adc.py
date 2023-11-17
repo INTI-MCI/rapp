@@ -10,6 +10,7 @@ ADC_DEVICE = '/dev/ttyACM0'
 ADC_BAUDRATE = 57600
 ADC_TIMEOUT = 0.1
 ADC_MULTIPLIER_mV = 0.125
+ADC_SAMPLES_TERMINATION_CHARACTER = "s"
 
 WAIT_TIME_AFTER_CONNECTION = 2
 
@@ -32,15 +33,14 @@ def read_data(adc, n_samples, in_bytes=True):
             value = bits_to_volts(value)
             data.append(value)
         except (ValueError, UnicodeDecodeError) as e:
-            print(e)
+            print("Error while reading from ADC: {}".format(e))
 
     return data
 
 
 def acquire(adc, n_samples, **kwargs):
-    adc.write(bytes(str(n_samples), 'utf-8'))
-    # Sending directly the numerical value didn't work.
-    # See: https://stackoverflow.com/questions/69317581/sending-serial-data-to-arduino-works-in-serial-monitor-but-not-in-python  # noqa
+    adc_command = "{}{}".format(n_samples, ADC_SAMPLES_TERMINATION_CHARACTER)
+    adc.write(bytes(adc_command, 'utf-8'))
 
     a0 = read_data(adc, n_samples, **kwargs)
     a1 = read_data(adc, n_samples, **kwargs)
@@ -64,7 +64,7 @@ def main(n_samples=5):
     adc.flushInput()
 
     print("Acquiring...")
-    data, elapsed_time = timing(acquire)(adc, n_samples=n_samples, in_bytes=False)
+    data, elapsed_time = timing(acquire)(adc, n_samples=n_samples, in_bytes=True)
 
     for d in data:
         print("(A0, A1) = {}".format(d))
@@ -78,9 +78,11 @@ def main(n_samples=5):
 if __name__ == '__main__':
     try:
         n_samples = int(sys.argv[1])
-    except ValueError as e:
-        print(e)
-        print("Input parameter must be a integer number!")
+    except IndexError:
+        print("ERROR: You must provide an argument (number of samples). ")
+        exit(1)
+    except ValueError:
+        print("ERROR: Number of samples should be an integer number!")
         exit(1)
 
     main(n_samples)
