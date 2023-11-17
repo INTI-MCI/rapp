@@ -4,9 +4,12 @@
 Adafruit_ADS1115 ads;
 const unsigned short int SERIAL_BAUDRATE = 57600;
 const bool ADS_READING_MODE_CONTINUOUS = true;
-const byte ADS_READING_DELAY = 5; // Time we need to wait so ADC goes out of suspension
-const bool SEND_DATA_AS_STRING = false;
 
+// ADS_READING_DELAY: Time we need to wait so ADC goes out of suspension.
+// Otherwise we get repeated values at the beginning of each channel.
+const byte ADS_READING_DELAY = 4;
+
+// ADS_CONTINUOUS_MODE_DELAY_MUS: Time we need to wait between each read.
 // 600 gives ~812 SPS when using serial_write_short(), 580 gives ~855 SPS when using println().
 const unsigned long ADS_CONTINUOUS_MODE_DELAY_MUS = 600;
 
@@ -23,27 +26,10 @@ void setup(void) {
 
     ads.setDataRate(RATE_ADS1115_860SPS);
     ads.begin();
-}
 
-void measure_sps() {
-    // This function was useful to measure the samples per second
-    float starttime;
-    float endtime;
-    starttime = millis();
-    endtime = starttime;
-
-    ads.startADCReading(MUX_BY_CHANNEL[0], ADS_READING_MODE_CONTINUOUS);
-
-    long N = 0;
-    while ((endtime - starttime) <= 1000)
-    {
-        short value0_bits = ads.getLastConversionResults();
-        N = N + 1;
-        endtime = millis();
-        delayMicroseconds(ADS_CONTINUOUS_MODE_DELAY_MUS);
-    }
-    Serial.print("SAMPLES PER SECOND: ");
-    Serial.println(N);
+    // When we don't use terminator character, this helps to reduce the parseInt() delay.
+    // Instead of setting this, for an optimal result is better to ALWAYS use terminator character.
+    // Serial.setTimeout(10);
 }
 
 void serial_write_short(short data){
@@ -60,20 +46,46 @@ void read_n_samples_from_channel(short n_samples, byte channel){
     short i = 0;
     while (i < n_samples) {
         short data = ads.getLastConversionResults();
-        if (SEND_DATA_AS_STRING)
-          Serial.println(data, DEC);
-        else
-          serial_write_short(data);
+        //Serial.println(data, DEC);
+        serial_write_short(data);
+
         i = i + 1;
         delayMicroseconds(ADS_CONTINUOUS_MODE_DELAY_MUS);
     };
 }
 
+short acquire(short n_samples){
+    read_n_samples_from_channel(n_samples, 0);      
+    read_n_samples_from_channel(n_samples, 1);
+}
+
+void measure_SPS(){
+    float starttime = millis();
+
+    short n_samples = Serial.parseInt();
+    Serial.read(); // Remove next char (terminator) from buffer.
+    acquire(n_samples);
+
+    float endtime = millis();
+
+    float elapsedtime = (endtime - starttime) / 1000;
+    short sps = (n_samples / elapsedtime);
+
+    Serial.print("SAMPLES: ");
+    Serial.println(n_samples, DEC);
+
+    Serial.print("SECONDS: ");
+    Serial.println(elapsedtime, DEC);
+
+    Serial.print("SAMPLES PER SECOND: ");
+    Serial.println(sps);
+}
+
 void loop(void) {
     if (Serial.available() > 0) {  // Wait to recieve a signal.
-        short n_samples = Serial.parseInt();
-        
-        read_n_samples_from_channel(n_samples, 0);      
-        read_n_samples_from_channel(n_samples, 1);
+
+        //measure_SPS();
+
+        acquire(Serial.parseInt());
     }
 }
