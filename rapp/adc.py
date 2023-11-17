@@ -1,7 +1,7 @@
 import time
 import logging
 
-import serial        # noqa
+import serial
 
 logger = logging.getLogger(__name__)
 
