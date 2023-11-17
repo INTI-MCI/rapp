@@ -7,7 +7,7 @@ const bool ADS_READING_MODE_CONTINUOUS = true;
 
 // ADS_READING_DELAY: Time we need to wait so ADC goes out of suspension.
 // Otherwise we get repeated values at the beginning of each channel.
-const byte ADS_READING_DELAY = 4;
+const byte ADS_READING_DELAY = 5;
 
 // ADS_CONTINUOUS_MODE_DELAY_MUS: Time we need to wait between each read.
 // 600 gives ~812 SPS when using serial_write_short(), 580 gives ~855 SPS when using println().
@@ -54,18 +54,21 @@ void read_n_samples_from_channel(short n_samples, byte channel){
     };
 }
 
-short acquire(short n_samples){
+short read_n_samples(short n_samples){
     read_n_samples_from_channel(n_samples, 0);      
     read_n_samples_from_channel(n_samples, 1);
 }
 
+short parse_int() {
+    short value = Serial.parseInt();
+    Serial.read(); // Remove next char (terminator) from buffer.
+    return value;
+}
+
 void measure_SPS(){
     float starttime = millis();
-
-    short n_samples = Serial.parseInt();
-    Serial.read(); // Remove next char (terminator) from buffer.
-    acquire(n_samples);
-
+    short n_samples = parse_int();
+    read_n_samples(n_samples);
     float endtime = millis();
 
     float elapsedtime = (endtime - starttime) / 1000;
@@ -86,6 +89,6 @@ void loop(void) {
 
         //measure_SPS();
 
-        acquire(Serial.parseInt());
+        read_n_samples(parse_int());
     }
 }
