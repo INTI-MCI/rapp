@@ -101,8 +101,11 @@ positional arguments:
   name        name of the simulation. One of [all, two_signals, error_vs_cycle, error_vs_step, phase_diff].
 
 options:
-  -h, --help  show this help message and exit
-  --show      whether to show the plot.
+  -h, --help         show this help message and exit
+  --samples SAMPLES  n° of samples per angle.
+  --reps REPS        number of repetitions in each simulated iteration (default: 1).
+  --show             whether to show the plot.
+  -v, --verbose      whether to run with DEBUG log level (default: False).
 
 Example: rapp sim error_vs_cycles --show
 ```
