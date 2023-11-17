@@ -4,8 +4,8 @@ import logging
 
 from datetime import datetime
 
-from rapp.esp import ESP  # noqa
-from rapp.mocks import SerialMock, ESPMock
+from rapp.esp import ESP
+from rapp.mocks import ADCMock, ESPMock
 from rapp.utils import frange
 from rapp.adc import ADC
 
@@ -14,6 +14,7 @@ from rapp.signal.analysis import plot_two_signals
 logger = logging.getLogger(__name__)
 
 
+WORK_DIR = "workdir"
 OUTPUT_DIR = "output-data"
 
 ADC_DEVICE = 'COM4'
@@ -60,21 +61,21 @@ def ask_for_overwrite(filename):
 
 
 def main(
-    cycles=1, step=10, samples=10, delay_position=1, analyzer_velocity=2, prefix='test', test=False
+    cycles=1, step=10, samples=10, delay_position=1, analyzer_velocity=2, prefix='test',
+    test=False, plot=False
 ):
-    os.makedirs(OUTPUT_DIR, exist_ok=True)
+    output_dir = os.path.join(WORK_DIR, OUTPUT_DIR)
+    os.makedirs(output_dir, exist_ok=True)
 
     filename = FILENAME_FORMAT.format(prefix=prefix, cycles=cycles, step=step, samples=samples)
-    filepath = os.path.join(OUTPUT_DIR, filename)
+    filepath = os.path.join(output_dir, filename)
     overwrite = ask_for_overwrite(filepath)
     file = create_or_open_file(filepath, overwrite)
 
     if test:
         # If this happens, we don't use real connections. We use mock objects to test the code.
         # TODO: create a unit test and use the mocks from there.
-        adc = SerialMock()
-        adc = ADC(ADC_DEVICE, b=ADC_BAUDRATE, timeout=ADC_TIMEOUT, wait=ADC_WAIT)
-
+        adc = ADCMock()
         analyzer = ESPMock()
     else:
         logger.info("Connecting to ADC...")
@@ -110,5 +111,6 @@ def main(
     adc.close()
     analyzer.dev.close()
 
-    logger.info("Plotting result...")
-    plot_two_signals(filepath, delimiter=FILE_DELIMITER, usecols=(0, 1, 2), show=True)
+    if plot:
+        logger.info("Plotting result...")
+        plot_two_signals(filepath, delimiter=FILE_DELIMITER, usecols=(0, 1, 2), show=True)

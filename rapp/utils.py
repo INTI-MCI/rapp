@@ -6,7 +6,7 @@ from time import time
 from functools import wraps
 
 
-def create_folder(folder, overwrite=True):
+def create_folder(folder, overwrite=False):
     if os.path.exists(folder) and overwrite:
         shutil.rmtree(folder)
 

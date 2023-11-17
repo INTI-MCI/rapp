@@ -19,7 +19,10 @@ HELP_DELAY_POSITION = 'delay (in seconds) after changing analyzer position (defa
 HELP_ANALYZER_V = 'velocity of the analyzer in deg/s (default: %(default)s).'
 HELP_PREFIX = 'prefix for the filename in which to write results (default: %(default)s).'
 HELP_TEST = 'run on test mode. No real connections will be established (default: %(default)s).'
+HELP_PLOT = 'plot the results when the measurement is finished (default: %(default)s).'
 HELP_VERBOSE = 'whether to run with DEBUG log level (default: %(default)s).'
+
+HELP_SIM_REPS = 'number of repetitions in each simulated iteration (default: %(default)s).'
 
 HELP_SHOW = 'whether to show the plot.'
 HELP_FILEPATH = 'the file containing the measurements.'
@@ -62,12 +65,14 @@ def add_polarimeter_subparser(subparsers):
     p.add_argument('--analyzer_velocity', type=float, default=4, metavar='', help=HELP_ANALYZER_V)
     p.add_argument('--prefix', type=str, default='test', metavar='', help=HELP_PREFIX)
     p.add_argument('--test', action='store_true', help=HELP_TEST)
+    p.add_argument('--plot', action='store_true', help=HELP_PLOT)
     p.add_argument('-v', '--verbose', action='store_true', help=HELP_VERBOSE)
 
 
 def add_sim_subparser(subparsers):
     p = subparsers.add_parser("sim", help=HELP_SIM, epilog=EPILOG_SIM)
     p.add_argument('name', type=str, help=HELP_SIM_NAME)
+    p.add_argument('--reps', type=int, default=1, help=HELP_SIM_REPS)
     p.add_argument('--show', action='store_true', help=HELP_SHOW)
     p.add_argument('-v', '--verbose', action='store_true', help=HELP_VERBOSE)
 
@@ -123,7 +128,8 @@ def main():
                 delay_position=args.delay_position,
                 analyzer_velocity=args.analyzer_velocity,
                 prefix=args.prefix,
-                test=args.test
+                test=args.test,
+                plot=args.plot
             )
     except ValueError as e:
         print("ERROR: {}".format(e))

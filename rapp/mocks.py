@@ -19,6 +19,20 @@ class SerialMock:
         pass
 
 
+class ADCMock:
+    """Mock object for serial.Serial."""
+    serial_mock = SerialMock()
+
+    def acquire(self, samples, **kwargs):
+        return [(self.serial_mock.readline(), self.serial_mock.readline()) for _ in range(samples)]
+
+    def close(self):
+        pass
+
+    def flush_input(self):
+        pass
+
+
 class ESPMock:
     """Mock object for esp.ESP."""
     dev = SerialMock()
