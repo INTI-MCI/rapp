@@ -11,11 +11,11 @@ from rapp.signal.phase import phase_difference, PHASE_DIFFERENCE_METHODS
 logger = logging.getLogger(__name__)
 
 
+PHI = np.pi / 4
 ANALYZER_VELOCITY = 4  # Degrees per second.
-PHI = np.pi/4
-AMPLITUDE_SIGNALS = 2   # Peak to peak amplitude
-FACTOR_QUANTIZATION = 4
-BITS_QUANTIZATION = 16  # Use signed values with this level of quantization
+SIGNAL_AMPLITUD = 2   # Peak to peak amplitude
+QUANTIZATION_FACTOR = 4
+QUANTIZATION_BITS = 16  # Use signed values with this level of quantization
 SAMPLES_PER_POSITION = 50
 
 # Noise measured from dark current
@@ -100,17 +100,17 @@ def polarimeter_signal(cycles, fc, phi=0, a0_noise=None, a1_noise=None, **kwargs
         a1_noise = np.array(a1_noise)
         a1_noise[1] /= np.sqrt(SAMPLES_PER_POSITION)
 
-    xs, s1 = harmonic(A=AMPLITUDE_SIGNALS / 2, n=cycles, fc=fc, noise=a0_noise, **kwargs)
-    _, s2 = harmonic(A=AMPLITUDE_SIGNALS / 2, n=cycles, fc=fc, phi=-phi, noise=a1_noise, **kwargs)
+    xs, s1 = harmonic(A=SIGNAL_AMPLITUD / 2, n=cycles, fc=fc, noise=a0_noise, **kwargs)
+    _, s2 = harmonic(A=SIGNAL_AMPLITUD / 2, n=cycles, fc=fc, phi=-phi, noise=a1_noise, **kwargs)
 
     # Use quantized values
     s1 = quantize(
         s1,
-        max_value=FACTOR_QUANTIZATION, bits=BITS_QUANTIZATION, average_samples=SAMPLES_PER_POSITION
+        max_value=QUANTIZATION_FACTOR, bits=QUANTIZATION_BITS, average_samples=SAMPLES_PER_POSITION
     )
     s2 = quantize(
         s2,
-        max_value=FACTOR_QUANTIZATION, bits=BITS_QUANTIZATION, average_samples=SAMPLES_PER_POSITION
+        max_value=QUANTIZATION_FACTOR, bits=QUANTIZATION_BITS, average_samples=SAMPLES_PER_POSITION
     )
 
     # We divide angles by 2 because one cycle of the analyzer contains two cycles of the signal.
