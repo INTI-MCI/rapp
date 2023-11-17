@@ -1,67 +1,23 @@
 import sys
-import time
-import serial
 
 from rapp.utils import timing
+from rapp.adc import ADC
+
 
 # ADC_DEVICE = 'COM4'
 ADC_DEVICE = '/dev/ttyACM0'
 
-ADC_BAUDRATE = 57600
-ADC_TIMEOUT = 0.1
-ADC_MULTIPLIER_mV = 0.125
-ADC_SAMPLES_TERMINATION_CHARACTER = "s"
 
-WAIT_TIME_AFTER_CONNECTION = 2
-
-
-def bits_to_volts(value):
-    return value * ADC_MULTIPLIER_mV / 1000
-
-
-def read_data(adc, n_samples, in_bytes=True):
-    data = []
-    for _ in range(n_samples):
-        try:
-            if in_bytes:
-                value = adc.read(2)
-                value = int.from_bytes(value, byteorder='big', signed=True)
-            else:
-                value = adc.readline().decode().strip()
-                value = int(value)
-
-            value = bits_to_volts(value)
-            data.append(value)
-        except (ValueError, UnicodeDecodeError) as e:
-            print("Error while reading from ADC: {}".format(e))
-
-    return data
-
-
-def acquire(adc, n_samples, **kwargs):
-    adc_command = "{}{}".format(n_samples, ADC_SAMPLES_TERMINATION_CHARACTER)
-    adc.write(bytes(adc_command, 'utf-8'))
-
-    a0 = read_data(adc, n_samples, **kwargs)
-    a1 = read_data(adc, n_samples, **kwargs)
-
-    data = zip(a0, a1)
-
-    return data
+def acquire(adc, *args, **kwargs):
+    return adc.acquire(*args, **kwargs)
 
 
 def main(n_samples=5):
-    adc = serial.Serial(ADC_DEVICE, ADC_BAUDRATE, timeout=ADC_TIMEOUT)
-
-    print("Waiting {} seconds after opening the connection...".format(WAIT_TIME_AFTER_CONNECTION))
-    # Arduino resets when a new serial connection is made.
-    # We need to wait, otherwise we don't recieve anything.
-    # Less than 2 seconds does not work.
-    # TODO: check if we can avoid that arduino resets.
-    time.sleep(WAIT_TIME_AFTER_CONNECTION)
+    print("Initializing ADC...")
+    adc = ADC(ADC_DEVICE, b=57600, timeout=0.1)
 
     print("Flushing input...")
-    adc.flushInput()
+    adc.flush_input()
 
     print("Acquiring...")
     data, elapsed_time = timing(acquire)(adc, n_samples=n_samples, in_bytes=True)
