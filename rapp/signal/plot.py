@@ -42,7 +42,7 @@ class Plot:
 
     def save(self, filename):
         """Saves the plot."""
-        create_folder(self._folder, overwrite=False)
+        create_folder(self._folder)
         self._fig.savefig(os.path.join(self._folder, filename))
 
     def legend(self, fontsize=10, **kwargs):

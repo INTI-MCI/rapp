@@ -13,20 +13,10 @@ from scipy import signal
 from scipy.stats import norm
 from scipy.optimize import curve_fit
 
-from rapp.utils import create_folder, round_to_n
-from rapp.signal.phase import phase_difference
-
 from rapp.signal.plot import Plot
-
-OUTPUT_FOLDER = 'output-plots'
-INPUT_FOLDER = 'data'
-
-LABEL_VOLTAGE = "Voltaje [V]"
-LABEL_ANGLE = "Ángulo del rotador [rad]"
-LABEL_N_SAMPLE = "No. de muestra"
-LABEL_COUNTS = "Cuentas"
-
-ENCONDIG = 'iso-8859-1'
+from rapp.signal.phase import phase_difference
+from rapp.utils import create_folder, round_to_n
+from rapp import constants as ct
 
 logger = logging.getLogger(__name__)
 
@@ -63,7 +53,7 @@ def detrend_poly(data, func):
     return data - func(np.arange(data.size), *popt)
 
 
-def plot_signals_per_n_measurement(show=False):
+def plot_signals_per_n_measurement(output_folder, show=False):
     print("")
     logger.info("PLOTTING SIGNALS VS # OF MEASUREMENT.")
 
@@ -75,10 +65,10 @@ def plot_signals_per_n_measurement(show=False):
     ]
 
     for filename in filenames:
-        filepath = os.path.join('data', filename)
+        filepath = os.path.join(ct.INPUT_DIR, filename)
         logger.info("Filepath: {}".format(filepath))
 
-        plot = Plot(ylabel=LABEL_VOLTAGE, xlabel="# measurement")
+        plot = Plot(ylabel=ct.LABEL_VOLTAGE, xlabel=ct.LABEL_N_SAMPLE, folder=output_folder)
         plot.set_title(filename[:-4])
 
         cols = (0, 1, 2)
@@ -95,7 +85,7 @@ def plot_signals_per_n_measurement(show=False):
         plot.close()
 
 
-def plot_signals_per_angle(show=False):
+def plot_signals_per_angle(output_folder, show=False):
     print("")
     logger.info("PLOTTING SIGNALS VS ANALYZER ANGLE...")
 
@@ -109,21 +99,21 @@ def plot_signals_per_angle(show=False):
     ]
 
     for filename in filenames:
-        filepath = os.path.join('data', filename)
+        filepath = os.path.join(ct.INPUT_DIR, filename)
 
         logger.info("Filepath: {}".format(filepath))
-        plot_two_signals(filepath, delimiter=' ', show=show)
+        plot_two_signals(filepath, output_folder, delimiter=' ', show=show)
 
 
-def plot_two_signals(filepath, delimiter='\t', usecols=(0, 1, 2), show=False):
-    data = pd.read_csv(filepath, delimiter=delimiter, header=0, usecols=usecols, encoding=ENCONDIG)
+def plot_two_signals(filepath, output_folder, delimiter='\t', usecols=(0, 1, 2), show=False):
+    data = pd.read_csv(filepath, delimiter=delimiter, header=0, usecols=usecols, encoding=ct.ENCONDIG)
     data = data.groupby(['ANGLE']).mean().reset_index()
 
     xs = np.deg2rad(np.array(data['ANGLE']))
     s1 = np.array(data['A0'])
     s2 = np.array(data['A1'])
 
-    plot = Plot(ylabel=LABEL_VOLTAGE, xlabel=LABEL_ANGLE)
+    plot = Plot(ylabel=ct.LABEL_VOLTAGE, xlabel=ct.LABEL_ANGLE, folder=output_folder)
     plot.add_data(xs, s1, color='k', style='o-', alpha=1, mew=1)
     plot.add_data(xs, s2, color='k', style='o-', alpha=1, mew=1)
     plot._ax.xaxis.set_major_locator(plt.MaxNLocator(5))
@@ -136,7 +126,7 @@ def plot_two_signals(filepath, delimiter='\t', usecols=(0, 1, 2), show=False):
     plot.close()
 
 
-def plot_drift(show=False):
+def plot_drift(output_folder, show=False):
     print("")
     logger.info("PROCESSING LASER DRIFT...")
 
@@ -228,14 +218,14 @@ def plot_drift(show=False):
     # plt.show()
 
 
-def plot_dark_current(show=False):
+def plot_dark_current(output_folder, show=False):
     print("")
     logger.info("PROCESSING DARK CURRENT...")
 
     filename = 'dark-current.txt'
-    filepath = os.path.join(INPUT_FOLDER, filename)
+    filepath = os.path.join(ct.INPUT_DIR, filename)
 
-    base_output_fname = "{}".format(os.path.join(OUTPUT_FOLDER, filename[:-4]))
+    base_output_fname = "{}".format(os.path.join(output_folder, filename[:-4]))
 
     cols = (0, 1, 2)
     data = np.loadtxt(filepath, delimiter=' ', skiprows=1, usecols=cols, encoding='iso-8859-1')
@@ -243,8 +233,8 @@ def plot_dark_current(show=False):
     f, axs = plt.subplots(1, 2, figsize=(8, 4), sharey=True)
     for i, ax in enumerate(axs):
         channel_data = data[:, i + 1]
-        ax.set_ylabel(LABEL_VOLTAGE)
-        ax.set_xlabel(LABEL_N_SAMPLE)
+        ax.set_ylabel(ct.LABEL_VOLTAGE)
+        ax.set_xlabel(ct.LABEL_N_SAMPLE)
         ax.set_title("Canal A{}".format(i))
         ax.plot(channel_data, '-', color='k')
         # ax.set_xlim(0, 500)
@@ -262,9 +252,9 @@ def plot_dark_current(show=False):
         channel_data = data[:, i + 1]
 
         if i == 0:
-            ax.set_ylabel(LABEL_COUNTS)
+            ax.set_ylabel(ct.LABEL_COUNTS)
 
-        ax.set_xlabel(LABEL_VOLTAGE)
+        ax.set_xlabel(ct.LABEL_VOLTAGE)
         ax.set_title("Canal A{}".format(i))
         ax.hist(channel_data, color='k', alpha=0.4, edgecolor='k', density=True)
         ax.ticklabel_format(style='sci', scilimits=(0, 0), axis='y')
@@ -344,7 +334,10 @@ def plot_phase_difference(filepath, show=False):
 
     logger.info(title)
 
-    plot = Plot(ylabel=LABEL_VOLTAGE, xlabel=LABEL_ANGLE, title=title)
+    output_folder = os.path.join(ct.WORK_DIR, ct.OUTPUT_FOLDER)
+    create_folder(output_folder)
+
+    plot = Plot(ylabel=ct.LABEL_VOLTAGE, xlabel=ct.LABEL_ANGLE, title=title, folder=output_folder)
 
     plot.add_data(xs, s1, yerr=s1err, ms=6, color='k', mew=0.5, xrad=True, markevery=5, alpha=0.8)
     plot.add_data(xs, s2, yerr=s2err, ms=6, color='k', mew=0.5, xrad=True, markevery=5, alpha=0.8)
@@ -370,12 +363,13 @@ def plot_phase_difference(filepath, show=False):
 
 
 def main(show):
-    create_folder(OUTPUT_FOLDER)
+    output_folder = os.path.join(ct.WORK_DIR, ct.OUTPUT_FOLDER)
+    create_folder(output_folder)
 
-    plot_dark_current(show=show)
-    plot_drift(show=show)
-    plot_signals_per_n_measurement(show=show)
-    plot_signals_per_angle(show=show)
+    plot_dark_current(output_folder, show=show)
+    plot_drift(output_folder, show=show)
+    plot_signals_per_n_measurement(output_folder, show=show)
+    plot_signals_per_angle(output_folder, show=show)
 
 
 if __name__ == '__main__':
