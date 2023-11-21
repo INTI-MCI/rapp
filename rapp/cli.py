@@ -1,11 +1,10 @@
 import sys
-import logging
 import argparse
 
 from rapp import polarimeter
 from rapp.signal import analysis
 from rapp.signal import simulator
-
+from rapp.log import setup_logger
 
 HELP_POLARIMETER = "Tool for measuring signals with the polarimeter."
 HELP_SIM = "Tool for making numerical simulations."
@@ -27,8 +26,6 @@ HELP_SIM_REPS = 'number of repetitions in each simulated iteration (default: %(d
 HELP_SHOW = 'whether to show the plot.'
 HELP_FILEPATH = 'the file containing the measurements.'
 
-LOG_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
-
 HELP_SIM_NAME = (
     'name of the simulation. '
     'One of [all, two_signals, error_vs_cycles, error_vs_step, phase_diff].'
@@ -42,18 +39,6 @@ EPILOG_SIM = "Example: {}".format(EXAMPLE_SIM)
 
 EXAMPLE_PHASE_DIFF = "rapp phase_diff"
 EPILOG_PHASE_DIFF = "Example: {}".format(EXAMPLE_PHASE_DIFF)
-
-
-def setup_logger(verbose=False):
-    logging.basicConfig(
-        level=logging.DEBUG if verbose else logging.INFO,
-        format=LOG_FORMAT
-    )
-
-    # Hide logging from external libraries
-    external_libs = ['matplotlib', 'PIL']
-    for lib in external_libs:
-        logging.getLogger(lib).setLevel(logging.ERROR)
 
 
 def add_polarimeter_subparser(subparsers):
