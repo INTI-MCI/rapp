@@ -21,124 +21,193 @@ from rapp import constants as ct
 logger = logging.getLogger(__name__)
 
 
-def pol1(x, A, B):
-    return A * x + B
+CHANNELS = [0, 1]
 
 
-def pol2(x, A, B, C):
+def poly_2(x, A, B, C):
     return A * x**2 + B * x + C
-
-
-def pol3(x, A, B, C, D):
-    return A * x**3 + B * x**2 + C * x + D
-
-
-def fit_and_plot(data, n_data, func, n, show=False):
-    for i in np.arange(len(func)):
-        popt, pcov = curve_fit(func[i], np.arange(data.size), data)
-        plt.plot(np.arange(data.size), data)
-        plt.plot(n_data, func[i](np.arange(data.size), *popt))
-        plt.title('Ajuste deriva Canal {}'.format(n))
-        if show:
-            plt.show(block=True)
-        logger.info(popt)
-    return
 
 
 def detrend_poly(data, func):
     popt, pcov = curve_fit(func, np.arange(data.size), data)
-    # plt.plot(func(np.arange(data.size), *popt))
-    # plt.plot(data)
-    # plt.show()
     return data - func(np.arange(data.size), *popt)
 
 
-def plot_signals_per_n_measurement(output_folder, show=False):
+def plot_histogram_and_pdf(data,  bins='quantized', prefix='', show=False):
+    # PLOT THE HISTOGRAM AND PDF
+    f, axs = plt.subplots(1, 2, figsize=(9, 4), sharey=False)
+    for i, ax in enumerate(axs):
+        channel_data = data[:, i]
+
+        if i == 0:
+            ax.set_ylabel(ct.LABEL_COUNTS)
+
+        # Plot the PDF.
+        mu, sigma = norm.fit(channel_data)
+
+        mu_rounded = round_to_n(mu, 1)
+        sigma_rounded = round_to_n(sigma, 1)
+
+        logger.info(
+            "{} noise (mu, sigma) = ({}, {})"
+            .format(i, mu_rounded, sigma_rounded))
+
+        pdf_x = np.linspace(min(channel_data), max(channel_data), 100)
+        pdf_y = norm.pdf(pdf_x, mu, sigma)
+
+        if bins == 'quantized':
+            # We create the list of bins, knowing we have dicretization.
+            d = np.diff(np.unique(channel_data)).min()
+            left_of_first_bin = channel_data.min() - float(d) / 2
+            right_of_last_bin = channel_data.max() + float(d) / 2
+            bins = np.arange(left_of_first_bin, right_of_last_bin + d, d)
+
+            logger.info("Discretization step: {}".format(d))
+
+        counts, edges = np.histogram(channel_data, bins=bins, density=False)
+        # Normalize histogram according to PDF.
+        counts = (counts / np.max(counts)) * np.max(pdf_y)
+
+        ax.bar(edges[:-1], counts, width=np.diff(edges), color='k', alpha=0.4, edgecolor='k')
+        ax.ticklabel_format(style='sci', scilimits=(0, 0), axis='y')
+
+        fit_label = "µ = {}.\nσ = {}.".format(mu_rounded, sigma_rounded)
+
+        ax.set_xlabel(ct.LABEL_VOLTAGE)
+        ax.set_title("Canal {}".format(i))
+
+        ax.plot(pdf_x, pdf_y, 'k', linewidth=2, label=fit_label)
+        ax.legend(loc='upper right', fontsize=10)
+
+        ax.xaxis.set_major_locator(plt.MaxNLocator(3))
+
+    f.savefig("{}-histogram".format(prefix))
+
+
+def plot_noise_dark_current(output_folder, show=False):
     print("")
-    logger.info("PLOTTING SIGNALS VS # OF MEASUREMENT.")
+    logger.info("PROCESSING DARK CURRENT...")
 
-    filenames = [
-        'laser-75-int-alta.txt',
-        'laser-75-encendido-15min.txt',
-        'laser-16-reencendido-1M.txt',
-        'laser-16-75-grados-int-baja.txt'
-    ]
+    filename = 'dark-current.txt'
+    filepath = os.path.join(ct.INPUT_DIR, filename)
 
-    for filename in filenames:
-        filepath = os.path.join(ct.INPUT_DIR, filename)
-        logger.info("Filepath: {}".format(filepath))
+    base_output_fname = "{}".format(os.path.join(output_folder, filename[:-4]))
 
-        plot = Plot(ylabel=ct.LABEL_VOLTAGE, xlabel=ct.LABEL_N_SAMPLE, folder=output_folder)
-        plot.set_title(filename[:-4])
+    data = np.loadtxt(filepath, delimiter=' ', skiprows=1, usecols=(1, 2), encoding=ct.ENCONDIG)
 
-        cols = (0, 1, 2)
-        data = np.loadtxt(filepath, delimiter=' ', skiprows=1, usecols=cols, encoding=ct.ENCONDIG)
-        data = data[:, 1]
-        xs = np.arange(1, data.size + 1, step=1)
+    # PLOT THE RAW DATA
+    f, axs = plt.subplots(1, 2, figsize=(8, 4), sharey=True)
+    for i, ax in enumerate(axs):
+        channel_data = data[:, i]
+        ax.set_ylabel(ct.LABEL_VOLTAGE)
+        ax.set_xlabel(ct.LABEL_N_SAMPLE)
+        ax.set_title("Canal {}".format(i))
+        ax.plot(channel_data, '-', color='k')
 
-        plot.add_data(xs, data, style='-', color='k')
-        plot.save(filename=filename[:-4])
+    # Hide x labels and tick labels for top plots and y ticks for right plots.
+    for ax in axs.flat:
+        ax.label_outer()
 
-        if show:
-            plot.show()
-
-        plot.close()
-
-
-def plot_signals_per_angle(output_folder, show=False):
-    print("")
-    logger.info("PLOTTING SIGNALS VS ANALYZER ANGLE...")
-
-    filenames = [
-        '2-full-cycles.txt',
-        '2-full-cycles-2.txt',
-        '1-full-cycles.txt',
-        'test-clear-buffer.txt',
-        'test-clear-buffer2.txt',
-        'test-cycles2-step1.0-samples50.txt'
-    ]
-
-    for filename in filenames:
-        filepath = os.path.join(ct.INPUT_DIR, filename)
-
-        logger.info("Filepath: {}".format(filepath))
-        plot_two_signals(filepath, output_folder, delimiter=' ', show=show)
-
-
-def plot_two_signals(filepath, output_folder, delimiter='\t', usecols=(0, 1, 2), show=False):
-    data = pd.read_csv(
-        filepath, delimiter=delimiter, header=0, usecols=usecols, encoding=ct.ENCONDIG
-    )
-
-    data = data.groupby(['ANGLE']).mean().reset_index()
-
-    xs = np.deg2rad(np.array(data['ANGLE']))
-    s1 = np.array(data['A0'])
-    s2 = np.array(data['A1'])
-
-    plot = Plot(ylabel=ct.LABEL_VOLTAGE, xlabel=ct.LABEL_ANGLE, folder=output_folder)
-    plot.add_data(xs, s1, color='k', style='o-', alpha=1, mew=1)
-    plot.add_data(xs, s2, color='k', style='o-', alpha=1, mew=1)
-    plot._ax.xaxis.set_major_locator(plt.MaxNLocator(5))
-
-    plot.save(filename="{}.png".format(os.path.basename(filepath)[:-4]))
+    f.savefig("{}-signal".format(base_output_fname))
 
     if show:
-        plot.show()
+        plt.show()
 
-    plot.close()
+    # PLOT THE FFT
+    f, axs = plt.subplots(1, 2, figsize=(8, 4), sharey=False)
+    for i, ax in enumerate(axs):
+        channel_data = data[:, i]
+        fft = np.fft.fft(channel_data)
+
+        ax.set_ylabel(ct.LABEL_COUNTS)
+        # ax.set_xlabel(ct.LABEL_N_SAMPLE)
+        ax.set_title("Canal {}".format(i))
+        ax.plot(fft[1:], color='k')
+
+    # Hide x labels and tick labels for top plots and y ticks for right plots.
+    for ax in axs.flat:
+        ax.label_outer()
+
+    f.savefig("{}-fft".format(base_output_fname))
+    if show:
+        plt.show()
+
+    plt.close()
+
+    plot_histogram_and_pdf(data, prefix=base_output_fname, show=show)
+
+    if show:
+        plt.show()
+
+    plt.close()
+
+
+def plot_noise_with_laser(output_folder, show=False):
+    print("")
+    logger.info("PROCESSING SIGNAL WITH LASER ON...")
+
+    filename = 'laser-75-int-alta.txt'
+    filepath = os.path.join(ct.INPUT_DIR, filename)
+    data = np.loadtxt(filepath, delimiter=' ', skiprows=1, usecols=(1, 2), encoding=ct.ENCONDIG)
+
+    base_output_fname = "{}".format(os.path.join(output_folder, filename[:-4]))
+
+    f, axs = plt.subplots(1, 2, figsize=(9, 4), sharey=False)
+
+    # PLOT THE RAW DATA AND POLYNOMIAL FIT FOR THE DRIFT
+    for i, ax in enumerate(axs):
+        channel_data = data[:, i]
+        xs = np.arange(channel_data.size)
+        popt, pcov = curve_fit(poly_2, xs, channel_data)
+
+        fitx = np.arange(min(xs), max(xs), step=0.01)
+        fity = poly_2(fitx, *popt)
+
+        ax.plot(channel_data, color='k')
+        ax.plot(fitx, fity, '-', lw=2)
+        ax.set_title('Canal {}'.format(i))
+
+        ax.yaxis.set_major_formatter(plt.FormatStrFormatter('%.2f'))
+        ax.yaxis.set_major_locator(plt.MaxNLocator(3))
+
+    f.savefig("{}-signal-and-fit".format(base_output_fname))
+
+    plot = Plot("Ruido filtrado", ct.LABEL_VOLTAGE, ct.LABEL_N_SAMPLE, folder=output_folder)
+
+    filtered = []
+    for i in CHANNELS:
+        data_detrend = detrend_poly(data[:, i], poly_2)
+
+        b, a = signal.butter(3, 0.064, btype='highpass')
+        filtered_noise = signal.filtfilt(b, a, data_detrend)
+        filtered.append(filtered_noise)
+
+        mu = np.mean(filtered_noise)
+        std = np.std(filtered_noise)
+
+        logger.info('µ ch0 = {}'.format(round_to_n(mu, 2)))
+        logger.info('σ ch0 = {}'.format(round_to_n(std, 2)))
+
+        plot.add_data(filtered_noise, style='-', label='Canal {}'.format(i))
+        plot.legend()
+
+    f.savefig("{}-filtered-noise".format(base_output_fname))
+
+    filtered = np.array(filtered).T
+
+    # quantization in histogram breaks in this case. Detects a step near zero and python hangs...
+    # fix it!
+    plot_histogram_and_pdf(filtered, bins=100, prefix=base_output_fname, show=show)
+
+    if show:
+        plt.show()
+
+    plt.close()
 
 
 def plot_drift(output_folder, show=False):
     print("")
     logger.info("PROCESSING LASER DRIFT...")
-
-    file = np.loadtxt(
-        'data/laser-75-int-alta.txt',
-        delimiter=' ', skiprows=1, usecols=(1, 2), encoding=ct.ENCONDIG)
-
-    ch0 = file[:, 0]
-    ch1 = file[:, 1]
 
     reencendido = np.loadtxt(
         "data/laser-16-reencendido-1M.txt",
@@ -150,17 +219,13 @@ def plot_drift(output_folder, show=False):
     drift0 = r0[300000:]
     drift1 = r1[300000:]
 
-    drift_detrend0 = detrend_poly(drift0, pol1)
-    drift_detrend1 = detrend_poly(drift1, pol1)
-
-    '''
     plt.figure()
     plt.plot(drift0)
 
     if show:
         plt.show()
 
-    #plt.close()
+    # plt.close()
 
     plt.figure()
     plt.plot(drift1)
@@ -180,7 +245,6 @@ def plot_drift(output_folder, show=False):
         plt.show()
 
     plt.close()
-    '''
 
     sf = 250000
     fc = np.array([100, 1000])
@@ -218,124 +282,12 @@ def plot_drift(output_folder, show=False):
 
     plt.close()
 
-
-'''
-    fit_and_plot(ch0, np.arange(ch0.size), [pol1], 0, show=show)
-    fit_and_plot(ch1, np.arange(ch1.size), [pol2], 1, show=show)
-
-    data_detrend0 = detrend_poly(ch0, pol1)
-    data_detrend1 = detrend_poly(ch1, pol2)
-
-    b, a = signal.butter(3, 0.064, btype='highpass')
-    filtered_noise0 = signal.filtfilt(b, a, data_detrend0)
-    filtered_noise1 = signal.filtfilt(b, a, data_detrend1)
-
-    mu_0 = np.mean(filtered_noise0)
-    std_dev0 = np.std(filtered_noise0)
-    std_dev1 = np.std(filtered_noise1)
-    mu_1 = np.mean(filtered_noise1)
-
-    logger.info('Media ch0 = {}'.format(round_to_n(mu_0, 2)))
-    logger.info('Sigma ch0 = {}'.format(round_to_n(std_dev0, 2)))
-    logger.info('Media ch1 = {}'.format(round_to_n(mu_1, 2)))
-    logger.info('Sigma ch1 = {}'.format(round_to_n(std_dev1, 2)))
-
-    plt.figure()
-    plt.title('Ruido filtrado')
-    plt.plot(filtered_noise0, label='Canal 0')
-    plt.plot(filtered_noise1, label='Canal 1')
-    plt.legend()
-
-    if show:
-        plt.show()
-
-    plt.close()
-
-    fig, ax = plt.subplots(1, 2, figsize=(8, 4))
-    fig.suptitle('Ruido filtrado')
-    ax[0].hist(filtered_noise0, 100, range=(-0.005, 0.005))
-    ax[0].set_title('Canal 0')
-    ax[1].hist(filtered_noise1, 100, range=(-0.003, 0.003))
-    ax[1].set_title('Canal 1')
-
-    if show:
-        plt.show()
-
-    plt.close()
-
     # # add a 'best fit' line
     # plt.figure()
     # y = norm.pdf(np.linspace(min(filtered_noise0), max(filtered_noise0)), mu0, sigma0)
     # plt.hist(filtered_noise0, 100, range=(-0.005, 0.005), density=True)
     # plt.plot(np.linspace(-0.005, 0.005), y, 'r--', linewidth=2)
     # plt.show()
-'''
-
-def plot_dark_current(output_folder, show=False):
-    print("")
-    logger.info("PROCESSING DARK CURRENT...")
-
-    filename = 'dark-current.txt'
-    filepath = os.path.join(ct.INPUT_DIR, filename)
-
-    base_output_fname = "{}".format(os.path.join(output_folder, filename[:-4]))
-
-    cols = (0, 1, 2)
-    data = np.loadtxt(filepath, delimiter=' ', skiprows=1, usecols=cols, encoding=ct.ENCONDIG)
-
-    f, axs = plt.subplots(1, 2, figsize=(8, 4), sharey=True)
-    for i, ax in enumerate(axs):
-        channel_data = data[:, i + 1]
-        ax.set_ylabel(ct.LABEL_VOLTAGE)
-        ax.set_xlabel(ct.LABEL_N_SAMPLE)
-        ax.set_title("Canal A{}".format(i))
-        ax.plot(channel_data, '-', color='k')
-        # ax.set_xlim(0, 500)
-
-    # Hide x labels and tick labels for top plots and y ticks for right plots.
-    for ax in axs.flat:
-        ax.label_outer()
-
-    f.savefig("{}-signal".format(base_output_fname))
-
-    plt.close()
-
-    f, axs = plt.subplots(1, 2, figsize=(8, 4), sharey=False)
-    for i, ax in enumerate(axs):
-        channel_data = data[:, i + 1]
-
-        if i == 0:
-            ax.set_ylabel(ct.LABEL_COUNTS)
-
-        ax.set_xlabel(ct.LABEL_VOLTAGE)
-        ax.set_title("Canal A{}".format(i))
-        ax.hist(channel_data, color='k', alpha=0.4, edgecolor='k', density=True)
-        ax.ticklabel_format(style='sci', scilimits=(0, 0), axis='y')
-
-        # Plot the PDF.
-        mu, sigma = norm.fit(channel_data)
-
-        mu_rounded = round_to_n(mu, 1)
-        sigma_rounded = round_to_n(sigma, 1)
-
-        logger.info(
-            "A{} noise (mu, sigma) = ({}, {})"
-            .format(i, mu_rounded, sigma_rounded))
-
-        xmin, xmax = ax.get_xlim()
-        fit_xs = np.linspace(xmin, xmax, 100)
-        fit_ys = norm.pdf(fit_xs, mu, sigma)
-        fit_label = "µ = {}.\nσ = {}.".format(mu_rounded, sigma_rounded)
-
-        ax.plot(fit_xs, fit_ys, 'k', linewidth=2, label=fit_label)
-        ax.legend(loc='upper right', fontsize=10)
-
-    f.savefig("{}-histogram".format(base_output_fname))
-
-    if show:
-        plt.show()
-
-    plt.close()
 
 
 def plot_phase_difference(filepath, show=False):
@@ -414,14 +366,91 @@ def plot_phase_difference(filepath, show=False):
     return phase_diff_deg
 
 
+def plot_signals_per_n_measurement(output_folder, show=False):
+    print("")
+    logger.info("PLOTTING SIGNALS VS # OF MEASUREMENT.")
+
+    filenames = [
+        'laser-75-int-alta.txt',
+        'laser-75-encendido-15min.txt',
+        'laser-16-reencendido-1M.txt',
+        'laser-16-75-grados-int-baja.txt'
+    ]
+
+    for filename in filenames:
+        filepath = os.path.join(ct.INPUT_DIR, filename)
+        logger.info("Filepath: {}".format(filepath))
+
+        plot = Plot(ylabel=ct.LABEL_VOLTAGE, xlabel=ct.LABEL_N_SAMPLE, folder=output_folder)
+        plot.set_title(filename[:-4])
+
+        cols = (0, 1, 2)
+        data = np.loadtxt(filepath, delimiter=' ', skiprows=1, usecols=cols, encoding=ct.ENCONDIG)
+        data = data[:, 1]
+        xs = np.arange(1, data.size + 1, step=1)
+
+        plot.add_data(xs, data, style='-', color='k')
+        plot.save(filename=filename[:-4])
+
+        if show:
+            plot.show()
+
+        plot.close()
+
+
+def plot_signals_per_angle(output_folder, show=False):
+    print("")
+    logger.info("PLOTTING SIGNALS VS ANALYZER ANGLE...")
+
+    filenames = [
+        '2-full-cycles.txt',
+        '2-full-cycles-2.txt',
+        '1-full-cycles.txt',
+        'test-clear-buffer.txt',
+        'test-clear-buffer2.txt',
+        'test-cycles2-step1.0-samples50.txt'
+    ]
+
+    for filename in filenames:
+        filepath = os.path.join(ct.INPUT_DIR, filename)
+
+        logger.info("Filepath: {}".format(filepath))
+        plot_two_signals(filepath, output_folder, delimiter=' ', show=show)
+
+
+def plot_two_signals(filepath, output_folder, delimiter='\t', usecols=(0, 1, 2), show=False):
+    data = pd.read_csv(
+        filepath, delimiter=delimiter, header=0, usecols=usecols, encoding=ct.ENCONDIG
+    )
+
+    data = data.groupby(['ANGLE']).mean().reset_index()
+
+    xs = np.deg2rad(np.array(data['ANGLE']))
+    s1 = np.array(data['A0'])
+    s2 = np.array(data['A1'])
+
+    plot = Plot(ylabel=ct.LABEL_VOLTAGE, xlabel=ct.LABEL_ANGLE, folder=output_folder)
+    plot.add_data(xs, s1, color='k', style='o-', alpha=1, mew=1)
+    plot.add_data(xs, s2, color='k', style='o-', alpha=1, mew=1)
+    plot._ax.xaxis.set_major_locator(plt.MaxNLocator(5))
+
+    plot.save(filename="{}.png".format(os.path.basename(filepath)[:-4]))
+
+    if show:
+        plot.show()
+
+    plot.close()
+
+
 def main(show):
     output_folder = os.path.join(ct.WORK_DIR, ct.OUTPUT_FOLDER_PLOTS)
     create_folder(output_folder)
 
-    plot_dark_current(output_folder, show=show)
-    plot_drift(output_folder, show=show)
-    plot_signals_per_n_measurement(output_folder, show=show)
-    plot_signals_per_angle(output_folder, show=show)
+    # plot_noise_dark_current(output_folder, show=show)
+    plot_noise_with_laser(output_folder, show=show)
+    # plot_drift(output_folder, show=show)
+    # plot_signals_per_n_measurement(output_folder, show=show)
+    # plot_signals_per_angle(output_folder, show=show)
 
 
 if __name__ == '__main__':

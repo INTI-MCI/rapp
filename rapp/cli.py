@@ -119,6 +119,8 @@ def main():
             )
     except ValueError as e:
         print("ERROR: {}".format(e))
+        import traceback
+        traceback.print_exc()
 
 
 if __name__ == '__main__':
