@@ -7,7 +7,7 @@ from matplotlib import pyplot as plt
 
 from rapp.utils import create_folder
 
-#plt.style.use('style.mplstyle')
+plt.style.use('style.mplstyle')
 
 
 class Plot:
@@ -25,12 +25,13 @@ class Plot:
 
         self._folder = folder
 
-    def add_data(self, xs, ys, style='o', mew=0.5, xrad=False, **kwargs):
+    def add_data(self, xs, ys=None, style='o', mew=0.5, xrad=False, **kwargs):
         """Adds data to the plot."""
 
         ax = self._ax
 
-        if xs is None:
+        if ys is None:
+            ys = xs
             xs = np.arange(1, ys.size + 1, step=1)
 
         if xrad:
