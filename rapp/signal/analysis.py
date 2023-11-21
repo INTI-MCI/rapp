@@ -6,7 +6,6 @@ import logging
 import numpy as np
 import pandas as pd
 
-# from matplotlib.ticker import MaxNLocator
 from matplotlib import pyplot as plt
 
 from scipy import signal
