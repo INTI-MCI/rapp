@@ -21,6 +21,25 @@ class ESP:
                     if (r != 0):
                         print("Error while setting up controller, error # %d" % r)
 
+    def motor_on(self, axis, check=False):
+        self.dev.write("{0}MO\r".format(axis).encode())
+        if check:
+            self.dev.write("{0}MO?\r".format(axis).encode())
+
+    def motor_off(self, axis, check=False):
+        self.dev.write("{0}MF\r".format(axis).encode())
+        if check:
+            self.dev.write("{0}MF?\r".format(axis).encode())
+
+    def hardware_reset(self):
+        self.dev.write("RS\r".encode())
+
+    def set_units(self, axis, unit):  # units: 0:encoder count, 1:motor step, 7:deg, 9:rad, 10:mrad, 11:murad, ?:report current setting
+        self.dev.write("{0}SN{1}\r".format(axis, unit).encode())
+
+    def display_res(self, axis,resolution): # resolution es la cantidad de decimales en las user units y con ? pedimos resolución ya seteada
+        self.dev.write("{0}FP{1}\r".format(axis, resolution).encode())
+
     def reset(self, axis):
         self.dev.write("{0}OR;{0}WS0\r".format(axis).encode())
 
