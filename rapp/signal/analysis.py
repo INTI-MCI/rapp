@@ -85,9 +85,9 @@ def plot_histogram_and_pdf(data,  bins='quantized', prefix='', show=False):
     f.savefig("{}-histogram".format(prefix))
 
 
-def plot_noise_dark_current(output_folder, show=False):
+def plot_noise_with_laser_off(output_folder, show=False):
     print("")
-    logger.info("PROCESSING DARK CURRENT...")
+    logger.info("PROCESSING SIGNAL WITH LASER OFF (dark current)...")
 
     filename = 'dark-current.txt'
     filepath = os.path.join(ct.INPUT_DIR, filename)
@@ -143,7 +143,7 @@ def plot_noise_dark_current(output_folder, show=False):
     plt.close()
 
 
-def plot_noise_with_laser(output_folder, show=False):
+def plot_noise_with_laser_on(output_folder, show=False):
     print("")
     logger.info("PROCESSING SIGNAL WITH LASER ON...")
 
@@ -447,8 +447,8 @@ def main(show):
     output_folder = os.path.join(ct.WORK_DIR, ct.OUTPUT_FOLDER_PLOTS)
     create_folder(output_folder)
 
-    plot_noise_dark_current(output_folder, show=show)
-    plot_noise_with_laser(output_folder, show=show)
+    plot_noise_with_laser_off(output_folder, show=show)
+    plot_noise_with_laser_on(output_folder, show=show)
     plot_drift(output_folder, show=show)
     plot_signals_per_n_measurement(output_folder, show=show)
     plot_signals_per_angle(output_folder, show=show)
