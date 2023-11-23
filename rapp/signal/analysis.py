@@ -36,6 +36,7 @@ def detrend_poly(data, func):
 def plot_histogram_and_pdf(data,  bins='quantized', prefix='', show=False):
     # PLOT THE HISTOGRAM AND PDF
     f, axs = plt.subplots(1, 2, figsize=(9, 4), sharey=False)
+
     for i, ax in enumerate(axs):
         channel_data = data[:, i]
 
@@ -90,6 +91,9 @@ def plot_noise_with_laser_off(output_folder, show=False):
     logger.info("PROCESSING SIGNAL WITH LASER OFF (dark current)...")
 
     filename = 'dark-current.txt'
+
+    SAMPLING_FREQUENCY = 59
+
     filepath = os.path.join(ct.INPUT_DIR, filename)
 
     base_output_fname = "{}".format(os.path.join(output_folder, filename[:-4]))
@@ -120,14 +124,17 @@ def plot_noise_with_laser_off(output_folder, show=False):
         channel_data = data[:, i]
         fft = np.fft.fft(channel_data)
 
-        ax.set_ylabel(ct.LABEL_COUNTS)
-        # ax.set_xlabel(ct.LABEL_N_SAMPLE)
-        ax.set_title("Canal {}".format(i))
-        ax.plot(fft[1:], color='k')
+        xs = np.arange(0, len(fft))
+        xs = (xs / len(fft)) * SAMPLING_FREQUENCY
 
-    # Hide x labels and tick labels for top plots and y ticks for right plots.
-    for ax in axs.flat:
-        ax.label_outer()
+        if i == 0:
+            ax.set_ylabel(ct.LABEL_COUNTS)
+
+        ax.set_xlabel(ct.LABEL_FREQUENCY)
+
+        ax.set_title("Canal {}".format(i))
+
+        ax.plot(xs[1:], fft[1:], color='k')
 
     f.savefig("{}-fft".format(base_output_fname))
     if show:
@@ -166,6 +173,12 @@ def plot_noise_with_laser_on(output_folder, show=False):
 
         ax.plot(channel_data, color='k')
         ax.plot(fitx, fity, '-', lw=2)
+
+        if i == 0:
+            ax.set_ylabel(ct.LABEL_VOLTAGE)
+
+        ax.set_xlabel(ct.LABEL_N_SAMPLE)
+
         ax.set_title('Canal {}'.format(i))
 
         ax.yaxis.set_major_formatter(plt.FormatStrFormatter('%.2f'))
@@ -173,7 +186,7 @@ def plot_noise_with_laser_on(output_folder, show=False):
 
     f.savefig("{}-signal-and-fit".format(base_output_fname))
 
-    plot = Plot("Ruido filtrado", ct.LABEL_VOLTAGE, ct.LABEL_N_SAMPLE, folder=output_folder)
+    plot = Plot(ylabel=ct.LABEL_VOLTAGE, xlabel=ct.LABEL_N_SAMPLE, folder=output_folder)
 
     filtered = []
     for i in CHANNELS:
@@ -181,6 +194,10 @@ def plot_noise_with_laser_on(output_folder, show=False):
 
         b, a = signal.butter(3, 0.064, btype='highpass')
         filtered_noise = signal.filtfilt(b, a, data_detrend)
+
+        filtered_noise[filtered_noise > 0.002] = 0
+        filtered_noise[filtered_noise < -0.002] = 0
+
         filtered.append(filtered_noise)
 
         mu = np.mean(filtered_noise)
@@ -192,13 +209,13 @@ def plot_noise_with_laser_on(output_folder, show=False):
         plot.add_data(filtered_noise, style='-', label='Canal {}'.format(i))
         plot.legend()
 
-    f.savefig("{}-filtered-noise".format(base_output_fname))
+    plot.save("{}-filtered-noise".format(filename[:-4]))
 
     filtered = np.array(filtered).T
 
     # quantization in histogram breaks in this case. Detects a step near zero and python hangs...
     # fix it!
-    plot_histogram_and_pdf(filtered, bins=100, prefix=base_output_fname, show=show)
+    plot_histogram_and_pdf(filtered, bins=30, prefix=base_output_fname, show=show)
 
     if show:
         plt.show()
@@ -447,11 +464,11 @@ def main(show):
     output_folder = os.path.join(ct.WORK_DIR, ct.OUTPUT_FOLDER_PLOTS)
     create_folder(output_folder)
 
-    plot_noise_with_laser_off(output_folder, show=show)
+    # plot_noise_with_laser_off(output_folder, show=show)
     plot_noise_with_laser_on(output_folder, show=show)
-    plot_drift(output_folder, show=show)
-    plot_signals_per_n_measurement(output_folder, show=show)
-    plot_signals_per_angle(output_folder, show=show)
+    # plot_drift(output_folder, show=show)
+    # plot_signals_per_n_measurement(output_folder, show=show)
+    # plot_signals_per_angle(output_folder, show=show)
 
 
 if __name__ == '__main__':

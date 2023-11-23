@@ -7,6 +7,7 @@ OUTPUT_FOLDER_PLOTS = 'output-plots'
 OUTPUT_FOLDER_DATA = 'output-data'
 
 LABEL_ANGLE = "Ángulo del rotador [rad]"
+LABEL_FREQUENCY = "Frecuencia [Hz]"
 LABEL_COUNTS = "Cuentas"
 LABEL_N_CYCLES = "N° de ciclos"
 LABEL_N_SAMPLE = "No. de muestra"
