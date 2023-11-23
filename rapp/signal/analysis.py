@@ -55,16 +55,17 @@ def plot_histogram_and_pdf(data,  bins='quantized', prefix='', show=False):
         pdf_x = np.linspace(min(channel_data), max(channel_data), 100)
         pdf_y = norm.pdf(pdf_x, mu, sigma)
 
-        if bins == 'quantized':
+        channel_bins = bins
+        if channel_bins == 'quantized':
             # We create the list of bins, knowing we have dicretization.
             d = np.diff(np.unique(channel_data)).min()
             left_of_first_bin = channel_data.min() - float(d) / 2
             right_of_last_bin = channel_data.max() + float(d) / 2
-            bins = np.arange(left_of_first_bin, right_of_last_bin + d, d)
+            channel_bins = np.arange(left_of_first_bin, right_of_last_bin + d, d)
 
             logger.info("Discretization step: {}".format(d))
 
-        counts, edges = np.histogram(channel_data, bins=bins, density=False)
+        counts, edges = np.histogram(channel_data, bins=channel_bins, density=False)
         # Normalize histogram according to PDF.
         counts = (counts / np.max(counts)) * np.max(pdf_y)
 
@@ -446,11 +447,11 @@ def main(show):
     output_folder = os.path.join(ct.WORK_DIR, ct.OUTPUT_FOLDER_PLOTS)
     create_folder(output_folder)
 
-    # plot_noise_dark_current(output_folder, show=show)
+    plot_noise_dark_current(output_folder, show=show)
     plot_noise_with_laser(output_folder, show=show)
-    # plot_drift(output_folder, show=show)
-    # plot_signals_per_n_measurement(output_folder, show=show)
-    # plot_signals_per_angle(output_folder, show=show)
+    plot_drift(output_folder, show=show)
+    plot_signals_per_n_measurement(output_folder, show=show)
+    plot_signals_per_angle(output_folder, show=show)
 
 
 if __name__ == '__main__':
