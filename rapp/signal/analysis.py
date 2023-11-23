@@ -338,7 +338,7 @@ def plot_phase_difference(filepath, show=False):
 
     logger.info(title)
 
-    output_folder = os.path.join(ct.WORK_DIR, ct.OUTPUT_FOLDER)
+    output_folder = os.path.join(ct.WORK_DIR, ct.OUTPUT_FOLDER_PLOTS)
     create_folder(output_folder)
 
     plot = Plot(ylabel=ct.LABEL_VOLTAGE, xlabel=ct.LABEL_ANGLE, title=title, folder=output_folder)
