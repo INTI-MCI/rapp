@@ -131,11 +131,10 @@ def plot_noise_with_laser_off(output_folder, show=False):
             ax.set_ylabel(ct.LABEL_COUNTS)
 
         ax.set_xlabel(ct.LABEL_FREQUENCY)
-
         ax.set_title("Canal {}".format(i))
-
         ax.plot(xs[1:], fft[1:], color='k')
 
+    f.tight_layout()
     f.savefig("{}-fft".format(base_output_fname))
     if show:
         plt.show()
@@ -464,7 +463,7 @@ def main(show):
     output_folder = os.path.join(ct.WORK_DIR, ct.OUTPUT_FOLDER_PLOTS)
     create_folder(output_folder)
 
-    # plot_noise_with_laser_off(output_folder, show=show)
+    plot_noise_with_laser_off(output_folder, show=show)
     plot_noise_with_laser_on(output_folder, show=show)
     # plot_drift(output_folder, show=show)
     # plot_signals_per_n_measurement(output_folder, show=show)
