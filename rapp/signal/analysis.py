@@ -119,7 +119,7 @@ def plot_noise_with_laser_off(output_folder, show=False):
         plt.show()
 
     # PLOT THE FFT
-    f, axs = plt.subplots(1, 2, figsize=(8, 4), sharey=False)
+    f, axs = plt.subplots(1, 2, figsize=(9, 4), sharey=False)
     for i, ax in enumerate(axs):
         channel_data = data[:, i]
         fft = np.fft.fft(channel_data)
@@ -212,8 +212,6 @@ def plot_noise_with_laser_on(output_folder, show=False):
 
     filtered = np.array(filtered).T
 
-    # quantization in histogram breaks in this case. Detects a step near zero and python hangs...
-    # fix it!
     plot_histogram_and_pdf(filtered, bins=30, prefix=base_output_fname, show=show)
 
     if show:
@@ -466,8 +464,8 @@ def main(show):
     plot_noise_with_laser_off(output_folder, show=show)
     plot_noise_with_laser_on(output_folder, show=show)
     # plot_drift(output_folder, show=show)
-    # plot_signals_per_n_measurement(output_folder, show=show)
-    # plot_signals_per_angle(output_folder, show=show)
+    plot_signals_per_n_measurement(output_folder, show=show)
+    plot_signals_per_angle(output_folder, show=show)
 
 
 if __name__ == '__main__':
