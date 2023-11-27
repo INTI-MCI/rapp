@@ -103,7 +103,7 @@ def main():
 
         if args.command == 'sim':
             setup_logger(args.verbose)
-            simulator.main(args.name, show=args.show)
+            simulator.main(args.name, reps=args.reps, show=args.show)
 
         if args.command == 'polarimeter':
             setup_logger(args.verbose)
