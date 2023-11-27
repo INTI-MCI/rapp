@@ -2,16 +2,20 @@ import os
 import re
 import decimal
 import logging
+from typing import Tuple, List, Any
 
 import numpy as np
 import pandas as pd
 
 # from matplotlib.ticker import MaxNLocator
 from matplotlib import pyplot as plt
+from numpy import ndarray, dtype, floating, float_
+from numpy._typing import _64Bit
 
 from scipy import signal
 from scipy.stats import norm
 from scipy.optimize import curve_fit
+from scipy.interpolate import splrep, BSpline
 
 from rapp.signal.plot import Plot
 from rapp.signal.phase import phase_difference
@@ -27,6 +31,10 @@ CHANNELS = [0, 1]
 def poly_2(x, A, B, C):
     return A * x**2 + B * x + C
 
+def samples_to_seconds(data, sps):
+    N = len(data)
+    seconds = np.linspace(0, N / sps, N)
+    return seconds
 
 def detrend_poly(data, func):
     popt, pcov = curve_fit(func, np.arange(data.size), data)
@@ -232,50 +240,46 @@ def plot_drift(output_folder, show=False):
 
     r0 = reencendido[:, 0]
     r1 = reencendido[:, 1]
+    r = [r0, r1]
+
+    '''
+    figure, ax = plt.subplots(2, 2)
+    figure.suptitle('Medición completa')
+    for i in range(2):
+        ax[0, i].plot(r[i])
+        ax[0, i].set_xlabel('Número de muestras')
+    for i in range(2):
+        ax[1, i].plot(samples_to_seconds(r[i], 59)/60/60, r[i])
+        ax[1, i].set_xlabel('Horas')
+    plt.show()
+    '''
 
     drift0 = r0[300000:]
     drift1 = r1[300000:]
+    drift = [drift0, drift1]
+    N = len(drift0)
 
-    plt.figure()
-    plt.plot(drift0)
-
-    if show:
-        plt.show()
-
-    # plt.close()
-
-    plt.figure()
-    plt.plot(drift1)
-
-    if show:
-        plt.show()
-
-    plt.close()
 
     plt.figure()
     fft_data0 = np.fft.fft(drift0)
     fft_data1 = np.fft.fft(drift1)
-    plt.semilogy(np.abs(fft_data0))
-    plt.semilogy(np.abs(fft_data1))
+    plt.semilogy(59*(np.arange(len(fft_data0))/len(fft_data0)), np.abs(fft_data0))
+    plt.semilogy(59*(np.arange(len(fft_data1))/len(fft_data1)), np.abs(fft_data1))
 
     if show:
         plt.show()
-
     plt.close()
 
-    sf = 250000
-    fc = np.array([100, 1000])
-    w = fc / (sf/2)
-    print(w)
+
+    sf = 59
+    fc = np.array([0.5, 0.8])
+    w = 2 * fc / sf
     figure, ax = plt.subplots(len(fc), 2, figsize=(8, 4*len(fc)), sharex=False, sharey=False)
     figure.suptitle('Deriva filtrada')
 
     b1, a1 = signal.butter(3, w[0], btype='lowpass')
     filtered_drift0 = signal.filtfilt(b1, a1, drift0)
     filtered_drift1 = signal.filtfilt(b1, a1, drift1)
-
-    print(filtered_drift0)
-    print(filtered_drift1)
 
     ax[0, 0].plot(filtered_drift0)
     ax[0, 0].set_title('Canal 0, fc = {}'.format(fc[0]))
@@ -286,11 +290,8 @@ def plot_drift(output_folder, show=False):
     filtered_drift0 = signal.filtfilt(b1, a1, drift0)
     filtered_drift1 = signal.filtfilt(b1, a1, drift1)
 
-    print(filtered_drift0)
-    print(filtered_drift1)
-
     ax[1, 0].plot(filtered_drift0)
-    ax[1, 0].set_title('Canal 1, fc = {}'.format(fc[1]))
+    ax[1, 0].set_title('Canal 0, fc = {}'.format(fc[1]))
     ax[1, 1].plot(filtered_drift1)
     ax[1, 1].set_title('Canal 1, fc = {}'.format(fc[1]))
 
@@ -298,6 +299,31 @@ def plot_drift(output_folder, show=False):
         plt.show()
 
     plt.close()
+
+    tck0 = splrep(range(N), filtered_drift0, s=500000)
+    tck1 = splrep(range(N), filtered_drift1, s=500000)
+
+    tck0_defaults = splrep(range(N), filtered_drift0, s=N - np.sqrt(2*N))
+    tck1_defaults = splrep(range(N), filtered_drift1, s=N - np.sqrt(2*N))
+
+    tck0_len = splrep(range(N), filtered_drift0, s=N)
+    tck1_len = splrep(range(N), filtered_drift1, s=N)
+
+    figure, ax = plt.subplots(2, 1)
+    figure.suptitle('Splines para canal 0 y 1')
+    ax[0].plot(filtered_drift0, '.', label='Data filtrada')
+    ax[0].plot(range(N), BSpline(*tck0)(range(N)), label='s = 500')
+    ax[0].plot(range(N), BSpline(*tck0_defaults)(range(N)), label='s = N - sqrt(2N)')
+    # ax[0].plot(range(N), BSpline(*tck0_len)(range(N)), label='s = N')
+
+    ax[1].plot(filtered_drift1, '.', label='Data filtrada')
+    ax[1].plot(range(N), BSpline(*tck1)(range(N)), label='s = 500')
+    ax[1].plot(range(N), BSpline(*tck1_defaults)(range(N)), label='s = N - sqrt(2N)')
+    # ax[1].plot(range(N), BSpline(*tck1_len)(range(N)), label='s = N')
+
+    plt.legend()
+    plt.show()
+
 
     # # add a 'best fit' line
     # plt.figure()
@@ -463,9 +489,9 @@ def main(show):
     output_folder = os.path.join(ct.WORK_DIR, ct.OUTPUT_FOLDER_PLOTS)
     create_folder(output_folder)
 
-    plot_noise_with_laser_off(output_folder, show=show)
-    plot_noise_with_laser_on(output_folder, show=show)
-    # plot_drift(output_folder, show=show)
+    # plot_noise_with_laser_off(output_folder, show=show)
+    # plot_noise_with_laser_on(output_folder, show=show)
+    plot_drift(output_folder, show=True)
     # plot_signals_per_n_measurement(output_folder, show=show)
     # plot_signals_per_angle(output_folder, show=show)
 
