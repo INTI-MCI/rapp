@@ -5,25 +5,25 @@ import numpy as np
 from rapp import constants as ct
 from rapp.utils import create_folder
 from rapp.signal.plot import Plot
-from rapp.signal.phase import phase_difference, PHASE_DIFFERENCE_METHODS
+from rapp.signal.phase import phase_difference
 
 
 logger = logging.getLogger(__name__)
 
 
-PHI = np.pi / 4
-ANALYZER_VELOCITY = 4  # Degrees per second.
-SIGNAL_AMPLITUD = 2   # Peak to peak amplitude
-QUANTIZATION_FACTOR = 4
-QUANTIZATION_BITS = 16  # Use signed values with this level of quantization
+PHI = np.pi / 4         # Phase difference.
+ANALYZER_VELOCITY = 4   # Degrees per second.
+
+ADC_MAXV = 4.096
+ADC_BITS = 16     # Use signed values with this level of quantization.
 
 # Noise measured from dark current
 # A0_NOISE = (-0.0004, 0.0003)
 # A1_NOISE = (-0.003, 0.0001)
 
 # Noise measured with laser ON
-A0_NOISE = (1.9e-07, 0.00092)
-A1_NOISE = (-1.7e-07, 0.00037)
+A0_NOISE = [1.9e-07, 0.00092]
+A1_NOISE = [-1.7e-07, 0.00037]
 
 
 np.random.seed(1)  # To make random simulations repeatable.
@@ -31,7 +31,7 @@ np.random.seed(1)  # To make random simulations repeatable.
 
 def harmonic(
     A: float = 2,
-    n: int = 1,
+    cycles: int = 1,
     fc: int = 50,
     phi: float = 0,
     noise: tuple = None,
@@ -41,7 +41,7 @@ def harmonic(
 
     Args:
         A: amplitude (peak) of the signal.
-        n: number of cycles.
+        cycles: number of cycles.
         fc: samples per cycle.
         phi: phase (radians).
         noise: (mu, sigma) of additive white gaussian noise.
@@ -51,7 +51,7 @@ def harmonic(
         The signal as an (xs, ys) tuple.
     """
 
-    xs = np.linspace(0, 2 * np.pi * n, num=n * fc)
+    xs = np.linspace(0, 2 * np.pi * cycles, num=cycles * fc)
 
     signal = A * np.sin(xs + phi)
 
@@ -68,47 +68,60 @@ def harmonic(
     return xs, signal
 
 
-def quantize(values, max_value, bits, average_samples=1, signed=True):
-    """Quantization of (simulated) values.
+def quantize(signal, max_v=ADC_MAXV, bits=ADC_BITS, samples=1, signed=True):
+    """Performs quantization of a (simulated) signal.
 
     Args:
-        values: ndarray with float values
-        max_value: maximum value of the scale
-        bits: number of bits for quantization
-        signed: allow using negative values
+        signal (np.array): values to quantize (in Volts).
+        max_v: maximum value of ADC scale [0, max_v] (in Volts).
+        bits: number of bits for quantization.
+        signed: allow using negative values.
 
     Returns:
-        Quantized values
+        Quantized signal.
     """
     max_q = 2 ** (bits - 1 if signed else bits)
-    quantum = max_value / max_q
-    quantum /= average_samples
-    max_q *= average_samples
-    q_values = np.round(values / quantum)
-    q_values[q_values >= max_q - average_samples] = max_q - average_samples
+    q_factor = max_v / max_q
+
+    q_factor /= samples
+    max_q *= samples
+
+    q_signal = np.round(signal / q_factor)
+    q_signal[q_signal >= max_q] = max_q
+
     if signed:
-        q_values[q_values < -max_q] = -max_q
-    return q_values * quantum
+        q_signal[q_signal < -max_q] = -max_q
+
+    logger.debug("Quantization: bits={}, factor={}".format(bits, q_factor))
+
+    return q_signal * q_factor
 
 
-def polarimeter_signal(cycles, fc, phi=0, samples=50, a0_noise=None, a1_noise=None, **kwargs):
-    """Simulates a pair of signals measured by the polarimeter."""
-    if samples > 1:
-        a0_noise = np.array(a0_noise)
-        a0_noise[1] /= np.sqrt(samples)
-        a1_noise = np.array(a1_noise)
-        a1_noise[1] /= np.sqrt(samples)
+def polarimeter_signal(
+    phi=0, samples=50, a0_noise=None, a1_noise=None, bits=ADC_BITS, max_v=ADC_MAXV, **kwargs
+):
+    """Simulates a pair of signals measured by the polarimeter.
 
-    xs, s1 = harmonic(A=SIGNAL_AMPLITUD / 2, n=cycles, fc=fc, noise=a0_noise, **kwargs)
-    _, s2 = harmonic(A=SIGNAL_AMPLITUD / 2, n=cycles, fc=fc, phi=-phi, noise=a1_noise, **kwargs)
+    Args:
+        phi: phase difference between signals.
+        samples: number of samples in each angle.
+        a0_noise: (mu, sigma) of additive white gaussian noise of channel 0.
+        a1_noise: (mu, sigma) of additive white gaussian noise of channel 1.
+        bits: number of bits of the signal.
+        **kwargs: any other keyword argument to be passed 'harmonic' function.
+
+    Returns:
+        the X-coordinates and S1, S2 Y-coordinates as (X, S1, S2) 3-tuple.
+    """
+    a0_noise[1] /= np.sqrt(samples)
+    a1_noise[1] /= np.sqrt(samples)
+
+    xs, s1 = harmonic(noise=a0_noise, **kwargs)
+    _, s2 = harmonic(phi=-phi, noise=a1_noise, **kwargs)
 
     # Use quantized values
-    s1 = quantize(
-        s1, max_value=QUANTIZATION_FACTOR, bits=QUANTIZATION_BITS, average_samples=samples
-    )
-    s2 = quantize(
-        s2, max_value=QUANTIZATION_FACTOR, bits=QUANTIZATION_BITS, average_samples=samples
-    )
+    s1 = quantize(s1, max_v=max_v, bits=bits, samples=samples)
+    s2 = quantize(s2, max_v=max_v, bits=bits, samples=samples)
 
     # We divide angles by 2 because one cycle of the analyzer contains two cycles of the signal.
     return xs / 2, s1, s2
@@ -123,21 +136,41 @@ def total_time(n_cycles):
     return n_cycles * (180 / ANALYZER_VELOCITY)
 
 
+def n_simulations(n=1, method='fit', **kwargs):
+    """Performs n simulations and returned a list of n errors.
+
+    Args:
+        n: number of simulations.
+        method: phase difference alculation method.
+        *kwargs: arguments for polarimeter_signal function.
+    """
+    errors = []
+    for i in range(n):
+        xs, s1, s2 = polarimeter_signal(**kwargs)
+        res = phase_difference(xs * 2, s1, s2, method=method)
+        errors.append(res.value)
+
+    return errors
+
+
 def plot_two_signals(phi, folder, s1_noise=None, s2_noise=None, show=False):
     print("")
     logger.info("TWO HARMONIC SIGNALS...")
 
-    plot = Plot(ylabel=ct.LABEL_VOLTAGE, xlabel=ct.LABEL_ANGLE, folder=folder)
-
-    xs, s1 = harmonic(noise=s1_noise)
-    _, s2 = harmonic(phi=-phi, noise=s2_noise)
-
-    label_template = "(φ1 - φ2)={}°.\n \t (µ, σ1)={} \n \t (µ, σ1)={}"
+    label_template = "(φ1 - φ2)={}°.\n(µ, σ1)={}\n(µ, σ1)={}"
     label = label_template.format(round(phi, 2), s1_noise, s2_noise).expandtabs(11)
 
-    plot.add_data(xs, s1, color='k', style='o-', label=label, xrad=True)
-    plot.add_data(xs, s2, color='k', style='o-', xrad=True)
-    plot.legend(loc='upper right', fontsize=10)
+    plot = Plot(ylabel=ct.LABEL_VOLTAGE, xlabel=ct.LABEL_ANGLE, folder=folder)
+
+    plot.set_title(label)
+    xs, s1, s2 = polarimeter_signal(
+        A=2, cycles=1, phi=phi, fc=360, samples=1, a0_noise=s1_noise, a1_noise=s2_noise,
+        bits=5, max_v=ADC_MAXV, all_positive=True
+    )
+
+    plot.add_data(xs, s1, style='-', color='k', xrad=True)
+    plot.add_data(xs, s2, style='-', xrad=True)
+    plot._ax.set_ylim(0, ADC_MAXV)
 
     plot.save(filename='sim_two_signals')
 
@@ -149,48 +182,41 @@ def plot_two_signals(phi, folder, s1_noise=None, s2_noise=None, show=False):
     logger.info("Done.")
 
 
-def plot_error_vs_cycles(phi, folder, samples=50, max_cycles=20, step=0.01, reps=1, show=False):
+def plot_error_vs_cycles(phi, folder, samples=50, max_cycles=10, reps=1, show=False):
     print("")
     logger.info("PHASE DIFFERENCE VS # OF CYCLES")
 
-    fc = samples_per_cycle(step=step)
     cycles_list = np.arange(1, max_cycles + 1, step=1)
 
     plot = Plot(
         ylabel=ct.LABEL_PHI_ERR, xlabel=ct.LABEL_N_CYCLES,
-        title="\nfc={}, step={} deg, reps={}".format(fc, step, reps), ysci=True,
+        title="reps={}".format(reps), ysci=True, xint=True,
         folder=folder
     )
 
-    for method in PHASE_DIFFERENCE_METHODS:
-        logger.info("Method: {}".format(method))
+    for step in [0.01, 0.5, 1]:
+        fc = samples_per_cycle(step=step)
+        logger.info("Method: {}, fc={}, reps={}".format('fit', fc, reps))
 
         errors = []
         for cycles in cycles_list:
-            # Find RMSE using a number of repetitions of the simulation
-            error = 0
-            for rep in range(reps):
-                xs, s1, s2 = polarimeter_signal(
-                    cycles, fc, phi, samples, A0_NOISE, A1_NOISE, all_positive=True
-                )
+            n_errors = n_simulations(
+                n=reps, method='fit', cycles=cycles, fc=fc, phi=phi,
+                samples=samples, a0_noise=A0_NOISE, a1_noise=A1_NOISE, all_positive=True
+            )
 
-                res = phase_difference(xs * 2, s1, s2, method=method)
-
-                error += abs(phi - res.value) ** 2
-            error /= reps
-            error = np.sqrt(error)
-
-            error_degrees = np.rad2deg(error)
+            # RMSE
+            error_rad = np.sqrt(sum([abs(phi - e) ** 2 for e in n_errors]) / reps)
+            error_degrees = np.rad2deg(error_rad)
             error_degrees_sci = "{:.2E}".format(error_degrees)
 
             errors.append(error_degrees)
 
             time = total_time(cycles) / 60
-            logger.info(
-                "cycles={}, fc={}, time={} m, φerr: {}, reps: {}."
-                .format(cycles, fc, time, error_degrees_sci, reps))
+            logger.info("cycles={}, time={} m, φerr: {}.".format(cycles, time, error_degrees_sci))
 
-        plot.add_data(cycles_list, errors, style='o-', label=method)
+        label = "step={}, fc={}".format(step, fc)
+        plot.add_data(cycles_list, errors, style='-', lw=2, label=label)
 
     plot.legend()
 
@@ -204,7 +230,7 @@ def plot_error_vs_cycles(phi, folder, samples=50, max_cycles=20, step=0.01, reps
     logger.info("Done.")
 
 
-def plot_error_vs_step(phi, folder, samples=50, cycles=20, show=False):
+def plot_error_vs_step(phi, folder, samples=1, cycles=5, reps=1, show=False):
     print("")
     logger.info("PHASE DIFFERENCE ERROR VS STEP")
     time_min = total_time(cycles) / 60
@@ -215,25 +241,27 @@ def plot_error_vs_step(phi, folder, samples=50, cycles=20, show=False):
         ylabel=ct.LABEL_PHI_ERR, xlabel=ct.LABEL_STEP,
         title="cycles={}, time={} min.".format(cycles, time_min), ysci=True, folder=folder)
 
-    for method in PHASE_DIFFERENCE_METHODS:
-        logger.info("Method: {}".format(method))
+    method = 'fit'
 
-        errors = []
-        for step in steps:
-            fc = samples_per_cycle(step=step)
-            xs, s1, s2 = polarimeter_signal(cycles, fc, phi, samples, A0_NOISE, A1_NOISE)
-            res = phase_difference(xs * 2, s1, s2, method=method)
+    logger.info("Method: {}".format(method))
 
-            error_degrees = np.rad2deg(abs(phi - res.value))
-            error_degrees_sci = "{:.2E}".format(error_degrees)
+    errors = []
+    for step in steps:
+        fc = samples_per_cycle(step=step)
+        n_errors = n_simulations(
+            n=reps, method='fit', cycles=cycles, fc=fc, phi=phi,
+            samples=samples, a0_noise=A0_NOISE, a1_noise=A1_NOISE, all_positive=True
+        )
 
-            errors.append(error_degrees)
-            step = round(step, 1)
-            logger.info(
-                "cycles={}, fc={}, step={}, φerr: {}."
-                .format(cycles, fc, step, error_degrees_sci))
+        # RMSE
+        error_rad = np.sqrt(sum([abs(phi - e) ** 2 for e in n_errors]) / reps)
+        error_degrees = np.rad2deg(error_rad)
+        error_degrees_sci = "{:.2E}".format(error_degrees)
 
-        plot.add_data(steps, errors, style='o-', label=method)
+        errors.append(error_degrees)
+        logger.info("fc={}, step={}, φerr: {}.".format(fc, round(step, 1), error_degrees_sci))
+
+    plot.add_data(steps, errors, style='o-', color='k', label=method)
 
     plot.legend()
 
@@ -255,7 +283,9 @@ def plot_phase_diff(phi, folder, samples=50, cycles=10, step=0.01, show=False):
 
     logger.info("Simulating signals...")
     xs, s1, s2 = polarimeter_signal(
-        cycles, fc, phi, samples, A0_NOISE, A1_NOISE, all_positive=True)
+        cycles=cycles, fc=fc, phi=phi, samples=samples,
+        a0_noise=A0_NOISE, a1_noise=A1_NOISE, all_positive=True
+    )
 
     logger.info("Calculating phase difference...")
     res = phase_difference(xs * 2, s1, s2, method='fit')
@@ -305,7 +335,7 @@ def plot_phase_diff(phi, folder, samples=50, cycles=10, step=0.01, show=False):
     logger.info("Done.")
 
 
-def main(sim, reps=1, samples=50, show=False):
+def main(sim, reps=1, samples=1, show=False):
     print("")
     logger.info("STARTING SIMULATIONS...")
 
@@ -320,11 +350,10 @@ def main(sim, reps=1, samples=50, show=False):
         raise ValueError("Simulation with name {} not implemented".format(sim))
 
     if sim in ['all', 'two_signals']:
-        plot_two_signals(PHI, output_folder, s1_noise=A0_NOISE, s2_noise=A1_NOISE, show=show)
+        plot_two_signals(np.pi / 2, output_folder, s1_noise=A0_NOISE, s2_noise=A1_NOISE, show=show)
 
     if sim in ['all', 'error_vs_cycles']:
-        plot_error_vs_cycles(
-            PHI, output_folder, samples, max_cycles=20, step=0.01, reps=reps, show=show)
+        plot_error_vs_cycles(PHI, output_folder, samples, max_cycles=10, reps=reps, show=show)
 
     if sim in ['all', 'error_vs_step']:
         plot_error_vs_step(PHI, output_folder, samples, cycles=10, show=show)
