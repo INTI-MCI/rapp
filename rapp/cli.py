@@ -28,7 +28,7 @@ HELP_FILEPATH = 'the file containing the measurements.'
 
 HELP_SIM_NAME = (
     'name of the simulation. '
-    'One of [all, two_signals, error_vs_cycles, error_vs_step, phase_diff].'
+    'One of {}.'.format(simulator.SIMULATIONS)
 )
 
 EXAMPLE_POLARIMETER = "rapp polarimeter --cycles 1 --step 30 --samples 10 --delay_position 0"
@@ -37,7 +37,7 @@ EPILOG_POLARIMETER = "Example: {}".format(EXAMPLE_POLARIMETER)
 EXAMPLE_SIM = "rapp sim error_vs_cycles --show"
 EPILOG_SIM = "Example: {}".format(EXAMPLE_SIM)
 
-EXAMPLE_PHASE_DIFF = "rapp phase_diff"
+EXAMPLE_PHASE_DIFF = "rapp phase_diff data/test-cycles2-step1.0-samples50.txt"
 EPILOG_PHASE_DIFF = "Example: {}".format(EXAMPLE_PHASE_DIFF)
 
 
@@ -57,7 +57,7 @@ def add_polarimeter_subparser(subparsers):
 def add_sim_subparser(subparsers):
     p = subparsers.add_parser("sim", help=HELP_SIM, epilog=EPILOG_SIM)
     p.add_argument('name', type=str, help=HELP_SIM_NAME)
-    p.add_argument('--samples', type=int, default=50, help=HELP_SAMPLES)
+    p.add_argument('--samples', type=int, default=1, help=HELP_SAMPLES)
     p.add_argument('--reps', type=int, default=1, help=HELP_SIM_REPS)
     p.add_argument('--show', action='store_true', help=HELP_SHOW)
     p.add_argument('-v', '--verbose', action='store_true', help=HELP_VERBOSE)
@@ -103,7 +103,7 @@ def main():
 
         if args.command == 'sim':
             setup_logger(args.verbose)
-            simulator.main(args.name, reps=args.reps, show=args.show)
+            simulator.main(args.name, reps=args.reps, samples=args.samples, show=args.show)
 
         if args.command == 'polarimeter':
             setup_logger(args.verbose)
