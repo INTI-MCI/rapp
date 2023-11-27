@@ -75,6 +75,7 @@ def quantize(signal, max_v=ADC_MAXV, bits=ADC_BITS, samples=1, signed=True):
         signal (np.array): values to quantize (in Volts).
         max_v: maximum value of ADC scale [0, max_v] (in Volts).
         bits: number of bits for quantization.
+        samples: number of samples that are averaged for getting each element in the signal.
         signed: allow using negative values.
 
     Returns:
@@ -87,7 +88,8 @@ def quantize(signal, max_v=ADC_MAXV, bits=ADC_BITS, samples=1, signed=True):
     max_q *= samples
 
     q_signal = np.round(signal / q_factor)
-    q_signal[q_signal >= max_q] = max_q
+    # The maximum integer value allowed for each averaged sample is 2**(bits-1) - 1 or 2**bits - 1
+    q_signal[q_signal > max_q - samples] = max_q - samples
 
     if signed:
         q_signal[q_signal < -max_q] = -max_q
@@ -108,6 +110,7 @@ def polarimeter_signal(
         a0_noise: (mu, sigma) of additive white gaussian noise of channel 0.
         a1_noise: (mu, sigma) of additive white gaussian noise of channel 1.
         bits: number of bits of the signal.
+        max_v: float number corresponding to the highest possible integer value given by the ADC
         **kwargs: any other keyword argument to be passed 'harmonic' function.
 
     Returns:
