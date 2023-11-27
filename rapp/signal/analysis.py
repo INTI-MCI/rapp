@@ -242,7 +242,6 @@ def plot_drift(output_folder, show=False):
     r1 = reencendido[:, 1]
     r = [r0, r1]
 
-    '''
     figure, ax = plt.subplots(2, 2)
     figure.suptitle('Medición completa')
     for i in range(2):
@@ -252,13 +251,12 @@ def plot_drift(output_folder, show=False):
         ax[1, i].plot(samples_to_seconds(r[i], 59)/60/60, r[i])
         ax[1, i].set_xlabel('Horas')
     plt.show()
-    '''
 
+    # Seleccionamos deriva y graficamos FFT
     drift0 = r0[300000:]
     drift1 = r1[300000:]
     drift = [drift0, drift1]
     N = len(drift0)
-
 
     plt.figure()
     fft_data0 = np.fft.fft(drift0)
@@ -270,7 +268,7 @@ def plot_drift(output_folder, show=False):
         plt.show()
     plt.close()
 
-
+    # Frecuencias de corte para pasabajos
     sf = 59
     fc = np.array([0.5, 0.8])
     w = 2 * fc / sf
@@ -300,6 +298,20 @@ def plot_drift(output_folder, show=False):
 
     plt.close()
 
+    ''' Gráfico derivas filtradas de ambos canales
+    fig, ax = plt.subplots(2, 1)
+    # fig.suptitle('Deriva')
+    fig.subplots_adjust(hspace=0.5)
+    ax[0].plot(samples_to_seconds(filtered_drift0, 59)/60/60, filtered_drift0, color='k')
+    ax[0].set_title('Canal 0')
+    ax[0].set_ylabel('Tensión [V]')
+    ax[1].plot(samples_to_seconds(filtered_drift1, 59)/60/60, filtered_drift1, color='k')
+    ax[1].set_xlabel('Horas')
+    ax[1].set_ylabel('Tensión [V]')
+    ax[1].set_title('Canal 1')
+    '''
+
+    # Splines: hacer ventanas de aprox 15 minutos, ver cuántos parámetros se necesitan para ajustar
     tck0 = splrep(range(N), filtered_drift0, s=500000)
     tck1 = splrep(range(N), filtered_drift1, s=500000)
 
@@ -310,15 +322,17 @@ def plot_drift(output_folder, show=False):
     tck1_len = splrep(range(N), filtered_drift1, s=N)
 
     figure, ax = plt.subplots(2, 1)
-    figure.suptitle('Splines para canal 0 y 1')
-    ax[0].plot(filtered_drift0, '.', label='Data filtrada')
-    ax[0].plot(range(N), BSpline(*tck0)(range(N)), label='s = 500')
-    ax[0].plot(range(N), BSpline(*tck0_defaults)(range(N)), label='s = N - sqrt(2N)')
+    # figure.suptitle('Splines para canal 0 y 1')
+    ax[0].plot(samples_to_seconds(filtered_drift0, 59)/60, filtered_drift0, '.', label='Data filtrada')
+    ax[0].set_xlabel('Minutos')
+    # ax[0].plot(range(N), BSpline(*tck0)(range(N)), label='s = 500')
+    # ax[0].plot(range(N), BSpline(*tck0_defaults)(range(N)), label='s = N - sqrt(2N)')
     # ax[0].plot(range(N), BSpline(*tck0_len)(range(N)), label='s = N')
 
-    ax[1].plot(filtered_drift1, '.', label='Data filtrada')
-    ax[1].plot(range(N), BSpline(*tck1)(range(N)), label='s = 500')
-    ax[1].plot(range(N), BSpline(*tck1_defaults)(range(N)), label='s = N - sqrt(2N)')
+    ax[1].plot(samples_to_seconds(filtered_drift1, 59)/60, filtered_drift1, '.', label='Data filtrada')
+    ax[1].set_xlabel('Minutos')
+    # ax[1].plot(range(N), BSpline(*tck1)(range(N)), label='s = 500')
+    # ax[1].plot(range(N), BSpline(*tck1_defaults)(range(N)), label='s = N - sqrt(2N)')
     # ax[1].plot(range(N), BSpline(*tck1_len)(range(N)), label='s = N')
 
     plt.legend()
