@@ -6,11 +6,10 @@ import logging
 import numpy as np
 import pandas as pd
 
-# from matplotlib.ticker import MaxNLocator
 from matplotlib import pyplot as plt
 
 from scipy import signal
-from scipy.stats import norm
+from scipy import stats
 from scipy.optimize import curve_fit
 
 from rapp.signal.plot import Plot
@@ -34,7 +33,7 @@ def detrend_poly(data, func):
 
 
 def plot_histogram_and_pdf(data,  bins='quantized', prefix='', show=False):
-    # PLOT THE HISTOGRAM AND PDF
+    """Plots a histogram and PDF for 2-channel data."""
     f, axs = plt.subplots(1, 2, figsize=(9, 4), sharey=False)
 
     for i, ax in enumerate(axs):
@@ -44,17 +43,17 @@ def plot_histogram_and_pdf(data,  bins='quantized', prefix='', show=False):
             ax.set_ylabel(ct.LABEL_COUNTS)
 
         # Plot the PDF.
-        mu, sigma = norm.fit(channel_data)
+        mu, sigma = stats.norm.fit(channel_data)
 
         mu_rounded = round_to_n(mu, 1)
         sigma_rounded = round_to_n(sigma, 1)
 
         logger.info(
-            "{} noise (mu, sigma) = ({}, {})"
+            "CH{} noise (mu, sigma) = ({}, {})"
             .format(i, mu_rounded, sigma_rounded))
 
         pdf_x = np.linspace(min(channel_data), max(channel_data), 100)
-        pdf_y = norm.pdf(pdf_x, mu, sigma)
+        pdf_y = stats.norm.pdf(pdf_x, mu, sigma)
 
         channel_bins = bins
         if channel_bins == 'quantized':
@@ -100,10 +99,15 @@ def plot_noise_with_laser_off(output_folder, show=False):
 
     data = np.loadtxt(filepath, delimiter=' ', skiprows=1, usecols=(1, 2), encoding=ct.ENCONDIG)
 
-    # PLOT THE RAW DATA
+    logger.info("Plotting raw data...")
     f, axs = plt.subplots(1, 2, figsize=(8, 4), sharey=True)
     for i, ax in enumerate(axs):
         channel_data = data[:, i]
+
+        # res = stats.normaltest(channel_data)
+        res = stats.shapiro(channel_data)
+        logger.info("p-value: {}".format(res.pvalue))
+
         ax.set_ylabel(ct.LABEL_VOLTAGE)
         ax.set_xlabel(ct.LABEL_N_SAMPLE)
         ax.set_title("Canal {}".format(i))
@@ -118,10 +122,13 @@ def plot_noise_with_laser_off(output_folder, show=False):
     if show:
         plt.show()
 
-    # PLOT THE FFT
-    f, axs = plt.subplots(1, 2, figsize=(9, 4), sharey=False)
+    filtered = []
+
+    logger.info("Filtering unwanted frequencies...")
+    f, axs = plt.subplots(1, 2, figsize=(8, 4), sharey=True)
     for i, ax in enumerate(axs):
         channel_data = data[:, i]
+
         fft = np.fft.fft(channel_data)
 
         xs = np.arange(0, len(fft))
@@ -132,7 +139,24 @@ def plot_noise_with_laser_off(output_folder, show=False):
 
         ax.set_xlabel(ct.LABEL_FREQUENCY)
         ax.set_title("Canal {}".format(i))
-        ax.plot(xs[1:], fft[1:], color='k')
+        # ax.plot(xs[1:], fft[1:], color='k')
+
+        # Remove peaks
+        fft[np.abs(fft) > 0.5] = 0
+
+        filtered_channel = np.fft.ifft(fft).real
+
+        res = stats.shapiro(filtered_channel)
+        logger.info("p-value: {}".format(res.pvalue))
+
+        filtered.append(filtered_channel)
+
+        # ax.plot(fft, color='k')
+        ax.plot(filtered_channel, color='k')
+
+    # Hide x labels and tick labels for top plots and y ticks for right plots.
+    for ax in axs.flat:
+        ax.label_outer()
 
     f.tight_layout()
     f.savefig("{}-fft".format(base_output_fname))
@@ -141,7 +165,8 @@ def plot_noise_with_laser_off(output_folder, show=False):
 
     plt.close()
 
-    plot_histogram_and_pdf(data, prefix=base_output_fname, show=show)
+    data = np.array(filtered).T
+    plot_histogram_and_pdf(data, bins=25, prefix=base_output_fname, show=show)
 
     if show:
         plt.show()
@@ -151,7 +176,7 @@ def plot_noise_with_laser_off(output_folder, show=False):
 
 def plot_noise_with_laser_on(output_folder, show=False):
     print("")
-    logger.info("PROCESSING SIGNAL WITH LASER ON...")
+    logger.info("ANALYZING NOISE WITH LASER ON...")
 
     filename = 'laser-75-int-alta.txt'
     filepath = os.path.join(ct.INPUT_DIR, filename)
@@ -418,11 +443,11 @@ def plot_signals_per_angle(output_folder, show=False):
     logger.info("PLOTTING SIGNALS VS ANALYZER ANGLE...")
 
     filenames = [
-        '2-full-cycles.txt',
-        '2-full-cycles-2.txt',
-        '1-full-cycles.txt',
-        'test-clear-buffer.txt',
-        'test-clear-buffer2.txt',
+        # '2-full-cycles.txt',
+        # '2-full-cycles-2.txt',
+        # '1-full-cycles.txt',
+        # 'test-clear-buffer.txt',
+        # 'test-clear-buffer2.txt',
         'test-cycles2-step1.0-samples50.txt'
     ]
 
