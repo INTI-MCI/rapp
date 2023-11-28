@@ -20,6 +20,9 @@ ANALYZER_VELOCITY = 4   # Degrees per second.
 ADC_MAXV = 4.096
 ADC_BITS = 16     # Use signed values with this level of quantization.
 
+ARDUINO_MAXV = 5
+ARDUINO_BITS = 10
+
 # Noise measured from dark current
 # A0_NOISE = (-0.0004, 0.0003)
 # A1_NOISE = (-0.003, 0.0001)
@@ -29,7 +32,8 @@ A0_NOISE = [1.9e-07, 0.00092]
 A1_NOISE = [-1.7e-07, 0.00037]
 
 SIMULATIONS = [
-    'all', 'two_signals', 'methods', 'error_vs_cycles', 'phase_diff', 'error_vs_range'
+    'all', 'two_signals', 'methods',
+    'error_vs_cycles', 'error_vs_res', 'phase_diff', 'error_vs_range'
 ]
 
 
@@ -149,7 +153,7 @@ def n_simulations(n=1, method='fit', **kwargs):
         method: phase difference calculation method.
         *kwargs: arguments for polarimeter_signal function.
     """
-    errors = []
+    results = []
     for i in range(n):
         xs, s1, s2 = polarimeter_signal(**kwargs)
 
@@ -170,16 +174,16 @@ def n_simulations(n=1, method='fit', **kwargs):
         s1_sigma = np.array(data['A0']['std'])
         s2_sigma = np.array(data['A1']['std'])
 
-        if np.isnan(s1_sigma).any():
+        if np.isnan(s1_sigma).any() or (s1_sigma == 0).any():
             s1_sigma = None
 
-        if np.isnan(s2_sigma).any():
+        if np.isnan(s2_sigma).any() or (s2_sigma == 0).any():
             s2_sigma = None
 
         res = phase_difference(xs * 2, s1, s2, s1_sigma=s1_sigma, s2_sigma=s2_sigma, method=method)
-        errors.append(res.value)
+        results.append(res)
 
-    return errors
+    return results
 
 
 def plot_two_signals(phi, folder, samples=1, s1_noise=None, s2_noise=None, show=False):
@@ -274,7 +278,7 @@ def plot_error_vs_cycles(phi, folder, samples=5, max_cycles=10, reps=1, show=Fal
         folder=folder
     )
 
-    n_reps = [1, 1, 1, 1]
+    n_reps = [1, 5, 10, 50]
     steps = [0.001, 0.01, 0.1, 1]
     for i, step in enumerate(steps, 0):
         fc = samples_per_cycle(step=step)
@@ -283,9 +287,66 @@ def plot_error_vs_cycles(phi, folder, samples=5, max_cycles=10, reps=1, show=Fal
 
         errors = []
         for cycles in cycles_list:
-            n_errors = n_simulations(
+            n_res = n_simulations(
                 n=reps, method='fit', cycles=cycles, fc=fc, phi=phi,
                 fa=samples, a0_noise=A0_NOISE, a1_noise=A1_NOISE, all_positive=True
+            )
+
+            # RMSE
+            error_rad = np.sqrt(sum([abs(phi - e.value) ** 2 for e in n_res]) / reps)
+            error_degrees = np.rad2deg(error_rad)
+            error_degrees_sci = "{:.2E}".format(error_degrees)
+
+            mean_u = sum([r.u for r in n_res]) / len(n_res)
+
+            errors.append(error_degrees)
+
+            time = total_time(cycles) / 60
+            logger.info(
+                "cycles={}, time={} m, φerr: {}, u: {}.".format(
+                    cycles, time, error_degrees_sci, mean_u)
+            )
+
+        label = "step={}, reps={}".format(step, reps)
+        plot.add_data(cycles_list, errors, style='.-', lw=2, label=label)
+
+    plot.legend()
+
+    plot.save(filename="sim_error_vs_cycles-samples-{}".format(samples))
+
+    if show:
+        plot.show()
+
+    plot.close()
+
+    logger.info("Done.")
+
+
+def plot_error_vs_resolution(phi, folder, samples=5, step=1, max_cycles=10, reps=1, show=False):
+    print("")
+    logger.info("PHASE DIFFERENCE VS RESOLUTION")
+
+    cycles_list = np.arange(1, max_cycles + 1, step=1)
+
+    title = "samples={}".format(samples)
+
+    plot = Plot(
+        ylabel=ct.LABEL_PHI_ERR, xlabel=ct.LABEL_N_CYCLES, title=title, ysci=True, xint=True,
+        folder=folder
+    )
+
+    resolutions_bits = [(ARDUINO_BITS, ARDUINO_MAXV), (ADC_BITS, ADC_MAXV)]
+    for bits, maxv in resolutions_bits:
+        fc = samples_per_cycle(step=step)
+        logger.info("fc={}".format(fc))
+
+        amplitude = 0.9 * maxv
+
+        errors = []
+        for cycles in cycles_list:
+            n_errors = n_simulations(
+                A=amplitude, bits=bits, max_v=maxv, n=reps, method='fit', cycles=cycles, fc=fc,
+                phi=phi, fa=samples, a0_noise=A0_NOISE, a1_noise=A1_NOISE, all_positive=True
             )
 
             # RMSE
@@ -298,12 +359,12 @@ def plot_error_vs_cycles(phi, folder, samples=5, max_cycles=10, reps=1, show=Fal
             time = total_time(cycles) / 60
             logger.info("cycles={}, time={} m, φerr: {}.".format(cycles, time, error_degrees_sci))
 
-        label = "step={}, reps={}".format(step, reps)
+        label = "{} bits".format(bits)
         plot.add_data(cycles_list, errors, style='.-', lw=2, label=label)
 
-    plot.legend()
+    plot.legend(fontsize=12)
 
-    plot.save(filename="sim_error_vs_cycles-samples-{}".format(samples))
+    plot.save(filename="sim_error_vs_resolution-samples-{}".format(samples))
 
     if show:
         plot.show()
@@ -443,6 +504,10 @@ def main(sim, reps=1, samples=1, show=False):
 
     if sim in ['all', 'error_vs_cycles']:
         plot_error_vs_cycles(PHI, output_folder, samples, max_cycles=8, reps=reps, show=show)
+
+    if sim in ['all', 'error_vs_res']:
+        plot_error_vs_resolution(
+            PHI, output_folder, samples, max_cycles=8, step=0.01, reps=reps, show=show)
 
     if sim in ['all', 'error_vs_range']:
         plot_error_vs_range(PHI, output_folder, samples, step=0.1, cycles=2, reps=reps, show=show)
