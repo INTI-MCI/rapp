@@ -18,9 +18,9 @@ def sine(x, a, phi, c):
 
 
 class PhaseDifferenceResult:
-    def __init__(self, value, error=None, fitx=None, fits1=None, fits2=None):
+    def __init__(self, value, uncertainty=None, fitx=None, fits1=None, fits2=None):
         self.value = value
-        self.error = error
+        self.u = uncertainty
         self.fitx = fitx
         self.fits1 = fits1
         self.fits2 = fits2
@@ -58,7 +58,7 @@ def phase_difference(
         phi2_error = errors2[2]
 
         phase_diff = abs(abs(phi1) - abs(phi2))
-        phase_diff_error = np.sqrt(phi1_error**2 + phi2_error**2)
+        phase_diff_u = np.sqrt(phi1_error**2 + phi2_error**2)
 
         logger.debug("φ1 = {}".format(round_to_n(phi1, 3)))
         logger.debug("φ2 = {}".format(round_to_n(phi2, 3)))
@@ -69,4 +69,4 @@ def phase_difference(
         fity1 = sine(fitx, *popt1)
         fity2 = sine(fitx, *popt2)
 
-        return PhaseDifferenceResult(phase_diff, phase_diff_error, fitx, fity1, fity2)
+        return PhaseDifferenceResult(phase_diff, phase_diff_u, fitx, fity1, fity2)
