@@ -393,7 +393,7 @@ def plot_phase_difference(filepath, show=False):
         plot.add_data(fitx, res.fits2, style='-', color='k', lw=1.5, xrad=True)
 
     # plot._ax.set_xlim(0, 1)
-    plot.legend(loc='upper right')
+    # plot.legend(loc='upper right')
     plot._ax.xaxis.set_major_locator(plt.MaxNLocator(5))
 
     plot.save(filename="{}.png".format(os.path.basename(filepath)[:-4]))
