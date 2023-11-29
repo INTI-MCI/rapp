@@ -328,7 +328,7 @@ def plot_error_vs_resolution(phi, folder, samples=5, step=1, max_cycles=10, reps
 
     cycles_list = np.arange(1, max_cycles + 1, step=1)
 
-    title = "samples={}, reps={}".format(samples, reps)
+    title = "step={}, samples={}, reps={}".format(step, samples, reps)
 
     plot = Plot(
         ylabel=ct.LABEL_PHI_ERR, xlabel=ct.LABEL_N_CYCLES, title=title, ysci=True, xint=True,
@@ -364,7 +364,8 @@ def plot_error_vs_resolution(phi, folder, samples=5, step=1, max_cycles=10, reps
 
     plot.legend(fontsize=12)
 
-    plot.save(filename="sim_error_vs_resolution-samples-{}-reps{}".format(samples, reps))
+    filename = "sim_error_vs_resolution-step-{}-samples-{}-reps{}.png".format(step, samples, reps)
+    plot.save(filename=filename)
 
     if show:
         plot.show()
@@ -507,7 +508,7 @@ def main(sim, reps=1, samples=1, show=False):
 
     if sim in ['all', 'error_vs_res']:
         plot_error_vs_resolution(
-            PHI, output_folder, samples, max_cycles=8, step=0.001, reps=reps, show=show)
+            PHI, output_folder, samples, max_cycles=5, step=0.01, reps=reps, show=show)
 
     if sim in ['all', 'error_vs_range']:
         plot_error_vs_range(PHI, output_folder, samples, step=0.1, cycles=2, reps=reps, show=show)
