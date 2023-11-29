@@ -328,7 +328,7 @@ def plot_error_vs_resolution(phi, folder, samples=5, step=1, max_cycles=10, reps
 
     cycles_list = np.arange(1, max_cycles + 1, step=1)
 
-    title = "samples={}".format(samples)
+    title = "samples={}, reps={}".format(samples, reps)
 
     plot = Plot(
         ylabel=ct.LABEL_PHI_ERR, xlabel=ct.LABEL_N_CYCLES, title=title, ysci=True, xint=True,
@@ -344,13 +344,13 @@ def plot_error_vs_resolution(phi, folder, samples=5, step=1, max_cycles=10, reps
 
         errors = []
         for cycles in cycles_list:
-            n_errors = n_simulations(
+            n_results = n_simulations(
                 A=amplitude, bits=bits, max_v=maxv, n=reps, method='fit', cycles=cycles, fc=fc,
                 phi=phi, fa=samples, a0_noise=A0_NOISE, a1_noise=A1_NOISE, all_positive=True
             )
 
             # RMSE
-            error_rad = np.sqrt(sum([abs(phi - e) ** 2 for e in n_errors]) / reps)
+            error_rad = np.sqrt(sum([abs(phi - res.value) ** 2 for res in n_results]) / reps)
             error_degrees = np.rad2deg(error_rad)
             error_degrees_sci = "{:.2E}".format(error_degrees)
 
@@ -364,7 +364,7 @@ def plot_error_vs_resolution(phi, folder, samples=5, step=1, max_cycles=10, reps
 
     plot.legend(fontsize=12)
 
-    plot.save(filename="sim_error_vs_resolution-samples-{}".format(samples))
+    plot.save(filename="sim_error_vs_resolution-samples-{}-reps{}".format(samples, reps))
 
     if show:
         plot.show()
@@ -507,7 +507,7 @@ def main(sim, reps=1, samples=1, show=False):
 
     if sim in ['all', 'error_vs_res']:
         plot_error_vs_resolution(
-            PHI, output_folder, samples, max_cycles=8, step=0.01, reps=reps, show=show)
+            PHI, output_folder, samples, max_cycles=8, step=0.001, reps=reps, show=show)
 
     if sim in ['all', 'error_vs_range']:
         plot_error_vs_range(PHI, output_folder, samples, step=0.1, cycles=2, reps=reps, show=show)
