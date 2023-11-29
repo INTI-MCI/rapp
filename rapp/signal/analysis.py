@@ -100,7 +100,7 @@ def plot_noise_with_laser_off(output_folder, show=False):
     data = np.loadtxt(filepath, delimiter=' ', skiprows=1, usecols=(1, 2), encoding=ct.ENCONDIG)
 
     logger.info("Plotting raw data...")
-    f, axs = plt.subplots(1, 2, figsize=(8, 4), sharey=True)
+    f, axs = plt.subplots(1, 2, figsize=(9, 4), sharey=True)
     for i, ax in enumerate(axs):
         channel_data = data[:, i]
 
