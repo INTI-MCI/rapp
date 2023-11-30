@@ -32,6 +32,18 @@ def detrend_poly(data, func):
     return data - func(np.arange(data.size), *popt)
 
 
+def bins_from_quantization(data):
+    # We create the list of bins, knowing we have dicretization.
+    d = np.diff(np.unique(data)).min()
+    logger.info("Discretization step: {}".format(d))
+
+    left_of_first_bin = data.min() - float(d) / 2
+    right_of_last_bin = data.max() + float(d) / 2
+    bins = np.arange(left_of_first_bin, right_of_last_bin + d, d)
+
+    return bins
+
+
 def plot_histogram_and_pdf(data,  bins='quantized', prefix='', show=False):
     """Plots a histogram and PDF for 2-channel data."""
     f, axs = plt.subplots(1, 2, figsize=(9, 4), sharey=False)
@@ -57,13 +69,7 @@ def plot_histogram_and_pdf(data,  bins='quantized', prefix='', show=False):
 
         channel_bins = bins
         if channel_bins == 'quantized':
-            # We create the list of bins, knowing we have dicretization.
-            d = np.diff(np.unique(channel_data)).min()
-            left_of_first_bin = channel_data.min() - float(d) / 2
-            right_of_last_bin = channel_data.max() + float(d) / 2
-            channel_bins = np.arange(left_of_first_bin, right_of_last_bin + d, d)
-
-            logger.info("Discretization step: {}".format(d))
+            channel_bins = bins_from_quantization(channel_bins)
 
         counts, edges = np.histogram(channel_data, bins=channel_bins, density=True)
 
@@ -81,6 +87,50 @@ def plot_histogram_and_pdf(data,  bins='quantized', prefix='', show=False):
         ax.xaxis.set_major_locator(plt.MaxNLocator(3))
 
     f.savefig("{}-histogram".format(prefix))
+
+
+def plot_poisson_noise_histogram(outout_folder, show=False):
+    print("")
+    logger.info("PROCESSING SIGNAL WITH LASER OFF (dark current)...")
+
+    filename = 'dark-current.txt'
+
+    filepath = os.path.join(ct.INPUT_DIR, filename)
+
+    # base_output_fname = "{}".format(os.path.join(output_folder, filename[:-4]))
+
+    data = np.loadtxt(filepath, delimiter=' ', skiprows=1, usecols=(1, 2), encoding=ct.ENCONDIG)
+
+    logger.info("Plotting raw data...")
+    f, axs = plt.subplots(1, 2, figsize=(9, 4), sharey=False)
+    for i, ax in enumerate(axs):
+        channel_data = data[:, i]
+
+        # channel_data = (channel_data * 1000000).astype(int)
+        # channel_data = channel_data + abs(min(channel_data)) + 100
+
+        channel_bins = bins_from_quantization(channel_data)
+        counts, edges = np.histogram(channel_data, bins=channel_bins, density=True)
+
+        mu = np.mean(channel_data)
+        sigma = np.std(channel_data)
+
+        print("(µ, σ) = ({}, {})".format(mu, sigma))
+
+        pdf_x = np.arange(min(channel_data), max(channel_data), step=0.00001)
+
+        # pdf_x = np.arange(int(min(channel_bins)), int(max(channel_bins)))
+        # pdf_y = stats.poisson.pmf(pdf_x, mu)
+
+        pdf_y = stats.norm.pdf(pdf_x, mu, sigma)
+
+        ax.bar(edges[:-1], counts, width=np.diff(edges), color='k', alpha=0.2, edgecolor='k')
+        ax.plot(pdf_x, pdf_y, lw=2)
+
+    if show:
+        plt.show()
+
+    plt.close()
 
 
 def plot_noise_with_laser_off(output_folder, show=False):
@@ -494,11 +544,12 @@ def main(show):
     output_folder = os.path.join(ct.WORK_DIR, ct.OUTPUT_FOLDER_PLOTS)
     create_folder(output_folder)
 
-    plot_noise_with_laser_off(output_folder, show=show)
-    plot_noise_with_laser_on(output_folder, show=show)
-    plot_drift(output_folder, show=show)
-    plot_signals_per_n_measurement(output_folder, show=show)
-    plot_signals_per_angle(output_folder, show=show)
+    plot_poisson_noise_histogram(output_folder, show=show)
+    # plot_noise_with_laser_off(output_folder, show=show)
+    # plot_noise_with_laser_on(output_folder, show=show)
+    # plot_drift(output_folder, show=show)
+    # plot_signals_per_n_measurement(output_folder, show=show)
+    # plot_signals_per_angle(output_folder, show=show)
 
 
 if __name__ == '__main__':
