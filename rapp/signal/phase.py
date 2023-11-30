@@ -4,8 +4,6 @@ import numpy as np
 
 from scipy.optimize import curve_fit
 
-from rapp.utils import round_to_n
-
 
 PHASE_DIFFERENCE_METHODS = ['cossim', 'fit']
 
@@ -55,7 +53,7 @@ def phase_difference(
         phi2 = popt2[1]
 
         phi1_error = errors1[1]
-        phi2_error = errors2[2]
+        phi2_error = errors2[1]
 
         phase_diff = abs(abs(phi1) - abs(phi2))
         phase_diff_u = np.sqrt(phi1_error**2 + phi2_error**2)
