@@ -336,7 +336,7 @@ def plot_drift(output_folder, show=False):
     # plt.show()
 
 
-def plot_phase_difference(filepath, show=False):
+def plot_phase_difference(filepath, method, show=False):
     logger.info("Calculating phase difference for {}...".format(filepath))
 
     # TODO: maybe we can write these parameters in the header of the file,
@@ -363,19 +363,22 @@ def plot_phase_difference(filepath, show=False):
     s1err = s1_sigma / np.sqrt(int(samples))
     s2err = s2_sigma / np.sqrt(int(samples))
 
-    res = phase_difference(xs * 2, s1, s2, s1_sigma=s1_sigma, s2_sigma=s2_sigma, method='fit')
+    x_sigma = ct.ANALYZER_MIN_STEP / (2 * np.sqrt(3))
+
+    res = phase_difference(
+        xs * 2, s1, s2, x_sigma=x_sigma, s1_sigma=s1_sigma, s2_sigma=s2_sigma, method=method)
 
     error_deg = np.rad2deg(res.u)
     error_deg_rounded = round_to_n(error_deg, 2)
 
-    # Obtain number of decimal places of the error:
+    # Obtain number of decimal places of the u:
     d = abs(decimal.Decimal(str(error_deg_rounded)).as_tuple().exponent)
 
     phase_diff_deg = np.rad2deg(res.value)
     phase_diff_deg_rounded = round(phase_diff_deg, d)
 
-    title = "cycles={}, step={}, samples={}.".format(cycles, step, samples)
     phi_label = "φ=({} ± {})°.".format(phase_diff_deg_rounded, error_deg_rounded)
+    title = "{}\ncycles={}, step={}, samples={}.".format(phi_label, cycles, step, samples)
 
     logger.info(
         "Detected phase difference: {}"
@@ -392,14 +395,13 @@ def plot_phase_difference(filepath, show=False):
     plot.add_data(xs, s1, yerr=s1err, ms=6, color='k', mew=0.5, xrad=True, markevery=5, alpha=0.8)
     plot.add_data(xs, s2, yerr=s2err, ms=6, color='k', mew=0.5, xrad=True, markevery=5, alpha=0.8)
 
-    fitx = res.fitx / 2
-
     if res.fitx is not None:
-        plot.add_data(fitx, res.fits1, style='-', color='k', lw=1.5, xrad=True, label=phi_label)
+        fitx = res.fitx / 2
+        plot.add_data(fitx, res.fits1, style='-', color='k', lw=1.5, xrad=True)
         plot.add_data(fitx, res.fits2, style='-', color='k', lw=1.5, xrad=True)
 
-    # plot._ax.set_xlim(0, 1)
-    plot.legend(loc='upper right')
+    # plt.legend(loc='upper right', fancybox=True)
+
     plot._ax.xaxis.set_major_locator(plt.MaxNLocator(5))
 
     plot.save(filename="{}.png".format(os.path.basename(filepath)[:-4]))

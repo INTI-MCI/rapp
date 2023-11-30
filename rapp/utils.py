@@ -15,6 +15,9 @@ def create_folder(folder, overwrite=False):
 
 def round_to_n(number, n):
     """Rounds to n significant digits."""
+    if number == 0:
+        return number
+
     return round(number, n - int(math.floor(math.log10(abs(number)))) - 1)
 
 

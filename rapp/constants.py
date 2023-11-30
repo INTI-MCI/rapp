@@ -17,3 +17,5 @@ LABEL_VOLTAGE = "Tensión [V]"
 LABEL_MAX_V = "Tensión máxima [V]"
 
 ENCONDIG = 'iso-8859-1'
+
+ANALYZER_MIN_STEP = 0.001
