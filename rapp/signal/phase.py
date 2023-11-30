@@ -60,9 +60,9 @@ def phase_difference(
         phase_diff = abs(abs(phi1) - abs(phi2))
         phase_diff_u = np.sqrt(phi1_error**2 + phi2_error**2)
 
-        logger.debug("φ1 = {}".format(round_to_n(phi1, 3)))
-        logger.debug("φ2 = {}".format(round_to_n(phi2, 3)))
-        logger.debug("|φ1 - φ2| = {}".format(round_to_n(phase_diff, 3)))
+        logger.debug("φ1 = {}".format(phi1))
+        logger.debug("φ2 = {}".format(phi2))
+        logger.debug("|φ1 - φ2| = {}".format(phase_diff))
 
         fitx = np.arange(min(xs), max(xs), step=0.01)
 
