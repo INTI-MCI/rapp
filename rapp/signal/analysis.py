@@ -365,7 +365,7 @@ def plot_phase_difference(filepath, show=False):
 
     res = phase_difference(xs * 2, s1, s2, s1_sigma=s1_sigma, s2_sigma=s2_sigma, method='fit')
 
-    error_deg = np.rad2deg(res.error)
+    error_deg = np.rad2deg(res.u)
     error_deg_rounded = round_to_n(error_deg, 2)
 
     # Obtain number of decimal places of the error:
@@ -399,7 +399,7 @@ def plot_phase_difference(filepath, show=False):
         plot.add_data(fitx, res.fits2, style='-', color='k', lw=1.5, xrad=True)
 
     # plot._ax.set_xlim(0, 1)
-    # plot.legend(loc='upper right')
+    plot.legend(loc='upper right')
     plot._ax.xaxis.set_major_locator(plt.MaxNLocator(5))
 
     plot.save(filename="{}.png".format(os.path.basename(filepath)[:-4]))
