@@ -3,15 +3,21 @@ import logging
 import numpy as np
 
 from scipy.optimize import curve_fit
+from scipy.odr import ODR, Model, RealData
 
 
-PHASE_DIFFERENCE_METHODS = ['cossim', 'fit']
+PHASE_DIFFERENCE_METHODS = ['cossim', 'curve_fit', 'odr']
 
 
 logger = logging.getLogger(__name__)
 
 
 def sine(x, a, phi, c):
+    return a * np.sin(x + phi) + c
+
+
+def sine_model(P, x):
+    a, phi, c = P
     return a * np.sin(x + phi) + c
 
 
@@ -30,8 +36,33 @@ def cosine_similarity(s1, s2):
     return np.arccos(np.dot(s1, s2) / (np.linalg.norm(s1) * np.linalg.norm(s2)))
 
 
+def sine_fit(xs, ys, p0=None, x_sigma=None, y_sigma=None, method='curve_fit'):
+    fitx = np.arange(min(xs), max(xs), step=0.01)
+
+    if method == 'curve_fit':
+        popt, pcov = curve_fit(sine, xs, ys, p0=p0, sigma=y_sigma, absolute_sigma=True)
+
+        us = np.sqrt(np.diag(pcov))
+        fity = sine(fitx, *popt)
+
+        return popt, us, fitx, fity
+
+    if method == 'odr':
+        data = RealData(xs, ys, sx=x_sigma, sy=y_sigma)
+        odr = ODR(data, Model(sine_model),  beta0=p0 or [1, 0, 0])
+        odr.set_job(fit_type=2)
+        output = odr.run()
+
+        # cov_beta is the cov. matrix NOT scaled by the residual variance (whereas sd_beta is).
+        # So cov_beta is equivalent to absolute_sigma=True.
+        us = np.sqrt(np.diag(output.cov_beta))
+        fity = sine_model(output.beta, fitx)
+
+        return output.beta, us, fitx, fity
+
+
 def phase_difference(
-    xs, s1, s2, s1_sigma=None, s2_sigma=None, method='cossim'
+    xs, s1, s2, x_sigma=None, s1_sigma=None, s2_sigma=None, method='curve_fit'
 ) -> PhaseDifferenceResult:
     """Computes phase difference between two harmonic signals (xs, s1) and (xs, s2)."""
 
@@ -40,31 +71,27 @@ def phase_difference(
 
     if method == 'cossim':
         phase_diff = cosine_similarity(s1, s2)
-        return PhaseDifferenceResult(phase_diff)
+        return PhaseDifferenceResult(phase_diff, uncertainty=0)
 
-    if method == 'fit':
-        popt1, pcov1 = curve_fit(sine, xs, s1, sigma=s1_sigma, absolute_sigma=s1_sigma is not None)
-        popt2, pcov2 = curve_fit(sine, xs, s2, sigma=s2_sigma, absolute_sigma=s2_sigma is not None)
+    if method in ['curve_fit', 'odr']:
 
-        errors1 = np.sqrt(np.diag(pcov1))
-        errors2 = np.sqrt(np.diag(pcov2))
+        p1, p1_u, fitx1, fity1 = sine_fit(
+            xs, s1, x_sigma=x_sigma, y_sigma=s1_sigma, method=method)
 
-        phi1 = popt1[1]
-        phi2 = popt2[1]
+        p2, p2_u, fitx2, fity2 = sine_fit(
+            xs, s2, x_sigma=x_sigma, y_sigma=s2_sigma, method=method)
 
-        phi1_error = errors1[1]
-        phi2_error = errors2[1]
+        phi1 = p1[1]
+        phi1_u = p1_u[1]
+
+        phi2 = p2[1]
+        phi2_u = p2_u[1]
 
         phase_diff = abs(abs(phi1) - abs(phi2))
-        phase_diff_u = np.sqrt(phi1_error**2 + phi2_error**2)
+        phase_diff_u = np.sqrt(phi1_u**2 + phi2_u**2)
 
         logger.debug("φ1 = {}".format(phi1))
         logger.debug("φ2 = {}".format(phi2))
         logger.debug("|φ1 - φ2| = {}".format(phase_diff))
 
-        fitx = np.arange(min(xs), max(xs), step=0.01)
-
-        fity1 = sine(fitx, *popt1)
-        fity2 = sine(fitx, *popt2)
-
-        return PhaseDifferenceResult(phase_diff, phase_diff_u, fitx, fity1, fity2)
+        return PhaseDifferenceResult(phase_diff, phase_diff_u, fitx1, fity1, fity2)
