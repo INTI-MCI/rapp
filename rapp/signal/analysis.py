@@ -52,7 +52,7 @@ def plot_histogram_and_pdf(data,  bins='quantized', prefix='', show=False):
             "CH{} noise (mu, sigma) = ({}, {})"
             .format(i, mu_rounded, sigma_rounded))
 
-        pdf_x = np.linspace(min(channel_data), max(channel_data), 100)
+        pdf_x = np.arange(min(channel_data), max(channel_data), 0.00001)
         pdf_y = stats.norm.pdf(pdf_x, mu, sigma)
 
         channel_bins = bins
@@ -65,11 +65,9 @@ def plot_histogram_and_pdf(data,  bins='quantized', prefix='', show=False):
 
             logger.info("Discretization step: {}".format(d))
 
-        counts, edges = np.histogram(channel_data, bins=channel_bins, density=False)
-        # Normalize histogram according to PDF.
-        counts = (counts / np.max(counts)) * np.max(pdf_y)
+        counts, edges = np.histogram(channel_data, bins=channel_bins, density=True)
 
-        ax.bar(edges[:-1], counts, width=np.diff(edges), color='k', alpha=0.4, edgecolor='k')
+        ax.bar(edges[:-1], counts, width=np.diff(edges), color='k', alpha=0.2, edgecolor='k')
         ax.ticklabel_format(style='sci', scilimits=(0, 0), axis='y')
 
         fit_label = "µ = {}.\nσ = {}.".format(mu_rounded, sigma_rounded)
@@ -77,7 +75,7 @@ def plot_histogram_and_pdf(data,  bins='quantized', prefix='', show=False):
         ax.set_xlabel(ct.LABEL_VOLTAGE)
         ax.set_title("Canal {}".format(i))
 
-        ax.plot(pdf_x, pdf_y, 'k', linewidth=2, label=fit_label)
+        ax.plot(pdf_x, pdf_y, 'k', lw=2, label=fit_label)
         ax.legend(loc='upper right', fontsize=10)
 
         ax.xaxis.set_major_locator(plt.MaxNLocator(3))
@@ -106,7 +104,7 @@ def plot_noise_with_laser_off(output_folder, show=False):
 
         # res = stats.normaltest(channel_data)
         res = stats.shapiro(channel_data)
-        logger.info("p-value: {}".format(res.pvalue))
+        logger.info("Gaussian Test. p-value: {}".format(res.pvalue))
 
         ax.set_ylabel(ct.LABEL_VOLTAGE)
         ax.set_xlabel(ct.LABEL_N_SAMPLE)
@@ -119,8 +117,10 @@ def plot_noise_with_laser_off(output_folder, show=False):
 
     f.savefig("{}-signal".format(base_output_fname))
 
-    if show:
-        plt.show()
+    # if show:
+    #    plt.show()
+
+    plt.close()
 
     filtered = []
 
@@ -147,7 +147,7 @@ def plot_noise_with_laser_off(output_folder, show=False):
         filtered_channel = np.fft.ifft(fft).real
 
         res = stats.shapiro(filtered_channel)
-        logger.info("p-value: {}".format(res.pvalue))
+        logger.info("Gaussian Test. p-value: {}".format(res.pvalue))
 
         filtered.append(filtered_channel)
 
@@ -160,13 +160,14 @@ def plot_noise_with_laser_off(output_folder, show=False):
 
     f.tight_layout()
     f.savefig("{}-fft".format(base_output_fname))
-    if show:
-        plt.show()
+
+    # if show:
+    #    plt.show()
 
     plt.close()
 
     data = np.array(filtered).T
-    plot_histogram_and_pdf(data, bins=25, prefix=base_output_fname, show=show)
+    plot_histogram_and_pdf(data, bins='auto', prefix=base_output_fname, show=show)
 
     if show:
         plt.show()
@@ -189,6 +190,10 @@ def plot_noise_with_laser_on(output_folder, show=False):
     # PLOT THE RAW DATA AND POLYNOMIAL FIT FOR THE DRIFT
     for i, ax in enumerate(axs):
         channel_data = data[:, i]
+
+        res = stats.shapiro(channel_data)
+        logger.info("Gaussian Test. p-value: {}".format(res.pvalue))
+
         xs = np.arange(channel_data.size)
         popt, pcov = curve_fit(poly_2, xs, channel_data)
 
@@ -210,8 +215,11 @@ def plot_noise_with_laser_on(output_folder, show=False):
 
     f.savefig("{}-signal-and-fit".format(base_output_fname))
 
+    plt.close()
+
     plot = Plot(ylabel=ct.LABEL_VOLTAGE, xlabel=ct.LABEL_N_SAMPLE, folder=output_folder)
 
+    logger.info("Filtering laser drift...")
     filtered = []
     for i in CHANNELS:
         data_detrend = detrend_poly(data[:, i], poly_2)
@@ -224,20 +232,18 @@ def plot_noise_with_laser_on(output_folder, show=False):
 
         filtered.append(filtered_noise)
 
-        mu = np.mean(filtered_noise)
-        std = np.std(filtered_noise)
-
-        logger.info('µ ch0 = {}'.format(round_to_n(mu, 2)))
-        logger.info('σ ch0 = {}'.format(round_to_n(std, 2)))
+        res = stats.shapiro(filtered_noise)
+        logger.info("Gaussian Test. p-value: {}".format(res.pvalue))
 
         plot.add_data(filtered_noise, style='-', label='Canal {}'.format(i))
         plot.legend()
 
     plot.save("{}-filtered-noise".format(filename[:-4]))
+    plot.close()
 
     filtered = np.array(filtered).T
 
-    plot_histogram_and_pdf(filtered, bins=30, prefix=base_output_fname, show=show)
+    plot_histogram_and_pdf(filtered, bins='auto', prefix=base_output_fname, show=show)
 
     if show:
         plt.show()
@@ -488,7 +494,7 @@ def main(show):
 
     plot_noise_with_laser_off(output_folder, show=show)
     plot_noise_with_laser_on(output_folder, show=show)
-    # plot_drift(output_folder, show=show)
+    plot_drift(output_folder, show=show)
     plot_signals_per_n_measurement(output_folder, show=show)
     plot_signals_per_angle(output_folder, show=show)
 
