@@ -20,6 +20,7 @@ HELP_PREFIX = 'prefix for the filename in which to write results (default: %(def
 HELP_TEST = 'run on test mode. No real connections will be established (default: %(default)s).'
 HELP_PLOT = 'plot the results when the measurement is finished (default: %(default)s).'
 HELP_VERBOSE = 'whether to run with DEBUG log level (default: %(default)s).'
+HELP_METHOD = 'phase difference calculation method (default: %(default)s).'
 
 HELP_SIM_REPS = 'number of repetitions in each simulated iteration (default: %(default)s).'
 
@@ -66,6 +67,7 @@ def add_sim_subparser(subparsers):
 def add_phase_diff_subparser(subparsers):
     p = subparsers.add_parser("phase_diff", help=HELP_PHASE_DIFF, epilog=EPILOG_PHASE_DIFF)
     p.add_argument('filepath', type=str, help=HELP_FILEPATH)
+    p.add_argument('--method', type=str, default='odr', help=HELP_METHOD)
     p.add_argument('--show', action='store_true', help=HELP_SHOW)
     p.add_argument('-v', '--verbose', action='store_true', help=HELP_VERBOSE)
 
@@ -95,7 +97,7 @@ def main():
     try:
         if args.command == 'phase_diff':
             setup_logger(args.verbose)
-            analysis.plot_phase_difference(args.filepath, show=args.show)
+            analysis.plot_phase_difference(args.filepath, method=args.method, show=args.show)
 
         if args.command == 'analysis':
             setup_logger(args.verbose)
