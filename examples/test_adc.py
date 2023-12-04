@@ -4,8 +4,8 @@ from rapp.utils import timing
 from rapp.adc import ADC
 
 
-# ADC_DEVICE = 'COM4'
-ADC_DEVICE = '/dev/ttyACM0'
+ADC_DEVICE = 'COM4'
+# ADC_DEVICE = '/dev/ttyACM0'
 
 ADC_BAUDRATE = 57600
 ADC_TIMEOUT = 0.1
