@@ -1,4 +1,7 @@
+import logging
 import serial
+
+logger = logging.getLogger(__name__)
 
 
 class ESP:
@@ -9,6 +12,10 @@ class ESP:
             self.inuse = [axis]
 
         self.defaxis = axis
+
+        logger.debug("Turning motor ON...")
+        self.motor_on()
+
         if (reset):
             for n in self.inuse:
                 self.reset(n)
@@ -20,6 +27,33 @@ class ESP:
                     r = self.check_errors()
                     if (r != 0):
                         print("Error while setting up controller, error # %d" % r)
+
+    def motor_on(self, axis=None):
+        a = self.defaxis
+        if (axis and axis > 0):
+            a = axis
+
+        self.dev.write("{0}MO; {0}MO?\r".format(a).encode())
+
+        res = float(self.dev.readline())
+        return res == 1
+
+    def motor_off(self, axis=False):
+        self.dev.write("{0}MF; {0}MF?\r".format(axis).encode())
+
+        res = float(self.dev.readline())
+        return res == 1
+
+    def hardware_reset(self):
+        self.dev.write("RS\r".encode())
+
+    # units: 0:encoder count, 1:motor step, 7:deg, 9:rad, 10:mrad, 11:murad, ?:report current setts
+    def set_units(self, axis, unit):
+        self.dev.write("{0}SN{1}\r".format(axis, unit).encode())
+
+    # resolution es la cantidad de decimales en las user units
+    def display_res(self, axis, resolution):
+        self.dev.write("{0}FP{1}\r".format(axis, resolution).encode())
 
     def reset(self, axis):
         self.dev.write("{0}OR;{0}WS0\r".format(axis).encode())
