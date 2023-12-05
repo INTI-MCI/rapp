@@ -24,7 +24,12 @@ class ADCMock:
     serial_mock = SerialMock()
 
     def acquire(self, samples, **kwargs):
-        return [(self.serial_mock.readline(), self.serial_mock.readline()) for _ in range(samples)]
+        return [(
+            int(self.serial_mock.readline()) * 0.125/1000,
+            int(self.serial_mock.readline()) * 0.125/1000
+        )
+            for _ in range(samples)
+        ]
 
     def close(self):
         pass
