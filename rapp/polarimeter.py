@@ -4,6 +4,9 @@ import logging
 
 from datetime import datetime
 
+import numpy as np
+
+
 from rapp import constants as ct
 
 from rapp.esp import ESP
@@ -12,6 +15,7 @@ from rapp.utils import frange
 from rapp.mocks import ADCMock, ESPMock
 from rapp.signal.analysis import plot_two_signals
 
+np.set_printoptions(threshold=0, edgeitems=5)  # truncate arrays when printing
 logger = logging.getLogger(__name__)
 
 
@@ -23,6 +27,8 @@ ADC_WAIT = 2
 ANALYZER_DEVICE = "COM3"
 ANALYZER_BAUDRATE = 921600
 ANALYZER_AXIS = 1
+
+MAX_CHUNK_SIZE = 500
 
 FILENAME_FORMAT = "{prefix}-cycles{cycles}-step{step}-samples{samples}.txt"
 
@@ -38,7 +44,7 @@ def create_file(filename):
     return file
 
 
-def create_or_open_file(filename, overwrite):
+def open_file(filename, overwrite=False):
     if not os.path.exists(filename) or overwrite:
         file = create_file(filename)
     else:
@@ -58,6 +64,12 @@ def ask_for_overwrite(filename):
     return overwrite
 
 
+def get_chunks(lst, n):
+    """Yield successive n-sized chunks from lst."""
+    for i in range(0, len(lst), n):
+        yield lst[i:i + n]
+
+
 def main(
     cycles=1, step=10, samples=10, delay_position=1, analyzer_velocity=2, prefix='test',
     test=False, plot=False
@@ -68,7 +80,7 @@ def main(
     filename = FILENAME_FORMAT.format(prefix=prefix, cycles=cycles, step=step, samples=samples)
     filepath = os.path.join(output_dir, filename)
     overwrite = ask_for_overwrite(filepath)
-    file = create_or_open_file(filepath, overwrite)
+    file = open_file(filepath, overwrite)
 
     if test:
         # If this happens, we don't use real connections. We use mock objects to test the code.
@@ -80,30 +92,47 @@ def main(
         adc = ADC(ADC_DEVICE, b=ADC_BAUDRATE, timeout=ADC_TIMEOUT, wait=ADC_WAIT)
 
         logger.info("Connecting to ESP...")
-        analyzer = ESP(ANALYZER_DEVICE, b=ANALYZER_BAUDRATE, axis=ANALYZER_AXIS, reset=True)
+        analyzer = ESP(ANALYZER_DEVICE, b=ANALYZER_BAUDRATE, axis=ANALYZER_AXIS)
 
     logger.info("Setting analyzer velocity to {} deg/s.".format(analyzer_velocity))
     analyzer.setvel(vel=analyzer_velocity)
+
+    logger.info("Setting analyzer home velocity to {} deg/s.".format(analyzer_velocity))
     analyzer.sethomevel(vel=analyzer_velocity)
 
-    angles = [i for i in frange(0, 360 * cycles, step)]
-    logger.debug("Angles to measure: {}".format(angles))
+    logger.info("Samples to measure in each angle: {}.".format(samples))
+    logger.info("Maximum chunk size configured: {}.".format(MAX_CHUNK_SIZE))
 
+    chunks = get_chunks(range(samples), MAX_CHUNK_SIZE)
+    chunks_sizes = [len(x) for x in chunks]
+    logger.info("Samples chunks sizes: {}".format(chunks_sizes))
+
+    init_position = analyzer.getpos()
+
+    if cycles == 0:
+        angles = [init_position]
+    else:
+        angles = np.array([i for i in frange(init_position, init_position + 360 * cycles, step)])
+
+    logger.info("Angles to process: {}.".format(angles))
     for angle in angles:
-        analyzer.setpos(angle)      # TODO: Try to set exact position desired instead of x.001.
-        time.sleep(delay_position)  # wait for position to stabilize
-        adc.flush_input()            # Clear buffer. Otherwise messes up values at the beginning.
+        logger.debug("Changing analyzer position...")
+        analyzer.setpos(angle)
 
-        logger.info("Angle: {}".format(analyzer.getpos()))
+        logger.debug("Waiting {}s after changing position...".format(delay_position))
+        time.sleep(delay_position)
 
-        data = adc.acquire(samples, in_bytes=True)
+        logger.info("Measuring angle {}°".format(angle))
+        for chunk_size in chunks_sizes:
+            adc.flush_input()  # Clear buffer. Otherwise messes up values at the beginning.
+            data = adc.acquire(chunk_size, in_bytes=True)
 
-        for a0, a1 in data:
-            logger.debug("(A0, A1) = ({}, {})".format(a0, a1))
-            datetime_ = datetime.now().isoformat()
-            row = FILE_ROW.format(angle=angle, a0=a0, a1=a1, datetime=datetime_, d=FILE_DELIMITER)
-            file.write(row)
-            file.write('\n')
+            for a0, a1 in data:
+                logger.debug("(A0, A1) = ({}, {})".format(a0, a1))
+                dt = datetime.now().isoformat()
+                row = FILE_ROW.format(angle=angle, a0=a0, a1=a1, datetime=dt, d=FILE_DELIMITER)
+                file.write(row)
+                file.write('\n')
 
     file.close()
     adc.close()

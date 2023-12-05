@@ -344,7 +344,7 @@ def plot_phase_difference(filepath, method, show=False):
     cycles, step, samples = re. findall(r'\d+(?:\.\d+)?', filepath)
 
     cols = (0, 1, 2)
-    data = pd.read_csv(filepath, delimiter=' ', header=0, usecols=cols, encoding=ct.ENCONDIG)
+    data = pd.read_csv(filepath, delimiter='\t', header=0, usecols=cols, encoding=ct.ENCONDIG)
     data = data.groupby(['ANGLE'], as_index=False).agg({
         'A0': ['mean', 'std'],
         'A1': ['mean', 'std']

@@ -5,7 +5,7 @@ logger = logging.getLogger(__name__)
 
 
 class ESP:
-    def __init__(self, dev="/dev/ttyUSB0", b=19200, axis=1, reset=True, initpos=0.0, useaxis=[]):
+    def __init__(self, dev="/dev/ttyUSB0", b=19200, axis=1, reset=False, initpos=0.0, useaxis=[]):
         self.dev = serial.Serial(dev, b)
         self.inuse = useaxis
         if (len(self.inuse) == 0):
@@ -16,7 +16,7 @@ class ESP:
         logger.debug("Turning motor ON...")
         self.motor_on()
 
-        if (reset):
+        if reset:
             for n in self.inuse:
                 self.reset(n)
                 r = self.check_errors()
@@ -101,7 +101,7 @@ class ESP:
         self.dev.write("{0}TP\r".format(a).encode())
         return float(self.dev.readline())
 
-    def setpos(self, pos, ws=0, axis=None, relative=True):
+    def setpos(self, pos, ws=0, axis=None, relative=False):
         a = self.defaxis
         if (axis and axis > 0):
             a = axis

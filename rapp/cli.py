@@ -45,7 +45,7 @@ EPILOG_PHASE_DIFF = "Example: {}".format(EXAMPLE_PHASE_DIFF)
 def add_polarimeter_subparser(subparsers):
     p = subparsers.add_parser("polarimeter", help=HELP_POLARIMETER, epilog=EPILOG_POLARIMETER)
     p.add_argument('--cycles', type=int, required=True, help=HELP_CYCLES)
-    p.add_argument('--step', type=float, required=True, help=HELP_STEP)
+    p.add_argument('--step', type=float, default=10, help=HELP_STEP)
     p.add_argument('--samples', type=int, required=True, help=HELP_SAMPLES)
     p.add_argument('--delay_position', type=float, default=1, metavar='', help=HELP_DELAY_POSITION)
     p.add_argument('--analyzer_velocity', type=float, default=4, metavar='', help=HELP_ANALYZER_V)
