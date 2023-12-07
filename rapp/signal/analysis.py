@@ -184,9 +184,14 @@ def plot_noise_with_laser_on(output_folder, show=False):
     print("")
     logger.info("ANALYZING NOISE WITH LASER ON...")
 
-    filename = 'laser-75-int-alta.txt'
+    filename = '2023-12-07-HeNe-noise-cycles0-step10-samples100000.txt'
     filepath = os.path.join(ct.INPUT_DIR, filename)
-    data = np.loadtxt(filepath, delimiter=' ', skiprows=1, usecols=(1, 2), encoding=ct.ENCONDIG)
+
+    data = pd.read_csv(
+        filepath,
+        sep=r"\s+", skip_blank_lines=True, comment='#', header=0, usecols=(0, 1, 2),
+        encoding=ct.ENCONDIG
+    )
 
     base_output_fname = "{}".format(os.path.join(output_folder, filename[:-4]))
 
@@ -194,7 +199,7 @@ def plot_noise_with_laser_on(output_folder, show=False):
 
     # PLOT THE RAW DATA AND POLYNOMIAL FIT FOR THE DRIFT
     for i, ax in enumerate(axs):
-        channel_data = data[:, i]
+        channel_data = data['CH{}'.format(i)]
 
         res = stats.shapiro(channel_data)
         logger.info("Gaussian Test. p-value: {}".format(res.pvalue))
@@ -398,8 +403,8 @@ def plot_phase_difference(filepath, method, show=False):
 
     plot = Plot(ylabel=ct.LABEL_VOLTAGE, xlabel=ct.LABEL_ANGLE, title=title, folder=output_folder)
 
-    plot.add_data(xs, s1, yerr=s1err, ms=6, color='k', mew=0.5, xrad=True, markevery=5, alpha=0.8)
-    plot.add_data(xs, s2, yerr=s2err, ms=6, color='k', mew=0.5, xrad=True, markevery=5, alpha=0.8)
+    plot.add_data(xs, s1, yerr=s1err, ms=6, color='k', mew=0.5, xrad=True, markevery=1, alpha=0.8)
+    plot.add_data(xs, s2, yerr=s2err, ms=6, color='k', mew=0.5, xrad=True, markevery=1, alpha=0.8)
 
     if res.fitx is not None:
         fitx = res.fitx / 2
@@ -500,11 +505,11 @@ def main(show):
     output_folder = os.path.join(ct.WORK_DIR, ct.OUTPUT_FOLDER_PLOTS)
     create_folder(output_folder)
 
-    plot_noise_with_laser_off(output_folder, show=show)
+    # plot_noise_with_laser_off(output_folder, show=show)
     plot_noise_with_laser_on(output_folder, show=show)
-    plot_drift(output_folder, show=show)
-    plot_signals_per_n_measurement(output_folder, show=show)
-    plot_signals_per_angle(output_folder, show=show)
+    # plot_drift(output_folder, show=show)
+    # plot_signals_per_n_measurement(output_folder, show=show)
+    # plot_signals_per_angle(output_folder, show=show)
 
 
 if __name__ == '__main__':

@@ -1,11 +1,22 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import pandas as pd
+import rapp.constants as ct
 
-filepath = 'workdir/output-data/HeNe-cycles0-step0.0-samples100000.txt'
-cols = (0, 1, 2)
-data = np.loadtxt(filepath, delimiter='\t', skiprows=1, usecols=cols, encoding='utf-8')
-data = data[:, 2]
-xs = np.arange(1, data.size + 1, step=1)
+filepath = 'workdir/output-data/2023-12-07-HeNe-noise-cycles0-step10-samples100000.txt'
+data = pd.read_csv(
+    filepath,
+    sep=r"\s+", skip_blank_lines=True, comment='#', header=0, usecols=(0, 1, 2),
+    encoding=ct.ENCONDIG
+)
 
-plt.plot(data)
+
+data_ch0 = data['CH0']
+data_ch1 = data['CH1']
+
+f, (ax0, ax1) = plt.subplots(1, 2, figsize=(8, 4), sharey=False)
+
+ax0.plot(data_ch0)
+ax1.plot(data_ch1)
+
 plt.show()
