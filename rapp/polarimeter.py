@@ -140,4 +140,4 @@ def main(
 
     if plot:
         logger.info("Plotting result...")
-        plot_two_signals(filepath, delimiter=FILE_DELIMITER, usecols=(0, 1, 2), show=True)
+        plot_two_signals(filepath, output_dir, delimiter=FILE_DELIMITER, show=True)
