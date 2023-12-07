@@ -2,11 +2,9 @@ import os
 import time
 import logging
 
-from datetime import datetime
+from datetime import datetime, date
 
 import numpy as np
-
-
 from rapp import constants as ct
 
 from rapp.esp import ESP
@@ -30,23 +28,24 @@ ANALYZER_AXIS = 1
 
 MAX_CHUNK_SIZE = 500
 
-FILENAME_FORMAT = "{prefix}-cycles{cycles}-step{step}-samples{samples}.txt"
-
+FILE_NAME = "{d}-{prefix}-cycles{cycles}-step{step}-samples{samples}.txt"
+FILE_ROW = "{angle}{s}{ch0}{s}{ch1}{s}{datetime}"
 FILE_DELIMITER = "\t"
-FILE_HEADER = "ANGLE{d}A0{d}A1{d}DATETIME".format(d=FILE_DELIMITER)
-FILE_ROW = "{angle}{d}{a0}{d}{a1}{d}{datetime}"
-
-
-def create_file(filename):
-    file = open(filename, 'w')
-    file.write(FILE_HEADER)
-    file.write('\n')
-    return file
+FILE_COLUMNS = "ANGLE{s}CH0{s}CH1{s}DATETIME".format(s=FILE_DELIMITER).expandtabs(10)
+FILE_METADATA = (
+    "#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#\n"
+    "#~~~~~~~~~ RAPP measurements | INTI {d} ~~~~~~~~#\n"
+    "#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#\n"
+    "# cycles  : {cycles}\n"
+    "# step    : {step}\n"
+    "# samples : {samples}\n"
+    "# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#\n"
+)
 
 
 def open_file(filename, overwrite=False):
     if not os.path.exists(filename) or overwrite:
-        file = create_file(filename)
+        file = open(filename, 'w')
     else:
         file = open(filename, 'a')
 
@@ -77,10 +76,15 @@ def main(
     output_dir = os.path.join(ct.WORK_DIR, ct.OUTPUT_FOLDER_DATA)
     os.makedirs(output_dir, exist_ok=True)
 
-    filename = FILENAME_FORMAT.format(prefix=prefix, cycles=cycles, step=step, samples=samples)
+    today = date.today()
+    filename = FILE_NAME.format(d=today, prefix=prefix, cycles=cycles, step=step, samples=samples)
     filepath = os.path.join(output_dir, filename)
     overwrite = ask_for_overwrite(filepath)
     file = open_file(filepath, overwrite)
+
+    file_meta = FILE_METADATA.format(d=today, cycles=cycles, step=step, samples=samples)
+    file_header = "{}{}\n".format(file_meta, FILE_COLUMNS)
+    file.write(file_header)
 
     if test:
         # If this happens, we don't use real connections. We use mock objects to test the code.
@@ -127,11 +131,11 @@ def main(
             adc.flush_input()  # Clear buffer. Otherwise messes up values at the beginning.
             data = adc.acquire(chunk_size, in_bytes=True)
 
-            for a0, a1 in data:
-                logger.debug("(A0, A1) = ({}, {})".format(a0, a1))
+            for ch0, ch1 in data:
+                logger.debug("(CH0, CH1) = ({}, {})".format(ch0, ch1))
                 dt = datetime.now().isoformat()
-                row = FILE_ROW.format(angle=angle, a0=a0, a1=a1, datetime=dt, d=FILE_DELIMITER)
-                file.write(row)
+                row = FILE_ROW.format(angle=angle, ch0=ch0, ch1=ch1, datetime=dt, s=FILE_DELIMITER)
+                file.write(row.expandtabs(10))
                 file.write('\n')
 
     file.close()
