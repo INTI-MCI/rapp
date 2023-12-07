@@ -112,11 +112,13 @@ def main(
     logger.info("Samples chunks sizes: {}".format(chunks_sizes))
 
     init_position = analyzer.getpos()
+    logger.info("Analyzer current position: {}".format(init_position))
 
     if cycles == 0:
         angles = [init_position]
     else:
-        angles = np.array([i for i in frange(init_position, init_position + 360 * cycles, step)])
+        angles = np.array(
+            [i for i in range(int(init_position), int(init_position + 360 * cycles), int(step))])
 
     logger.info("Angles to process: {}.".format(angles))
     for angle in angles:

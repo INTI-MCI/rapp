@@ -63,8 +63,6 @@ class ESP:
         if (axis and axis > 0):
             a = axis
 
-        print("setting velocity to %f" % vel)
-
         self.dev.write("{0}VA{1:.4f};{0}TV\r".format(a, vel).encode())
         return float(self.dev.readline())
 
@@ -72,8 +70,6 @@ class ESP:
         a = self.defaxis
         if (axis and axis > 0):
             a = axis
-
-        print("setting home velocity to %f" % vel)
 
         self.dev.write("{0}OL{1}\r".format(a, vel).encode())
         self.dev.write("{0}OH{1}; {0}OH?\r".format(a, vel).encode())
@@ -84,8 +80,6 @@ class ESP:
         a = self.defaxis
         if (axis and axis > 0):
             a = axis
-
-        print("setting acceleration to %f" % acc)
 
         self.dev.write("{0}CA{1:.4f};\r".format(a, acc).encode())
 
@@ -105,14 +99,12 @@ class ESP:
         a = self.defaxis
         if (axis and axis > 0):
             a = axis
-        print("setting to %f" % pos)
 
         command = "PA"
         if relative:
             command = "PR"
 
         commands = "{0}{c}{1:.4f};{0}WS{ws};{0}WP{1:.4f};{0}TP\r".format(a, pos, c=command, ws=ws)
-        print(commands)
 
         self.dev.write(commands.encode())
         return float(self.dev.readline())
