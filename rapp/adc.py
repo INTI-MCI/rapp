@@ -36,7 +36,7 @@ class ADC:
 
     SAMPLES_TERMINATION_CHARACTER = "s"
 
-    def __init__(self, dev, b=57600, timeout=0.1, gain=GAIN_TWOTHIRDS, wait=2):
+    def __init__(self, dev, b=57600, timeout=0.1, gain=GAIN_ONE, wait=2):
         self._serial = serial.Serial(dev, baudrate=b, timeout=timeout)
 
         logger.info("Waiting {} seconds after opening the connection...".format(wait))
