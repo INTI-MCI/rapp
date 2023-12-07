@@ -21,6 +21,11 @@ logger = logging.getLogger(__name__)
 
 
 CHANNELS = [0, 1]
+COLUMN_CH0 = 'CH0'
+COLUMN_CH1 = 'CH1'
+COLUMN_ANGLE = 'ANGLE'
+
+REGEX_NUMBER_AFTER_WORD = r"(?<={word})\d+(?:\.\d+)?"
 
 
 def poly_2(x, A, B, C):
@@ -339,34 +344,35 @@ def plot_drift(output_folder, show=False):
 def plot_phase_difference(filepath, method, show=False):
     logger.info("Calculating phase difference for {}...".format(filepath))
 
-    # TODO: maybe we can write these parameters in the header of the file,
-    # TODO: so we don't have to parse them form the filename...
-    cycles, step, samples = re. findall(r'\d+(?:\.\d+)?', filepath)
+    cycles = re.findall(REGEX_NUMBER_AFTER_WORD.format(word="cycles"), filepath)[0]
+    step = re.findall(REGEX_NUMBER_AFTER_WORD.format(word="step"), filepath)[0]
+    samples = re.findall(REGEX_NUMBER_AFTER_WORD.format(word="samples"), filepath)[0]
 
-    cols = (0, 1, 2)
-    data = pd.read_csv(filepath, delimiter='\t', header=0, usecols=cols, encoding=ct.ENCONDIG)
-    data = data.groupby(['ANGLE'], as_index=False).agg({
-        'A0': ['mean', 'std'],
-        'A1': ['mean', 'std']
+    data = pd.read_csv(
+        filepath,
+        sep=r"\s+", skip_blank_lines=True, comment='#', header=0, usecols=(0, 1, 2),
+        encoding=ct.ENCONDIG
+    )
+
+    data = data.groupby([COLUMN_ANGLE], as_index=False).agg({
+        COLUMN_CH0: ['mean', 'std'],
+        COLUMN_CH1: ['mean', 'std']
     })
 
     if len(data.index) == 1:
         raise ValueError("This is a file with only one angle!.")
 
-    xs = np.deg2rad(np.array(data['ANGLE']))
-    s1 = np.array(data['A0']['mean'])
-    s2 = np.array(data['A1']['mean'])
+    xs = np.deg2rad(np.array(data[COLUMN_ANGLE]))
+    s1 = np.array(data[COLUMN_CH0]['mean'])
+    s2 = np.array(data[COLUMN_CH1]['mean'])
 
-    s1_sigma = np.array(data['A0']['std'])
-    s2_sigma = np.array(data['A1']['std'])
-
-    s1err = s1_sigma / np.sqrt(int(samples))
-    s2err = s2_sigma / np.sqrt(int(samples))
+    s1err = np.array(data[COLUMN_CH0]['std']) / np.sqrt(int(samples))
+    s2err = np.array(data[COLUMN_CH1]['std']) / np.sqrt(int(samples))
 
     x_sigma = ct.ANALYZER_MIN_STEP / (2 * np.sqrt(3))
 
     res = phase_difference(
-        xs * 2, s1, s2, x_sigma=x_sigma, s1_sigma=s1_sigma, s2_sigma=s2_sigma, method=method)
+        xs * 2, s1, s2, x_sigma=x_sigma, s1_sigma=s1err, s2_sigma=s2err, method=method)
 
     error_deg = np.rad2deg(res.u)
     error_deg_rounded = round_to_n(error_deg, 2)
@@ -471,9 +477,9 @@ def plot_two_signals(filepath, output_folder, delimiter='\t', usecols=(0, 1, 2),
         filepath, delimiter=delimiter, header=0, usecols=usecols, encoding=ct.ENCONDIG
     )
 
-    data = data.groupby(['ANGLE']).mean().reset_index()
+    data = data.groupby([COLUMN_ANGLE]).mean().reset_index()
 
-    xs = np.deg2rad(np.array(data['ANGLE']))
+    xs = np.deg2rad(np.array(data[COLUMN_ANGLE]))
     s1 = np.array(data['A0'])
     s2 = np.array(data['A1'])
 
