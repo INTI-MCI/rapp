@@ -23,7 +23,7 @@ def round_to_n(number, n):
 
 def frange(start, end, step):
     """A range with float step allowed."""
-    return [p * step for p in range(start, int(end / step))]
+    return [p * step for p in range(int(start), int(end / step))]
 
 
 def timing(f):
