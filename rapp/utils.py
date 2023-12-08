@@ -21,11 +21,6 @@ def round_to_n(number, n):
     return round(number, n - int(math.floor(math.log10(abs(number)))) - 1)
 
 
-def frange(start, end, step):
-    """A range with float step allowed."""
-    return [p * step for p in range(int(start), int(end / step))]
-
-
 def timing(f):
     @wraps(f)
     def wrap(*args, **kw):
