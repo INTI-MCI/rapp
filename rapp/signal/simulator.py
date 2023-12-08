@@ -145,7 +145,7 @@ def total_time(n_cycles):
     return n_cycles * (180 / ANALYZER_VELOCITY)
 
 
-def n_simulations(n=1, method='fit', **kwargs):
+def n_simulations(n=1, method='curve_fit', **kwargs):
     """Performs n simulations and returned a list of n errors.
 
     Args:
@@ -241,7 +241,7 @@ def plot_methods(phi, folder, samples=5, step=1, max_cycles=10, reps=1, show=Fal
             )
 
             # RMSE
-            error_rad = np.sqrt(sum([abs(phi - e) ** 2 for e in n_errors]) / reps)
+            error_rad = np.sqrt(sum([abs(phi - e.value) ** 2 for e in n_errors]) / reps)
             error_degrees = np.rad2deg(error_rad)
             error_degrees_sci = "{:.2E}".format(error_degrees)
 
@@ -283,12 +283,12 @@ def plot_error_vs_cycles(phi, folder, samples=5, max_cycles=10, reps=1, show=Fal
     for i, step in enumerate(steps, 0):
         fc = samples_per_cycle(step=step)
         reps = n_reps[i]
-        logger.info("Method: {}, fc={}, reps={}".format('fit', fc, reps))
+        logger.info("Method: {}, fc={}, reps={}".format('curve_fit', fc, reps))
 
         errors = []
         for cycles in cycles_list:
             n_res = n_simulations(
-                n=reps, method='fit', cycles=cycles, fc=fc, phi=phi,
+                n=reps, method='curve_fit', cycles=cycles, fc=fc, phi=phi,
                 fa=samples, a0_noise=A0_NOISE, a1_noise=A1_NOISE, all_positive=True
             )
 
@@ -345,8 +345,8 @@ def plot_error_vs_resolution(phi, folder, samples=5, step=1, max_cycles=10, reps
         errors = []
         for cycles in cycles_list:
             n_results = n_simulations(
-                A=amplitude, bits=bits, max_v=maxv, n=reps, method='fit', cycles=cycles, fc=fc,
-                phi=phi, fa=samples, a0_noise=A0_NOISE, a1_noise=A1_NOISE, all_positive=True
+                A=amplitude, bits=bits, max_v=maxv, n=reps, method='curve_fit', cycles=cycles,
+                fc=fc, phi=phi, fa=samples, a0_noise=A0_NOISE, a1_noise=A1_NOISE, all_positive=True
             )
 
             # RMSE
@@ -395,12 +395,12 @@ def plot_error_vs_range(phi, folder, samples=5, step=0.01, cycles=5, reps=1, sho
         logger.info("A={}".format(amplitude))
 
         n_errors = n_simulations(
-            A=amplitude, n=reps, method='fit', cycles=cycles, fc=fc, phi=phi,
+            A=amplitude, n=reps, method='curve_fit', cycles=cycles, fc=fc, phi=phi,
             fa=samples, a0_noise=A0_NOISE, a1_noise=A1_NOISE, all_positive=True
         )
 
         # RMSE
-        error_rad = np.sqrt(sum([abs(phi - e) ** 2 for e in n_errors]) / reps)
+        error_rad = np.sqrt(sum([abs(phi - e.value) ** 2 for e in n_errors]) / reps)
         error_degrees = np.rad2deg(error_rad)
         error_degrees_sci = "{:.2E}".format(error_degrees)
 
@@ -435,7 +435,7 @@ def plot_phase_diff(phi, folder, samples=50, cycles=10, step=0.01, show=False):
     )
 
     logger.info("Calculating phase difference...")
-    res = phase_difference(xs * 2, s1, s2, method='fit')
+    res = phase_difference(xs * 2, s1, s2, method='curve_fit')
 
     error = abs(phi - res.value)
     error_degrees = np.rad2deg(error)

@@ -9,11 +9,11 @@ from rapp import constants as ct
 
 from rapp.esp import ESP
 from rapp.adc import ADC
-from rapp.utils import frange
 from rapp.mocks import ADCMock, ESPMock
 from rapp.signal.analysis import plot_two_signals
 
-np.set_printoptions(threshold=0, edgeitems=5)  # truncate arrays when printing
+# Always truncate arrays when printing, without scientific notation.
+np.set_printoptions(threshold=0, edgeitems=5, suppress=True)
 logger = logging.getLogger(__name__)
 
 
@@ -69,8 +69,12 @@ def get_chunks(lst, n):
         yield lst[i:i + n]
 
 
+def generate_angles(cycles, step, init_position=0.0):
+    return np.arange(init_position, init_position + 360 * cycles + step, step)
+
+
 def main(
-    cycles=1, step=10, samples=10, delay_position=1, analyzer_velocity=2, prefix='test',
+    cycles=1, step=10, samples=10, delay_position=1, velocity=2, prefix='test',
     test=False, plot=False
 ):
     output_dir = os.path.join(ct.WORK_DIR, ct.OUTPUT_FOLDER_DATA)
@@ -98,11 +102,11 @@ def main(
         logger.info("Connecting to ESP...")
         analyzer = ESP(ANALYZER_DEVICE, b=ANALYZER_BAUDRATE, axis=ANALYZER_AXIS)
 
-    logger.info("Setting analyzer velocity to {} deg/s.".format(analyzer_velocity))
-    analyzer.setvel(vel=analyzer_velocity)
+    logger.info("Setting analyzer velocity to {} deg/s.".format(velocity))
+    analyzer.setvel(vel=velocity)
 
-    logger.info("Setting analyzer home velocity to {} deg/s.".format(analyzer_velocity))
-    analyzer.sethomevel(vel=analyzer_velocity)
+    logger.info("Setting analyzer home velocity to {} deg/s.".format(velocity))
+    analyzer.sethomevel(vel=velocity)
 
     logger.info("Samples to measure in each angle: {}.".format(samples))
     logger.info("Maximum chunk size configured: {}.".format(MAX_CHUNK_SIZE))
@@ -117,10 +121,9 @@ def main(
     if cycles == 0:
         angles = [init_position]
     else:
-        angles = np.array(
-            [i for i in range(int(init_position), int(init_position + 360 * cycles), int(step))])
+        angles = generate_angles(cycles, step, init_position=init_position)
 
-    logger.info("Angles to process: {}.".format(angles))
+    logger.info("Will measure {} angles: {}.".format(len(angles), angles))
     for angle in angles:
         logger.debug("Changing analyzer position...")
         analyzer.setpos(angle)
@@ -146,4 +149,4 @@ def main(
 
     if plot:
         logger.info("Plotting result...")
-        plot_two_signals(filepath, output_dir, delimiter=FILE_DELIMITER, show=True)
+        plot_two_signals(filepath, output_dir, sep=r"\s+", show=True)

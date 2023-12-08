@@ -1,6 +1,6 @@
-import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
+
 import rapp.constants as ct
 
 filepath = 'workdir/output-data/2023-12-07-HeNe-noise-cycles0-step10-samples100000.txt'
