@@ -11,7 +11,7 @@ const unsigned short int BAUDRATE = 57600;
 void setup(void) {
   Serial.begin(BAUDRATE);
 
-   ads.setGain(GAIN_TWOTHIRDS);  // +/- 6.144V  1 bit = 0.1875mV (default)
+  ads.setGain(GAIN_TWOTHIRDS);  // +/- 6.144V  1 bit = 0.1875mV (default)
   // ads.setGain(GAIN_ONE);        // +/- 4.096V  1 bit = 0.125mV
   // ads.setGain(GAIN_TWO);        // +/- 2.048V  1 bit = 0.0625mV
   // ads.setGain(GAIN_FOUR);       // +/- 1.024V  1 bit = 0.03125mV
