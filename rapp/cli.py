@@ -15,7 +15,7 @@ HELP_CYCLES = 'n° of cycles to run.'
 HELP_STEP = 'every how many degrees to take a measurement.'
 HELP_SAMPLES = 'n° of samples per angle.'
 HELP_DELAY_POSITION = 'delay (in seconds) after changing analyzer position (default: %(default)s).'
-HELP_ANALYZER_V = 'velocity of the analyzer in deg/s (default: %(default)s).'
+HELP_VELOCITY = 'velocity of the analyzer in deg/s (default: %(default)s).'
 HELP_PREFIX = 'prefix for the filename in which to write results (default: %(default)s).'
 HELP_TEST = 'run on test mode. No real connections will be established (default: %(default)s).'
 HELP_PLOT = 'plot the results when the measurement is finished (default: %(default)s).'
@@ -48,7 +48,7 @@ def add_polarimeter_subparser(subparsers):
     p.add_argument('--step', type=float, default=10, help=HELP_STEP)
     p.add_argument('--samples', type=int, required=True, help=HELP_SAMPLES)
     p.add_argument('--delay_position', type=float, default=1, metavar='', help=HELP_DELAY_POSITION)
-    p.add_argument('--analyzer_velocity', type=float, default=4, metavar='', help=HELP_ANALYZER_V)
+    p.add_argument('--velocity', type=float, default=4, metavar='', help=HELP_VELOCITY)
     p.add_argument('--prefix', type=str, default='test', metavar='', help=HELP_PREFIX)
     p.add_argument('--test', action='store_true', help=HELP_TEST)
     p.add_argument('--plot', action='store_true', help=HELP_PLOT)
@@ -114,7 +114,7 @@ def main():
                 step=args.step,
                 samples=args.samples,
                 delay_position=args.delay_position,
-                analyzer_velocity=args.analyzer_velocity,
+                velocity=args.velocity,
                 prefix=args.prefix,
                 test=args.test,
                 plot=args.plot

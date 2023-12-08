@@ -27,6 +27,15 @@ COLUMN_ANGLE = 'ANGLE'
 
 REGEX_NUMBER_AFTER_WORD = r"(?<={word})\d+(?:\.\d+)?"
 
+PARAMETER_STRING = "cycles={}, step={}, samples={}."
+
+
+def read_measurement_file(filepath, sep=r"\s+"):
+    return pd.read_csv(
+        filepath,
+        sep=sep, skip_blank_lines=True, comment='#', usecols=(0, 1, 2), encoding=ct.ENCONDIG
+    )
+
 
 def poly_2(x, A, B, C):
     return A * x**2 + B * x + C
@@ -35,6 +44,14 @@ def poly_2(x, A, B, C):
 def detrend_poly(data, func):
     popt, pcov = curve_fit(func, np.arange(data.size), data)
     return data - func(np.arange(data.size), *popt)
+
+
+def parse_input_parameters_from_filepath(filepath):
+    return (
+        re.findall(REGEX_NUMBER_AFTER_WORD.format(word="cycles"), filepath)[0],
+        re.findall(REGEX_NUMBER_AFTER_WORD.format(word="step"), filepath)[0],
+        re.findall(REGEX_NUMBER_AFTER_WORD.format(word="samples"), filepath)[0]
+    )
 
 
 def plot_histogram_and_pdf(data,  bins='quantized', prefix='', show=False):
@@ -184,25 +201,18 @@ def plot_noise_with_laser_on(output_folder, show=False):
     print("")
     logger.info("ANALYZING NOISE WITH LASER ON...")
 
-    filename = '2023-12-07-HeNe-noise-cycles0-step10-samples100000.txt'
+    # filename, sep, sps = '2023-12-07-HeNe-noise-cycles0-step10-samples100000.txt', r"\s+", 830
+    filename, sep, sps = 'laser-75-int-alta.txt', ' ', 59
+
     filepath = os.path.join(ct.INPUT_DIR, filename)
 
-    data = pd.read_csv(
-        filepath,
-        sep=r"\s+", skip_blank_lines=True, comment='#', header=0, usecols=(0, 1, 2),
-        encoding=ct.ENCONDIG
-    )
-
+    data = read_measurement_file(filepath, sep=sep)
     base_output_fname = "{}".format(os.path.join(output_folder, filename[:-4]))
 
+    logger.info("Fitting raw data to 2-degree polynomial...")
     f, axs = plt.subplots(1, 2, figsize=(9, 4), sharey=False)
-
-    # PLOT THE RAW DATA AND POLYNOMIAL FIT FOR THE DRIFT
     for i, ax in enumerate(axs):
         channel_data = data['CH{}'.format(i)]
-
-        res = stats.shapiro(channel_data)
-        logger.info("Gaussian Test. p-value: {}".format(res.pvalue))
 
         xs = np.arange(channel_data.size)
         popt, pcov = curve_fit(poly_2, xs, channel_data)
@@ -225,35 +235,65 @@ def plot_noise_with_laser_on(output_folder, show=False):
 
     f.savefig("{}-signal-and-fit".format(base_output_fname))
 
+    if show:
+        plt.show()
+
     plt.close()
 
-    plot = Plot(ylabel=ct.LABEL_VOLTAGE, xlabel=ct.LABEL_N_SAMPLE, folder=output_folder)
-
-    logger.info("Filtering laser drift...")
-    filtered = []
+    logger.info("Removing 2-degree polynomial from signals...")
     for i in CHANNELS:
-        data_detrend = detrend_poly(data[:, i], poly_2)
+        data['CH{}'.format(i)] = detrend_poly(data['CH{}'.format(i)], poly_2)
+
+    logger.info("Plotting FFT...")
+    f, axs = plt.subplots(1, 2, figsize=(8, 4), sharey=False)
+    for i, ax in enumerate(axs):
+        channel_data = data['CH{}'.format(i)]
+        channel_fft = np.fft.fft(channel_data)
+
+        xs = np.arange(0, len(channel_fft))
+        xs = (xs / len(channel_fft)) * sps
+
+        if i == 0:
+            ax.set_ylabel(ct.LABEL_COUNTS)
+
+        ax.set_xlabel(ct.LABEL_FREQUENCY)
+        ax.set_title("Canal {}".format(i))
+        ax.semilogy(xs[1:], np.abs(channel_fft[1:]), color='k')
+
+    if show:
+        plt.show()
+
+    plt.close()
+
+    logger.info("Filtering noise...")
+    plot = Plot(ylabel=ct.LABEL_VOLTAGE, xlabel=ct.LABEL_N_SAMPLE, folder=output_folder)
+    for i in CHANNELS:
+        channel_data = data['CH{}'.format(i)]
 
         b, a = signal.butter(3, 0.064, btype='highpass')
-        filtered_noise = signal.filtfilt(b, a, data_detrend)
+        channel_data = signal.filtfilt(b, a, channel_data)
 
-        filtered_noise[filtered_noise > 0.002] = 0
-        filtered_noise[filtered_noise < -0.002] = 0
+        channel_data[channel_data > 0.002] = 0
+        channel_data[channel_data < -0.002] = 0
 
-        filtered.append(filtered_noise)
+        data['CH{}'.format(i)] = channel_data
 
-        res = stats.shapiro(filtered_noise)
+        res = stats.shapiro(channel_data)
         logger.info("Gaussian Test. p-value: {}".format(res.pvalue))
 
-        plot.add_data(filtered_noise, style='-', label='Canal {}'.format(i))
+        plot.add_data(channel_data, style='-', label='Canal {}'.format(i))
         plot.legend()
 
     plot.save("{}-filtered-noise".format(filename[:-4]))
+
+    if show:
+        plt.show()
+
     plot.close()
 
-    filtered = np.array(filtered).T
+    data = data[['CH0', 'CH1']].to_numpy()
 
-    plot_histogram_and_pdf(filtered, bins='auto', prefix=base_output_fname, show=show)
+    plot_histogram_and_pdf(data, bins='auto', prefix=base_output_fname, show=show)
 
     if show:
         plt.show()
@@ -349,9 +389,7 @@ def plot_drift(output_folder, show=False):
 def plot_phase_difference(filepath, method, show=False):
     logger.info("Calculating phase difference for {}...".format(filepath))
 
-    cycles = re.findall(REGEX_NUMBER_AFTER_WORD.format(word="cycles"), filepath)[0]
-    step = re.findall(REGEX_NUMBER_AFTER_WORD.format(word="step"), filepath)[0]
-    samples = re.findall(REGEX_NUMBER_AFTER_WORD.format(word="samples"), filepath)[0]
+    cycles, step, samples = parse_input_parameters_from_filepath(filepath)
 
     data = pd.read_csv(
         filepath,
@@ -474,24 +512,23 @@ def plot_signals_per_angle(output_folder, show=False):
         filepath = os.path.join(ct.INPUT_DIR, filename)
 
         logger.info("Filepath: {}".format(filepath))
-        plot_two_signals(filepath, output_folder, delimiter=' ', show=show)
+        plot_two_signals(filepath, output_folder, sep=' ', show=show)
 
 
-def plot_two_signals(filepath, output_folder, delimiter='\t', usecols=(0, 1, 2), show=False):
-    data = pd.read_csv(
-        filepath, delimiter=delimiter, header=0, usecols=usecols, encoding=ct.ENCONDIG
-    )
-
+def plot_two_signals(filepath, output_folder, sep='\t', usecols=(0, 1, 2), show=False):
+    data = read_measurement_file(filepath, sep=sep)
     data = data.groupby([COLUMN_ANGLE]).mean().reset_index()
 
     xs = np.deg2rad(np.array(data[COLUMN_ANGLE]))
-    s1 = np.array(data['A0'])
-    s2 = np.array(data['A1'])
+    s1 = np.array(data[COLUMN_CH0])
+    s2 = np.array(data[COLUMN_CH1])
 
     plot = Plot(ylabel=ct.LABEL_VOLTAGE, xlabel=ct.LABEL_ANGLE, folder=output_folder)
-    plot.add_data(xs, s1, color='k', style='o-', alpha=1, mew=1)
-    plot.add_data(xs, s2, color='k', style='o-', alpha=1, mew=1)
+    plot.set_title(PARAMETER_STRING.format(*parse_input_parameters_from_filepath(filepath)))
+    plot.add_data(xs, s1, style='o-', alpha=1, mew=1, label='CH0')
+    plot.add_data(xs, s2, style='o-', alpha=1, mew=1, label='CH1')
     plot._ax.xaxis.set_major_locator(plt.MaxNLocator(5))
+    plot.legend()
 
     plot.save(filename="{}.png".format(os.path.basename(filepath)[:-4]))
 
@@ -505,11 +542,11 @@ def main(show):
     output_folder = os.path.join(ct.WORK_DIR, ct.OUTPUT_FOLDER_PLOTS)
     create_folder(output_folder)
 
-    # plot_noise_with_laser_off(output_folder, show=show)
+    plot_noise_with_laser_off(output_folder, show=show)
     plot_noise_with_laser_on(output_folder, show=show)
     # plot_drift(output_folder, show=show)
-    # plot_signals_per_n_measurement(output_folder, show=show)
-    # plot_signals_per_angle(output_folder, show=show)
+    plot_signals_per_n_measurement(output_folder, show=show)
+    plot_signals_per_angle(output_folder, show=show)
 
 
 if __name__ == '__main__':
