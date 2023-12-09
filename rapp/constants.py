@@ -15,6 +15,7 @@ LABEL_PHI_ERR = "Error en φ (°)"
 LABEL_STEP = "Paso"
 LABEL_VOLTAGE = "Tensión [V]"
 LABEL_MAX_V = "Tensión máxima [V]"
+LABEL_DEGREE = "Ángulo del rotador [°]"
 
 ENCONDIG = 'iso-8859-1'
 
