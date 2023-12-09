@@ -113,7 +113,6 @@ def main(
 
     chunks = get_chunks(range(samples), MAX_CHUNK_SIZE)
     chunks_sizes = [len(x) for x in chunks]
-    logger.info("Samples chunks sizes: {}".format(chunks_sizes))
 
     init_position = analyzer.getpos()
     logger.info("Analyzer current position: {}".format(init_position))
@@ -124,14 +123,16 @@ def main(
         angles = generate_angles(cycles, step, init_position=init_position)
 
     logger.info("Will measure {} angles: {}.".format(len(angles), angles))
-    for angle in angles:
+
+    from rapp.utils import progressbar
+
+    for angle in progressbar(angles, prefix="Measuring: ", size=100):
         logger.debug("Changing analyzer position...")
         analyzer.setpos(angle)
 
         logger.debug("Waiting {}s after changing position...".format(delay_position))
         time.sleep(delay_position)
 
-        logger.info("Measuring angle {}°".format(angle))
         for chunk_size in chunks_sizes:
             adc.flush_input()  # Clear buffer. Otherwise messes up values at the beginning.
             data = adc.acquire(chunk_size, in_bytes=True)
@@ -146,6 +147,8 @@ def main(
     file.close()
     adc.close()
     analyzer.dev.close()
+
+    logger.info("Done!")
 
     if plot:
         logger.info("Plotting result...")
