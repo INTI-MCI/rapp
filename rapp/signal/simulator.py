@@ -4,6 +4,7 @@ import logging
 import numpy as np
 import pandas as pd
 
+import matplotlib.pyplot as plt
 
 from rapp import constants as ct
 from rapp.utils import create_folder
@@ -32,8 +33,14 @@ A0_NOISE = [1.9e-07, 0.00092]
 A1_NOISE = [-1.7e-07, 0.00037]
 
 SIMULATIONS = [
-    'all', 'two_signals', 'methods',
-    'error_vs_cycles', 'error_vs_res', 'phase_diff', 'error_vs_range'
+    'all',
+    'signals_out_of_phase',
+    'sim_steps',
+    'methods',
+    'error_vs_cycles',
+    'error_vs_res',
+    'error_vs_range'
+    'phase_diff',
 ]
 
 
@@ -47,6 +54,8 @@ def harmonic(
     fa: int = 1,
     phi: float = 0,
     noise: tuple = None,
+    bits: int = None,
+    max_v: float = ADC_MAXV,
     all_positive: bool = False
 ) -> tuple:
     """Simulates a harmonic signal.
@@ -57,7 +66,9 @@ def harmonic(
         fc: samples per cycle.
         fa: samples per angle.
         phi: phase (radians).
-        noise: (mu, sigma) of additive white gaussian noise.
+        noise: (mu, sigma) of additive white Gaussian noise.
+        bits: number of bits for quantization. If None, doesn't quantize the signal.
+        max_v: maximum value of ADC scale [0, max_v] (in Volts).
         all_positive: if true, shifts the signal to the positive axis.
 
     Returns:
@@ -78,6 +89,9 @@ def harmonic(
 
     if all_positive:
         signal = signal + A
+
+    if bits is not None:
+        signal = quantize(signal, max_v=max_v, bits=bits)
 
     return xs, signal
 
@@ -109,17 +123,13 @@ def quantize(
     return q_signal * q_factor
 
 
-def polarimeter_signal(
-    phi=0, a0_noise=None, a1_noise=None, bits=ADC_BITS, max_v=ADC_MAXV, **kwargs
-):
+def polarimeter_signal(phi=0, a0_noise=None, a1_noise=None, **kwargs):
     """Simulates a pair of signals measured by the polarimeter.
 
     Args:
         phi: phase difference between signals (radians).
-        a0_noise: (mu, sigma) of additive white gaussian noise of channel 0.
-        a1_noise: (mu, sigma) of additive white gaussian noise of channel 1.
-        bits: number of bits of the signal.
-        max_v: float number corresponding to the maximum value of ADC scale [0, max_v] (in Volts).
+        a0_noise: (mu, sigma) of additive white Gaussian noise of channel 0.
+        a1_noise: (mu, sigma) of additive white Gaussian noise of channel 1.
         **kwargs: any other keyword argument to be passed 'harmonic' function.
 
     Returns:
@@ -127,10 +137,6 @@ def polarimeter_signal(
     """
     xs, s1 = harmonic(noise=a0_noise, **kwargs)
     _, s2 = harmonic(phi=-phi, noise=a1_noise, **kwargs)
-
-    # Use quantized values
-    s1 = quantize(s1, max_v=max_v, bits=bits)
-    s2 = quantize(s2, max_v=max_v, bits=bits)
 
     # We divide angles by 2 because one cycle of the analyzer contains two cycles of the signal.
     return xs / 2, s1, s2
@@ -186,7 +192,7 @@ def n_simulations(n=1, method='curve_fit', **kwargs):
     return results
 
 
-def plot_two_signals(phi, folder, samples=1, s1_noise=None, s2_noise=None, show=False):
+def plot_signals_out_of_phase(phi, folder, samples=1, s1_noise=None, s2_noise=None, show=False):
     print("")
     logger.info("TWO HARMONIC SIGNALS...")
 
@@ -206,12 +212,85 @@ def plot_two_signals(phi, folder, samples=1, s1_noise=None, s2_noise=None, show=
     plot.add_data(xs, s2, style='o-', xrad=True)
     plot._ax.set_ylim(0, ADC_MAXV)
 
-    plot.save(filename='sim_two_signals-samples-{}'.format(samples))
+    plot.save(filename='sim_out_of_phase-samples-{}'.format(samples))
 
     if show:
         plot.show()
 
     plot.close()
+
+    logger.info("Done.")
+
+
+def plot_simulation_steps(folder, show=False):
+    print("")
+    logger.info("SIMULATION PROCESS...")
+
+    cycles = 0.15
+    fc = samples_per_cycle(step=0.5)
+    noise = (0, 0.04)
+    mu, sigma = noise
+    bits = 6
+    A = 1.7
+
+    f, axs = plt.subplots(4, 1, figsize=(4, 10), sharey=True)
+
+    # Pure signal
+    xs, ys = harmonic(A=A, cycles=cycles, fc=fc, all_positive=True)
+    xs = np.rad2deg(xs)
+    axs[0].plot(xs, ys, 'o-', color='k', ms=2, mfc='None')
+    axs[0].set_ylabel(ct.LABEL_VOLTAGE)
+    axs[0].set_xlabel(ct.LABEL_DEGREE)
+
+    # Noisy signal
+    xs, ys = harmonic(A=A, cycles=cycles, fc=fc, noise=noise, all_positive=True)
+    xs = np.rad2deg(xs)
+    axs[1].plot(xs, ys, 'o-', color='k', ms=2, mfc='None', label="σ={}".format(sigma))
+    axs[1].set_ylabel(ct.LABEL_VOLTAGE)
+    axs[1].set_xlabel(ct.LABEL_DEGREE)
+    axs[1].legend(loc='lower right', prop={'family': 'monaco', 'size': 12})
+
+    # Quantized signal
+    xs, ys = harmonic(A=A, cycles=cycles, fc=fc, noise=noise, bits=bits, all_positive=True)
+    xs = np.rad2deg(xs)
+
+    label = "σ={}\nbits={}".format(sigma, bits)
+    axs[2].plot(xs, ys, 'o-', color='k', ms=2, mfc='None', label=label)
+    axs[2].set_ylabel(ct.LABEL_VOLTAGE)
+    axs[2].set_xlabel(ct.LABEL_DEGREE)
+    axs[2].legend(loc='lower right', prop={'family': 'monaco', 'size': 12})
+
+    # Quantized signal + 50 samples
+    fa = 50
+    label = "σ={}\nbits={}\nmuestras={}".format(sigma, bits, fa)
+
+    xs, ys = harmonic(A=A, cycles=cycles, fc=fc, fa=fa, noise=noise, bits=bits, all_positive=True)
+    data = np.array([xs, ys]).T
+    data = pd.DataFrame(data=data, columns=["ANGLE", "CH0"])
+    data = data.groupby(['ANGLE'], as_index=False).agg({'CH0': ['mean', 'std']})
+    xs = np.array(data['ANGLE'])
+    ys = np.array(data['CH0']['mean'])
+
+    xs = np.rad2deg(xs)
+
+    axs[3].plot(xs, ys, 'o-', color='k', ms=2, mfc='None', label=label)
+    axs[3].set_ylabel(ct.LABEL_VOLTAGE)
+    axs[3].set_xlabel(ct.LABEL_DEGREE)
+    axs[3].legend(loc='lower right', prop={'family': 'monaco', 'size': 12})
+
+    # Hide x labels and tick labels for top plots and y ticks for right plots.
+    for ax in axs.flat:
+        ax.label_outer()
+
+    plt.subplots_adjust(wspace=0, hspace=0)
+    plt.tight_layout()
+
+    f.savefig(os.path.join(folder, 'sim_steps.png'))
+
+    if show:
+        plt.show()
+
+    plt.close()
 
     logger.info("Done.")
 
@@ -237,7 +316,8 @@ def plot_methods(phi, folder, samples=5, step=1, max_cycles=10, reps=1, show=Fal
         for cycles in cycles_list:
             n_errors = n_simulations(
                 n=reps, method=method, cycles=cycles, fc=fc, phi=phi,
-                fa=samples, a0_noise=A0_NOISE, a1_noise=A1_NOISE, all_positive=True
+                fa=samples, a0_noise=A0_NOISE, a1_noise=A1_NOISE,
+                bits=ADC_BITS, all_positive=True
             )
 
             # RMSE
@@ -289,7 +369,7 @@ def plot_error_vs_cycles(phi, folder, samples=5, max_cycles=10, reps=1, show=Fal
         for cycles in cycles_list:
             n_res = n_simulations(
                 n=reps, method='curve_fit', cycles=cycles, fc=fc, phi=phi,
-                fa=samples, a0_noise=A0_NOISE, a1_noise=A1_NOISE, all_positive=True
+                fa=samples, a0_noise=A0_NOISE, a1_noise=A1_NOISE, bits=ADC_BITS, all_positive=True
             )
 
             # RMSE
@@ -396,7 +476,7 @@ def plot_error_vs_range(phi, folder, samples=5, step=0.01, cycles=5, reps=1, sho
 
         n_errors = n_simulations(
             A=amplitude, n=reps, method='curve_fit', cycles=cycles, fc=fc, phi=phi,
-            fa=samples, a0_noise=A0_NOISE, a1_noise=A1_NOISE, all_positive=True
+            fa=samples, a0_noise=A0_NOISE, a1_noise=A1_NOISE, bits=ADC_BITS, all_positive=True
         )
 
         # RMSE
@@ -496,9 +576,12 @@ def main(sim, reps=1, samples=1, show=False):
     if sim not in SIMULATIONS:
         raise ValueError("Simulation with name {} not implemented".format(sim))
 
-    if sim in ['all', 'two_signals']:
-        plot_two_signals(
+    if sim in ['all', 'signals_out_of_phase']:
+        plot_signals_out_of_phase(
             np.pi / 2, output_folder, samples, s1_noise=A0_NOISE, s2_noise=A1_NOISE, show=show)
+
+    if sim in ['all', 'sim_steps']:
+        plot_simulation_steps(output_folder, show=show)
 
     if sim in ['all', 'methods']:
         plot_methods(PHI, output_folder, samples, max_cycles=10, step=0.01, reps=reps, show=show)
