@@ -56,7 +56,7 @@ def parse_input_parameters_from_filepath(filepath):
 
 def plot_histogram_and_pdf(data,  bins='quantized', prefix='', show=False):
     """Plots a histogram and PDF for 2-channel data."""
-    f, axs = plt.subplots(1, 2, figsize=(9, 4), sharey=False)
+    f, axs = plt.subplots(1, 2, figsize=(9, 4), sharey=False, sharex=False)
 
     for i, ax in enumerate(axs):
         channel_data = data[:, i]
@@ -92,7 +92,7 @@ def plot_histogram_and_pdf(data,  bins='quantized', prefix='', show=False):
         ax.bar(edges[:-1], counts, width=np.diff(edges), color='k', alpha=0.2, edgecolor='k')
         ax.ticklabel_format(style='sci', scilimits=(0, 0), axis='y')
 
-        fit_label = "µ = {}.\nσ = {}.".format(mu_rounded, sigma_rounded)
+        fit_label = "µ = {:.1E}.\nσ = {}.".format(mu_rounded, sigma_rounded)
 
         ax.set_xlabel(ct.LABEL_VOLTAGE)
         ax.set_title("Canal {}".format(i))
@@ -109,9 +109,7 @@ def plot_noise_with_laser_off(output_folder, show=False):
     print("")
     logger.info("PROCESSING SIGNAL WITH LASER OFF (dark current)...")
 
-    filename = 'dark-current.txt'
-
-    SAMPLING_FREQUENCY = 59
+    filename, sps = 'dark-current.txt', 59.5
 
     filepath = os.path.join(ct.INPUT_DIR, filename)
 
@@ -124,8 +122,7 @@ def plot_noise_with_laser_off(output_folder, show=False):
     for i, ax in enumerate(axs):
         channel_data = data[:, i]
 
-        # res = stats.normaltest(channel_data)
-        res = stats.shapiro(channel_data)
+        res = stats.normaltest(channel_data)
         logger.info("Gaussian Test. p-value: {}".format(res.pvalue))
 
         ax.set_ylabel(ct.LABEL_VOLTAGE)
@@ -139,14 +136,41 @@ def plot_noise_with_laser_off(output_folder, show=False):
 
     f.savefig("{}-signal".format(base_output_fname))
 
-    # if show:
-    #    plt.show()
+    if show:
+        plt.show()
+
+    plt.close()
+
+    logger.info("Plotting FFT...")
+    f, axs = plt.subplots(1, 2, figsize=(7, 4), sharey=True)
+    for i, ax in enumerate(axs):
+        channel_data = data[:, i]
+
+        fft = np.fft.fft(channel_data)
+
+        xs = np.arange(0, len(fft))
+        xs = (xs / len(fft)) * sps
+
+        if i == 0:
+            ax.set_ylabel(ct.LABEL_COUNTS)
+
+        ax.set_xlabel(ct.LABEL_FREQUENCY)
+        ax.set_title("Canal {}".format(i))
+        ax.plot(xs[1:], np.abs(fft[1:]), color='k')
+
+    f.tight_layout()
+
+    f.savefig("{}-fft".format(base_output_fname))
+
+    if show:
+        plt.show()
 
     plt.close()
 
     filtered = []
-
     logger.info("Filtering unwanted frequencies...")
+    max_freqs = [1, 0.02]
+
     f, axs = plt.subplots(1, 2, figsize=(8, 4), sharey=True)
     for i, ax in enumerate(axs):
         channel_data = data[:, i]
@@ -154,17 +178,16 @@ def plot_noise_with_laser_off(output_folder, show=False):
         fft = np.fft.fft(channel_data)
 
         xs = np.arange(0, len(fft))
-        xs = (xs / len(fft)) * SAMPLING_FREQUENCY
+        xs = (xs / len(fft)) * sps
 
         if i == 0:
             ax.set_ylabel(ct.LABEL_COUNTS)
 
-        ax.set_xlabel(ct.LABEL_FREQUENCY)
+        ax.set_xlabel(ct.LABEL_N_SAMPLE)
         ax.set_title("Canal {}".format(i))
-        # ax.plot(xs[1:], fft[1:], color='k')
 
         # Remove peaks
-        fft[np.abs(fft) > 0.5] = 0
+        fft[np.abs(fft) > max_freqs[i]] = 0
 
         filtered_channel = np.fft.ifft(fft).real
 
@@ -173,7 +196,6 @@ def plot_noise_with_laser_off(output_folder, show=False):
 
         filtered.append(filtered_channel)
 
-        # ax.plot(fft, color='k')
         ax.plot(filtered_channel, color='k')
 
     # Hide x labels and tick labels for top plots and y ticks for right plots.
@@ -181,10 +203,10 @@ def plot_noise_with_laser_off(output_folder, show=False):
         ax.label_outer()
 
     f.tight_layout()
-    f.savefig("{}-fft".format(base_output_fname))
+    f.savefig("{}-filtered".format(base_output_fname))
 
-    # if show:
-    #    plt.show()
+    if show:
+        plt.show()
 
     plt.close()
 
@@ -233,7 +255,7 @@ def plot_noise_with_laser_on(output_folder, show=False):
         ax.yaxis.set_major_formatter(plt.FormatStrFormatter('%.2f'))
         ax.yaxis.set_major_locator(plt.MaxNLocator(3))
 
-    f.savefig("{}-signal-and-fit".format(base_output_fname))
+    f.savefig("{}-poly-fit".format(base_output_fname))
 
     if show:
         plt.show()
@@ -258,7 +280,9 @@ def plot_noise_with_laser_on(output_folder, show=False):
 
         ax.set_xlabel(ct.LABEL_FREQUENCY)
         ax.set_title("Canal {}".format(i))
-        ax.semilogy(xs[1:], np.abs(channel_fft[1:]), color='k')
+        ax.plot(xs[1:], np.abs(channel_fft[1:]), color='k')
+
+    f.savefig("{}-fft".format(base_output_fname))
 
     if show:
         plt.show()
@@ -270,11 +294,11 @@ def plot_noise_with_laser_on(output_folder, show=False):
     for i in CHANNELS:
         channel_data = data['CH{}'.format(i)]
 
-        b, a = signal.butter(3, 0.064, btype='highpass')
+        b, a = signal.butter(3, 1.5, btype='highpass', fs=sps)
         channel_data = signal.filtfilt(b, a, channel_data)
 
-        channel_data[channel_data > 0.002] = 0
-        channel_data[channel_data < -0.002] = 0
+        channel_data[channel_data > 0.001] = 0
+        channel_data[channel_data < -0.001] = 0
 
         data['CH{}'.format(i)] = channel_data
 
@@ -439,15 +463,17 @@ def plot_phase_difference(filepath, method, show=False):
     output_folder = os.path.join(ct.WORK_DIR, ct.OUTPUT_FOLDER_PLOTS)
     create_folder(output_folder)
 
-    plot = Plot(ylabel=ct.LABEL_VOLTAGE, xlabel=ct.LABEL_ANGLE, title=title, folder=output_folder)
+    plot = Plot(ylabel=ct.LABEL_VOLTAGE, xlabel=ct.LABEL_DEGREE, title=title, folder=output_folder)
 
-    plot.add_data(xs, s1, yerr=s1err, ms=6, color='k', mew=0.5, xrad=True, markevery=1, alpha=0.8)
-    plot.add_data(xs, s2, yerr=s2err, ms=6, color='k', mew=0.5, xrad=True, markevery=1, alpha=0.8)
+    xs = np.rad2deg(xs)
+    plot.add_data(xs, s1, yerr=s1err, ms=6, color='k', mew=0.5, markevery=5, alpha=0.8)
+    plot.add_data(xs, s2, yerr=s2err, ms=6, color='k', mew=0.5, markevery=5, alpha=0.8)
 
     if res.fitx is not None:
         fitx = res.fitx / 2
-        plot.add_data(fitx, res.fits1, style='-', color='k', lw=1.5, xrad=True)
-        plot.add_data(fitx, res.fits2, style='-', color='k', lw=1.5, xrad=True)
+        fitx = np.rad2deg(fitx)
+        plot.add_data(fitx, res.fits1, style='-', color='k', lw=1.5)
+        plot.add_data(fitx, res.fits2, style='-', color='k', lw=1.5)
 
     # plt.legend(loc='upper right', fancybox=True)
 
@@ -543,10 +569,10 @@ def main(show):
     create_folder(output_folder)
 
     plot_noise_with_laser_off(output_folder, show=show)
-    plot_noise_with_laser_on(output_folder, show=show)
+    # plot_noise_with_laser_on(output_folder, show=show)
     # plot_drift(output_folder, show=show)
-    plot_signals_per_n_measurement(output_folder, show=show)
-    plot_signals_per_angle(output_folder, show=show)
+    # plot_signals_per_n_measurement(output_folder, show=show)
+    # plot_signals_per_angle(output_folder, show=show)
 
 
 if __name__ == '__main__':
