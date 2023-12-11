@@ -109,8 +109,8 @@ def plot_noise_with_laser_off(output_folder, show=False):
     print("")
     logger.info("PROCESSING SIGNAL WITH LASER OFF (dark current)...")
 
-    # file_params = 'dark-current-584nm-samples40000.txt', 59.5, ' ', [(5.93, 0.15), (9.45, 0.15), (28.38, 0.15)], 0.5  # noqa
-    file_params = 'dark-current-632nm-HeNe-samples100000.txt', 845, '\t', [(50, 10), (100, 1), (150, 1)], 26  # noqa
+    file_params = 'darkcurrent-range4V-samples40000.txt', 59.5, ' ', [(5.93, 0.15), (9.45, 0.15), (28.38, 0.15)], 0.5  # noqa
+    # file_params = 'darkcurrent-range2V-samples100000.txt', 845, '\t', [(50, 10), (100, 1), (150, 1)], 26  # noqa
 
     filename, sps, sep, bpass, hpass = file_params
     filepath = os.path.join(ct.INPUT_DIR, filename)
@@ -247,10 +247,10 @@ def plot_noise_with_laser_on(output_folder, show=False):
     print("")
     logger.info("ANALYZING NOISE WITH LASER ON...")
 
-    # filename, sep, sps, bpass, hpass = 'laser-75-int-alta.txt', ' ', 59.5, [(9.4, 0.3), (18.09, 0.3), (18.8, 0.3), (28.22, 0.3)], 2  # noqa
-    filename, sep, sps, bpass, hpass = (
-        '2023-12-07-HeNe-noise-cycles0-step10-samples100000.txt', r"\s+", 845, [(50, 20), (100, 10), (150, 10), (200, 10), (250, 10), (300, 10), (350, 10), (400, 10)], 25  # noqa
-    )
+    filename, sep, sps, bpass, hpass = 'continuous-584nm-int-alta-samples10000.txt', ' ', 59.5, [(9.4, 0.3), (18.09, 0.3), (18.8, 0.3), (28.22, 0.3)], 2  # noqa
+    # filename, sep, sps, bpass, hpass = (
+    #    '2023-12-07-continuous-632nm-cycles0-step10-samples100000.txt', r"\s+", 845, [(50, 20), (100, 10), (150, 10), (200, 10), (250, 10), (300, 10), (350, 10), (400, 10)], 25  # noqa
+    # )
 
     filepath = os.path.join(ct.INPUT_DIR, filename)
 
@@ -620,7 +620,7 @@ def main(show):
     output_folder = os.path.join(ct.WORK_DIR, ct.OUTPUT_FOLDER_PLOTS)
     create_folder(output_folder)
 
-    # plot_noise_with_laser_off(output_folder, show=show)
+    plot_noise_with_laser_off(output_folder, show=show)
     plot_noise_with_laser_on(output_folder, show=show)
     # plot_drift(output_folder, show=show)
     # plot_signals_per_n_measurement(output_folder, show=show)
