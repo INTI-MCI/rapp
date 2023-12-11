@@ -115,3 +115,6 @@ class ESP:
             self.getpos()
             self.setpos(pos, axis)
         return self.getpos(axis)
+
+    def close(self):
+        self.dev.close()

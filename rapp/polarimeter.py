@@ -10,9 +10,10 @@ import numpy as np
 from rapp import constants as ct
 from rapp.esp import ESP
 from rapp.adc import ADC
-from rapp.utils import progressbar
 from rapp.mocks import ADCMock, ESPMock
 from rapp.signal.analysis import plot_two_signals
+from rapp.utils import progressbar
+
 
 # Always truncate arrays when printing, without scientific notation.
 np.set_printoptions(threshold=0, edgeitems=5, suppress=True)
@@ -29,8 +30,6 @@ ADC_WAIT = 2
 ANALYZER_DEVICE = "COM3"
 ANALYZER_BAUDRATE = 921600
 ANALYZER_AXIS = 1
-
-MAX_CHUNK_SIZE = 500
 
 FILE_NAME = "{d}-{prefix}-cycles{cycles}-step{step}-samples{samples}.txt"
 FILE_ROW = "{angle}{s}{ch0}{s}{ch1}{s}{datetime}"
@@ -85,8 +84,8 @@ def generate_angles(cycles, step, init_position=0.0):
 
 
 def main(
-    cycles=1, step=10, samples=10, delay_position=1, velocity=2, ch0=True, ch1=True,
-    prefix='test', test_esp=False, test_adc=False, plot=False
+    cycles=1, step=10, samples=10, delay_position=1, velocity=2, no_ch0=False, no_ch1=False,
+    chunk_size=2000, prefix='test', test_esp=False, test_adc=False, plot=False
 ):
     output_dir = os.path.join(ct.WORK_DIR, ct.OUTPUT_FOLDER_DATA)
     os.makedirs(output_dir, exist_ok=True)
@@ -122,10 +121,13 @@ def main(
     analyzer.sethomevel(vel=velocity)
 
     logger.info("Samples to measure in each angle: {}.".format(samples))
-    logger.info("Maximum chunk size configured: {}.".format(MAX_CHUNK_SIZE))
+    logger.info("Maximum chunk size: {}.".format(chunk_size))
 
-    chunks = get_chunks(range(samples), MAX_CHUNK_SIZE)
-    chunks_sizes = [len(x) for x in chunks]
+    if chunk_size > 0:
+        chunks = get_chunks(range(samples), chunk_size)
+        chunks_sizes = [len(x) for x in chunks]
+    else:
+        chunks_sizes = [samples]
 
     init_position = analyzer.getpos()
     logger.info("Analyzer current position: {}".format(init_position))
@@ -134,10 +136,11 @@ def main(
         angles = [init_position]
     else:
         angles = generate_angles(cycles, step, init_position=init_position)
+        adc.progressbar = False
 
     logger.info("Will measure {} angles: {}.".format(len(angles), angles))
 
-    for angle in progressbar(angles, prefix="Measuring: ", size=100):
+    for angle in progressbar(angles, prefix="Angles:", enable=len(angles) > 0):
         logger.debug("Changing analyzer position...")
         analyzer.setpos(angle)
 
@@ -146,7 +149,7 @@ def main(
 
         for chunk_size in chunks_sizes:
             adc.flush_input()  # Clear buffer. Otherwise messes up values at the beginning.
-            data = adc.acquire(chunk_size, ch0=ch0, ch1=ch1, in_bytes=True)
+            data = adc.acquire(chunk_size, ch0=not no_ch0, ch1=not no_ch1, in_bytes=True)
 
             channels_names_tuple = "({})".format(", ".join(data.keys()))
             ch0, ch1 = data.values()
@@ -164,7 +167,7 @@ def main(
 
     file.close()
     adc.close()
-    analyzer.dev.close()
+    analyzer.close()
 
     logger.info("Done!")
 
