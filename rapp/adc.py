@@ -3,6 +3,8 @@ import logging
 
 import serial
 
+from rapp.utils import progressbar
+
 logger = logging.getLogger(__name__)
 
 
@@ -62,7 +64,9 @@ class ADC:
         self._serial.write(bytes(adc_command, 'utf-8'))
 
         a0 = self._read_data(n_samples, in_bytes=True)
-        a1 = self._read_data(n_samples, in_bytes=True)
+        # a1 = self._read_data(n_samples, in_bytes=True)
+        import numpy as np
+        a1 = np.zeros(n_samples)
 
         return list(zip(a0, a1))
 
@@ -74,7 +78,7 @@ class ADC:
 
     def _read_data(self, n_samples, in_bytes=True):
         data = []
-        for _ in range(n_samples):
+        for _ in progressbar(range(n_samples), prefix="Measuring samples: ", size=100):
             try:
                 if in_bytes:
                     value = self._serial.read(2)

@@ -11,6 +11,7 @@ from rapp.esp import ESP
 from rapp.adc import ADC
 from rapp.mocks import ADCMock, ESPMock
 from rapp.signal.analysis import plot_two_signals
+from rapp.utils import progressbar
 
 # Always truncate arrays when printing, without scientific notation.
 np.set_printoptions(threshold=0, edgeitems=5, suppress=True)
@@ -74,7 +75,7 @@ def generate_angles(cycles, step, init_position=0.0):
 
 
 def main(
-    cycles=1, step=10, samples=10, delay_position=1, velocity=2, prefix='test',
+    cycles=1, step=10, samples=10, chunks=0, delay_position=1, velocity=2, prefix='test',
     test=False, plot=False
 ):
     output_dir = os.path.join(ct.WORK_DIR, ct.OUTPUT_FOLDER_DATA)
@@ -111,8 +112,11 @@ def main(
     logger.info("Samples to measure in each angle: {}.".format(samples))
     logger.info("Maximum chunk size configured: {}.".format(MAX_CHUNK_SIZE))
 
-    chunks = get_chunks(range(samples), MAX_CHUNK_SIZE)
-    chunks_sizes = [len(x) for x in chunks]
+    if chunks != 0:
+        chunks = get_chunks(range(samples), MAX_CHUNK_SIZE)
+        chunks_sizes = [len(x) for x in chunks]
+    else:
+        chunks_sizes = [samples]
 
     init_position = analyzer.getpos()
     logger.info("Analyzer current position: {}".format(init_position))
@@ -124,9 +128,10 @@ def main(
 
     logger.info("Will measure {} angles: {}.".format(len(angles), angles))
 
-    from rapp.utils import progressbar
 
-    for angle in progressbar(angles, prefix="Measuring: ", size=100):
+    # for angle in progressbar(angles, prefix="Measuring: ", size=100):
+    for angle in angles:
+
         logger.debug("Changing analyzer position...")
         analyzer.setpos(angle)
 

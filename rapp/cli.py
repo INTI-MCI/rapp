@@ -47,6 +47,7 @@ def add_polarimeter_subparser(subparsers):
     p.add_argument('--cycles', type=int, required=True, help=HELP_CYCLES)
     p.add_argument('--step', type=float, default=10, help=HELP_STEP)
     p.add_argument('--samples', type=int, required=True, help=HELP_SAMPLES)
+    p.add_argument('--chunks', type=int)
     p.add_argument('--delay_position', type=float, default=1, metavar='', help=HELP_DELAY_POSITION)
     p.add_argument('--velocity', type=float, default=4, metavar='', help=HELP_VELOCITY)
     p.add_argument('--prefix', type=str, default='test', metavar='', help=HELP_PREFIX)
