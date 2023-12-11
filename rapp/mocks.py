@@ -1,16 +1,24 @@
+import time
 import random
+
+from rapp.adc import ADC
 
 
 class SerialMock:
     """Mock object for serial.Serial."""
+    def __init__(self, delay=0.0018):
+        self.delay = delay
+
     def readline(self):
-        return '{}'.format(random.randint(0, 30e3)).encode('utf-8')
+        return '{}'.format(self._random_value()).encode('utf-8')
 
     def write(self, v):
         pass
 
     def read(self, n_bytes):
-        return bytes(range(n_bytes))
+        time.sleep(self.delay)
+        value = self._random_value()
+        return int(value).to_bytes(length=2, byteorder='big')
 
     def close(self):
         pass
@@ -18,16 +26,16 @@ class SerialMock:
     def flushInput(self):
         pass
 
+    def _random_value(self):
+        return random.randint(1000, 5000)
 
-class ADCMock:
+
+class ADCMock(ADC):
     """Mock object for serial.Serial."""
-    serial_mock = SerialMock()
-
-    def acquire(self, samples, **kwargs):
-        ch0 = [int(self.serial_mock.readline()) * 0.125/1000 for _ in range(samples)]
-        ch1 = [int(self.serial_mock.readline()) * 0.125/1000 for _ in range(samples)]
-
-        return {'C0': ch0, 'C1': ch1}
+    def __init__(self, progressbar=True):
+        self._serial = SerialMock()
+        self._max_V, self._multiplier_mV = (4.096, 0.125)
+        self.progressbar = progressbar
 
     def close(self):
         pass
@@ -38,8 +46,6 @@ class ADCMock:
 
 class ESPMock:
     """Mock object for esp.ESP."""
-    dev = SerialMock()
-
     pos = 0
     vel = 2
 
@@ -55,4 +61,7 @@ class ESPMock:
         return vel
 
     def sethomevel(self, vel, axis=None):
+        pass
+
+    def close(self):
         pass

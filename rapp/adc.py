@@ -4,6 +4,8 @@ import logging
 import serial
 import numpy as np
 
+from rapp.utils import progressbar
+
 logger = logging.getLogger(__name__)
 
 
@@ -39,12 +41,13 @@ class ADC:
         timeout: read timeout (seconds).
         gain: the gain to use. One of [GAIN_TWOTHIRDS, GAIN_ONE, ...].
         wait: time to wait after making a connection (seconds).
+        pbar: if true, enables progressbar.
     """
 
     COMMAND_TEMPLATE = "{ch0};{ch1};{samples}s"
     CHANNEL_NAME = "C{}"
 
-    def __init__(self, dev, b=57600, timeout=0.1, gain=GAIN_ONE, wait=2):
+    def __init__(self, dev, b=57600, timeout=0.1, gain=GAIN_ONE, wait=2, progressbar=True):
         self._serial = serial.Serial(dev, baudrate=b, timeout=timeout)
 
         logger.info("Waiting {} seconds after opening the connection...".format(wait))
@@ -54,6 +57,8 @@ class ADC:
         time.sleep(wait)
 
         self._max_V, self._multiplier_mV = GAINS[gain]
+
+        self.progressbar = progressbar
 
     def acquire(self, n_samples, ch0=True, ch1=True, in_bytes=True):
         """Acquires data from the AD.
@@ -76,9 +81,11 @@ class ADC:
 
         self._serial.write(bytes(adc_command, 'utf-8'))
 
+        none_array = np.full(n_samples, None)
+
         data = {}
-        data['C0'] = self._read_data(n_samples, in_bytes=True) if ch0 else np.full(n_samples, None)
-        data['C1'] = self._read_data(n_samples, in_bytes=True) if ch1 else np.full(n_samples, None)
+        data['C0'] = self._read_data(n_samples, in_bytes=True, name='CH0') if ch0 else none_array
+        data['C1'] = self._read_data(n_samples, in_bytes=True, name='CH1') if ch1 else none_array
 
         return data
 
@@ -88,9 +95,9 @@ class ADC:
     def close(self):
         self._serial.close()
 
-    def _read_data(self, n_samples, in_bytes=True):
+    def _read_data(self, n_samples, in_bytes=True, name=''):
         data = []
-        for _ in range(n_samples):
+        for _ in progressbar(range(n_samples), prefix="{}:".format(name), enable=self.progressbar):
             try:
                 if in_bytes:
                     value = self._serial.read(2)
