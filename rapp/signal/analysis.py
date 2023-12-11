@@ -56,7 +56,7 @@ def parse_input_parameters_from_filepath(filepath):
 
 def plot_histogram_and_pdf(data,  bins='quantized', prefix='', show=False):
     """Plots a histogram and PDF for 2-channel data."""
-    f, axs = plt.subplots(1, 2, figsize=(9, 4), sharey=False, sharex=False)
+    f, axs = plt.subplots(1, 2, figsize=(9, 4), sharey=True, sharex=True)
 
     for i, ax in enumerate(axs):
         channel_data = data[:, i]
@@ -102,26 +102,28 @@ def plot_histogram_and_pdf(data,  bins='quantized', prefix='', show=False):
 
         ax.xaxis.set_major_locator(plt.MaxNLocator(3))
 
-    f.savefig("{}-histogram".format(prefix))
+    f.savefig("{}-histogram.png".format(prefix))
 
 
 def plot_noise_with_laser_off(output_folder, show=False):
     print("")
     logger.info("PROCESSING SIGNAL WITH LASER OFF (dark current)...")
 
-    filename, sps = 'dark-current.txt', 59.5
+    # file_params = 'dark-current-584nm-samples40000.txt', 59.5, ' ', [5.93, 9.45, 28.38], 0.15, 0.5  # noqa
+    file_params = 'dark-current-632nm-HeNe-samples100000.txt', 845, '\t', [50, 100, 150], 1, 26
 
+    filename, sps, sep, bpass, delta, hpass = file_params
     filepath = os.path.join(ct.INPUT_DIR, filename)
 
     base_output_fname = "{}".format(os.path.join(output_folder, filename[:-4]))
 
-    data = np.loadtxt(filepath, delimiter=' ', skiprows=1, usecols=(1, 2), encoding=ct.ENCONDIG)
+    data = np.loadtxt(filepath, delimiter=sep, skiprows=1, usecols=(1, 2), encoding=ct.ENCONDIG)
 
     logger.info("Plotting raw data...")
     f, axs = plt.subplots(1, 2, figsize=(9, 4), sharey=True)
     for i, ax in enumerate(axs):
         channel_data = data[:, i]
-
+        channel_data = channel_data - np.mean(channel_data)  # center signal
         res = stats.normaltest(channel_data)
         logger.info("Gaussian Test. p-value: {}".format(res.pvalue))
 
@@ -129,12 +131,14 @@ def plot_noise_with_laser_off(output_folder, show=False):
         ax.set_xlabel(ct.LABEL_N_SAMPLE)
         ax.set_title("Canal {}".format(i))
         ax.plot(channel_data, '-', color='k')
+        ax.xaxis.set_major_locator(plt.MaxNLocator(3))
+        ax.ticklabel_format(style='sci', scilimits=(0, 0), axis='y')
 
     # Hide x labels and tick labels for top plots and y ticks for right plots.
     for ax in axs.flat:
         ax.label_outer()
 
-    f.savefig("{}-signal".format(base_output_fname))
+    f.savefig("{}-signal.png".format(base_output_fname))
 
     if show:
         plt.show()
@@ -156,11 +160,11 @@ def plot_noise_with_laser_off(output_folder, show=False):
 
         ax.set_xlabel(ct.LABEL_FREQUENCY)
         ax.set_title("Canal {}".format(i))
-        ax.plot(xs[1:], np.abs(fft[1:]), color='k')
+        ax.semilogy(xs, np.abs(fft), color='k')
 
     f.tight_layout()
 
-    f.savefig("{}-fft".format(base_output_fname))
+    f.savefig("{}-fft.png".format(base_output_fname))
 
     if show:
         plt.show()
@@ -168,42 +172,62 @@ def plot_noise_with_laser_off(output_folder, show=False):
     plt.close()
 
     filtered = []
-    logger.info("Filtering unwanted frequencies...")
-    max_freqs = [1, 0.02]
 
+    logger.info("Filtering unwanted frequencies...")
     f, axs = plt.subplots(1, 2, figsize=(8, 4), sharey=True)
     for i, ax in enumerate(axs):
         channel_data = data[:, i]
+
+        if i == 0:
+            ax.set_ylabel(ct.LABEL_COUNTS)
+
+        ax.set_xlabel(ct.LABEL_FREQUENCY)
+        ax.set_title("Canal {}".format(i))
+
+        for fr in bpass:
+            b, a = signal.butter(3, [fr - delta, fr + delta], btype='bandstop', fs=sps)
+            channel_data = signal.lfilter(b, a, channel_data)
+
+        b, a = signal.butter(3, hpass, btype='highpass', fs=sps)
+        channel_data = signal.filtfilt(b, a, channel_data)
 
         fft = np.fft.fft(channel_data)
 
         xs = np.arange(0, len(fft))
         xs = (xs / len(fft)) * sps
+        ax.semilogy(xs, abs(fft), color='k')
 
-        if i == 0:
-            ax.set_ylabel(ct.LABEL_COUNTS)
-
-        ax.set_xlabel(ct.LABEL_N_SAMPLE)
-        ax.set_title("Canal {}".format(i))
-
-        # Remove peaks
-        fft[np.abs(fft) > max_freqs[i]] = 0
-
-        filtered_channel = np.fft.ifft(fft).real
-
-        res = stats.shapiro(filtered_channel)
+        res = stats.normaltest(channel_data)
         logger.info("Gaussian Test. p-value: {}".format(res.pvalue))
 
-        filtered.append(filtered_channel)
-
-        ax.plot(filtered_channel, color='k')
+        filtered.append(channel_data)
 
     # Hide x labels and tick labels for top plots and y ticks for right plots.
     for ax in axs.flat:
         ax.label_outer()
 
     f.tight_layout()
-    f.savefig("{}-filtered".format(base_output_fname))
+    f.savefig("{}-filtered-fft.png".format(base_output_fname))
+
+    if show:
+        plt.show()
+
+    plt.close()
+
+    f, axs = plt.subplots(1, 2, figsize=(8, 4), sharey=True)
+    for i, filtered_channel in enumerate(filtered, 0):
+        axs[i].plot(filtered_channel, color='k')
+        axs[i].set_ylabel(ct.LABEL_VOLTAGE)
+        axs[i].set_xlabel(ct.LABEL_N_SAMPLE)
+        axs[i].ticklabel_format(style='sci', scilimits=(0, 0), axis='y')
+        axs[i].xaxis.set_major_locator(plt.MaxNLocator(3))
+
+    # Hide x labels and tick labels for top plots and y ticks for right plots.
+    for ax in axs.flat:
+        ax.label_outer()
+
+    f.tight_layout()
+    f.savefig("{}-filtered-signal.png".format(base_output_fname))
 
     if show:
         plt.show()
@@ -223,12 +247,13 @@ def plot_noise_with_laser_on(output_folder, show=False):
     print("")
     logger.info("ANALYZING NOISE WITH LASER ON...")
 
-    # filename, sep, sps = '2023-12-07-HeNe-noise-cycles0-step10-samples100000.txt', r"\s+", 830
-    filename, sep, sps = 'laser-75-int-alta.txt', ' ', 59
+    filename, sep, sps, bpass, delta, hpass = 'laser-75-int-alta.txt', ' ', 59.5, [9.4, 18.1, 18.8, 21.45, 28.2], 0.3, 2  # noqa
+    # filename, sep, sps, cutoff = '2023-12-07-HeNe-noise-cycles0-step10-samples100000.txt', r"\s+", 845, 20  # noqa
 
     filepath = os.path.join(ct.INPUT_DIR, filename)
 
     data = read_measurement_file(filepath, sep=sep)
+    data = data[1:]
     base_output_fname = "{}".format(os.path.join(output_folder, filename[:-4]))
 
     logger.info("Fitting raw data to 2-degree polynomial...")
@@ -280,7 +305,7 @@ def plot_noise_with_laser_on(output_folder, show=False):
 
         ax.set_xlabel(ct.LABEL_FREQUENCY)
         ax.set_title("Canal {}".format(i))
-        ax.plot(xs[1:], np.abs(channel_fft[1:]), color='k')
+        ax.semilogy(xs, np.abs(channel_fft), color='k')
 
     f.savefig("{}-fft".format(base_output_fname))
 
@@ -289,31 +314,56 @@ def plot_noise_with_laser_on(output_folder, show=False):
 
     plt.close()
 
-    logger.info("Filtering noise...")
-    plot = Plot(ylabel=ct.LABEL_VOLTAGE, xlabel=ct.LABEL_N_SAMPLE, folder=output_folder)
-    for i in CHANNELS:
+    filtered = []
+    logger.info("Filtering unwanted frequencies...")
+    f, axs = plt.subplots(1, 2, figsize=(8, 4), sharey=True)
+    for i, ax in enumerate(axs):
         channel_data = data['CH{}'.format(i)]
 
-        b, a = signal.butter(3, 1.5, btype='highpass', fs=sps)
+        for fr in bpass:
+            b, a = signal.butter(3, [fr - delta, fr + delta], btype='bandstop', fs=sps)
+            channel_data = signal.lfilter(b, a, channel_data)
+
+        b, a = signal.butter(3, hpass, btype='highpass', fs=sps)
         channel_data = signal.filtfilt(b, a, channel_data)
 
-        channel_data[channel_data > 0.001] = 0
-        channel_data[channel_data < -0.001] = 0
+        channel_data[channel_data > 0.0015] = 0
+        channel_data[channel_data < -0.0015] = 0
 
         data['CH{}'.format(i)] = channel_data
 
-        res = stats.shapiro(channel_data)
+        fft = np.fft.fft(channel_data)
+
+        xs = np.arange(0, len(fft))
+        xs = (xs / len(fft)) * sps
+        ax.semilogy(xs, abs(fft), color='k')
+
+        res = stats.normaltest(channel_data)
         logger.info("Gaussian Test. p-value: {}".format(res.pvalue))
 
-        plot.add_data(channel_data, style='-', label='Canal {}'.format(i))
-        plot.legend()
+        filtered.append(channel_data)
 
-    plot.save("{}-filtered-noise".format(filename[:-4]))
+    f.savefig("{}-filtered-fft".format(filename[:-4]))
 
     if show:
         plt.show()
 
-    plot.close()
+    plt.close()
+
+    plot = Plot(ylabel=ct.LABEL_VOLTAGE, xlabel=ct.LABEL_N_SAMPLE, ysci=True, folder=output_folder)
+    for i, filtered_channel in enumerate(filtered, 0):
+
+        plot.add_data(filtered_channel, style='-', label='Canal {}'.format(i))
+        plot.legend()
+        plot._ax.xaxis.set_major_locator(plt.MaxNLocator(3))
+
+    f.tight_layout()
+    f.savefig("{}-filtered-signal.png".format(base_output_fname))
+
+    if show:
+        plt.show()
+
+    plt.close()
 
     data = data[['CH0', 'CH1']].to_numpy()
 
@@ -441,13 +491,13 @@ def plot_phase_difference(filepath, method, show=False):
     res = phase_difference(
         xs * 2, s1, s2, x_sigma=x_sigma, s1_sigma=s1err, s2_sigma=s2err, method=method)
 
-    error_deg = np.rad2deg(res.u)
+    error_deg = np.rad2deg(res.u / 2)
     error_deg_rounded = round_to_n(error_deg, 2)
 
     # Obtain number of decimal places of the u:
     d = abs(decimal.Decimal(str(error_deg_rounded)).as_tuple().exponent)
 
-    phase_diff_deg = np.rad2deg(res.value)
+    phase_diff_deg = np.rad2deg(res.value / 2)
     phase_diff_deg_rounded = round(phase_diff_deg, d)
 
     phi_label = "φ=({} ± {})°.".format(phase_diff_deg_rounded, error_deg_rounded)
@@ -568,8 +618,8 @@ def main(show):
     output_folder = os.path.join(ct.WORK_DIR, ct.OUTPUT_FOLDER_PLOTS)
     create_folder(output_folder)
 
-    plot_noise_with_laser_off(output_folder, show=show)
-    # plot_noise_with_laser_on(output_folder, show=show)
+    # plot_noise_with_laser_off(output_folder, show=show)
+    plot_noise_with_laser_on(output_folder, show=show)
     # plot_drift(output_folder, show=show)
     # plot_signals_per_n_measurement(output_folder, show=show)
     # plot_signals_per_angle(output_folder, show=show)
