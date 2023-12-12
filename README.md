@@ -57,14 +57,16 @@ rapp provides a command-line interface with different commands:
 
 ```bash
 (.venv) $ rapp
-usage: RAPP [-h] {analysis,polarimeter,sim} ...
+usage: RAPP [-h] {polarimeter,phase_diff,analysis,sim} ...
 
 Tools for measuring the rotation angle of the plane of polarization (RAPP).
 
 positional arguments:
-  {analysis,polarimeter,sim}
+  {polarimeter,phase_diff,analysis,sim}
                         available commands
     polarimeter         Tool for measuring signals with the polarimeter.
+    phase_diff          Tool for calculating phase difference between two harmonic signals.
+    analysis            Tool for analyzing signals: noise, drift, etc.
     sim                 Tool for making numerical simulations.
 
 options:
@@ -74,18 +76,22 @@ options:
 The polarimeter command:
 ```bash
 (.venv) $ rapp polarimeter -h
-usage: RAPP polarimeter [-h] --cycles CYCLES --step STEP --samples SAMPLES [--delay_position] [--analyzer_velocity] [--prefix] [--test] [-v]
+usage: RAPP polarimeter [-h] --cycles CYCLES [--step STEP] --samples SAMPLES [--delay_position] [--velocity] [--no-ch0] [--no-ch1] [--prefix] [--test_esp] [--test_adc] [--plot] [-v]
 
 options:
-  -h, --help            show this help message and exit
-  --cycles CYCLES       n° of cycles to run.
-  --step STEP           every how many degrees to take a measurement.
-  --samples SAMPLES     n° of samples per angle.
-  --delay_position      delay (in seconds) after changing analyzer position (default: 1).
-  --analyzer_velocity   velocity of the analyzer in deg/s (default: 4).
-  --prefix              prefix for the filename in which to write results (default: test).
-  --test                run on test mode. No real connections will be established (default: False).
-  -v, --verbose         whether to run with DEBUG log level (default: False).
+  -h, --help         show this help message and exit
+  --cycles CYCLES    n° of cycles to run.
+  --step STEP        every how many degrees to take a measurement.
+  --samples SAMPLES  n° of samples per angle.
+  --delay_position   delay (in seconds) after changing analyzer position (default: 1).
+  --velocity         velocity of the analyzer in deg/s (default: 4).
+  --no-ch0           excludes channel 0 from measurement (default: False).
+  --no-ch1           excludes channel 1 from measurement (default: False).
+  --prefix           prefix for the filename in which to write results (default: test).
+  --test_esp         use ESP mock object. (default: False).
+  --test_adc         use ADC mock object. (default: False).
+  --plot             plot the results when the measurement is finished (default: False).
+  -v, --verbose      whether to run with DEBUG log level (default: False).
 
 Example: rapp polarimeter --cycles 1 --step 30 --samples 10 --delay_position 0
 ```
@@ -95,10 +101,10 @@ The sim command:
 ```bash
 The sim command:
 (.venv) [tlink@tlink rapp]$ rapp sim -h
-usage: RAPP sim [-h] [--show] name
+usage: RAPP sim [-h] [--samples SAMPLES] [--reps REPS] [--show] [-v] name
 
 positional arguments:
-  name        name of the simulation. One of [all, two_signals, error_vs_cycle, error_vs_step, phase_diff].
+  name               name of the simulation. One of ['all', 'signals_out_of_phase', 'sim_steps', 'methods', 'error_vs_cycles', 'error_vs_res', 'error_vs_range', 'noise_vs_range', 'phase_diff'].
 
 options:
   -h, --help         show this help message and exit

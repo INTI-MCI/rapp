@@ -39,14 +39,14 @@ void serial_write_short(short data){
     Serial.write(buffer, 2);  
 }
 
-void read_n_samples_from_channel(unsigned long n_samples, byte channel){
+void read_n_samples_from_channel(unsigned long n_samples, char channel){
     ads.startADCReading(MUX_BY_CHANNEL[channel], ADS_READING_MODE_CONTINUOUS);
     delay(ADS_READING_DELAY);
 
     unsigned long i = 0;
     while (i < n_samples) {
         short data = ads.getLastConversionResults();
-        //Serial.println(data, DEC);
+        // Serial.println(data, DEC);  // Useful to test stuff from Serial Monitor.
         serial_write_short(data);
 
         i = i + 1;
@@ -54,21 +54,39 @@ void read_n_samples_from_channel(unsigned long n_samples, byte channel){
     };
 }
 
-void read_n_samples(unsigned long n_samples){
-    read_n_samples_from_channel(n_samples, 0);      
-    read_n_samples_from_channel(n_samples, 1);
+void read_n_samples(unsigned long n_samples, bool ch0, bool ch1){
+    if (ch0) {
+        read_n_samples_from_channel(n_samples, 0);
+    }
+    if (ch1) {
+        read_n_samples_from_channel(n_samples, 1);
+    }
 }
 
-unsigned long parse_n_samples() {
+unsigned long parse_and_read_n_samples() {
+    bool ch0 = parse_bool();
+    bool ch1 = parse_bool();
+    unsigned long n_samples = parse_int();
+    read_n_samples(n_samples, ch0, ch1);
+
+    return n_samples;
+}
+
+unsigned long parse_int() {
     unsigned long value = Serial.parseInt();
     Serial.read(); // Remove next char (terminator) from buffer.
     return value;
 }
 
-void measure_SPS(){
+bool parse_bool() {
+    bool value = Serial.parseInt();
+    Serial.read(); // Remove next char (terminator) from buffer.
+    return value;
+}
+
+void measure_SPS() {
     float starttime = millis();
-    unsigned long n_samples = parse_n_samples();
-    read_n_samples(n_samples);
+    unsigned long n_samples = parse_and_read_n_samples();
     float endtime = millis();
 
     float elapsedtime = (endtime - starttime) / 1000;
@@ -87,8 +105,9 @@ void measure_SPS(){
 void loop(void) {
     if (Serial.available() > 0) {  // Wait to recieve a signal.
 
-        //measure_SPS();
+        // measure_SPS();
 
-        read_n_samples(parse_n_samples());
+        parse_and_read_n_samples();
+
     }
 }

@@ -2,6 +2,7 @@ import time
 import logging
 
 import serial
+import numpy as np
 
 logger = logging.getLogger(__name__)
 
@@ -22,19 +23,26 @@ GAINS = {
     GAIN_SIXTEEN: (0.256, 0.0078125),
 }
 
+MESSAGE_CHANNELS = "Both ch0 and ch1 are False. Please set at least one of them as True."
+
+
+class ADCError(Exception):
+    pass
+
 
 class ADC:
-    """Encapsulates the communication with the polarimeter ADC.
+    """Encapsulates the communication with the polarimeter acquisition device (AD).
 
     Args:
-        dev: the device of the serial in which the ADC is connected.
+        dev: the device of the serial in which the AD is connected.
         baudrate: bits per second.
         timeout: read timeout (seconds).
         gain: the gain to use. One of [GAIN_TWOTHIRDS, GAIN_ONE, ...].
         wait: time to wait after making a connection (seconds).
     """
 
-    SAMPLES_TERMINATION_CHARACTER = "s"
+    COMMAND_TEMPLATE = "{ch0};{ch1};{samples}s"
+    CHANNEL_NAME = "C{}"
 
     def __init__(self, dev, b=57600, timeout=0.1, gain=GAIN_ONE, wait=2):
         self._serial = serial.Serial(dev, baudrate=b, timeout=timeout)
@@ -47,24 +55,32 @@ class ADC:
 
         self._max_V, self._multiplier_mV = GAINS[gain]
 
-    def acquire(self, n_samples, in_bytes=True):
-        """Acquires data from the ADC.
+    def acquire(self, n_samples, ch0=True, ch1=True, in_bytes=True):
+        """Acquires data from the AD.
 
         Args:
             n_samples: number of samples to ask.
-            in_bytes: if true, ADC sends values in bytes. If false, sends text.
+            in_bytes: if true, AD will send values as bytes. If false, as text.
+            ch0: if true, measures the channel 0.
+            ch1: if true, measures the channel 1.
 
         Returns:
             the values as a list of tuples [(a00, a10), (a01, a11), ..., (a0n, a1n)].
         """
 
-        adc_command = "{}{}".format(n_samples, ADC.SAMPLES_TERMINATION_CHARACTER)
+        if not (ch0 or ch1):
+            raise ADCError(MESSAGE_CHANNELS)
+
+        adc_command = ADC.COMMAND_TEMPLATE.format(ch0=int(ch0), ch1=int(ch1), samples=n_samples)
+        logger.debug("ADC command: {}".format(adc_command))
+
         self._serial.write(bytes(adc_command, 'utf-8'))
 
-        a0 = self._read_data(n_samples, in_bytes=True)
-        a1 = self._read_data(n_samples, in_bytes=True)
+        data = {}
+        data['C0'] = self._read_data(n_samples, in_bytes=True) if ch0 else np.full(n_samples, None)
+        data['C1'] = self._read_data(n_samples, in_bytes=True) if ch1 else np.full(n_samples, None)
 
-        return list(zip(a0, a1))
+        return data
 
     def flush_input(self):
         self._serial.flushInput()
