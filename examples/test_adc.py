@@ -4,39 +4,12 @@ from rapp.utils import timing
 from rapp.adc import ADC
 
 
-ADC_DEVICE = 'COM4'
-# ADC_DEVICE = '/dev/ttyACM0'
-
+ADC_WIN_DEVICE = 'COM4'
+ADC_LINUX_DEVICE = '/dev/ttyACM0'
 ADC_BAUDRATE = 57600
 ADC_TIMEOUT = 0.1
 ADC_MULTIPLIER_mV = 0.125
-
-WAIT_TIME_AFTER_CONNECTION = 5
-
-
-def bits_to_volts(value):
-    return value * ADC_MULTIPLIER_mV / 1000
-
-
-@timing
-def read_line(adc):
-    return adc.readline().decode().strip()
-
-
-@timing
-def read_data(adc, n_samples):
-    data = []
-    for _ in range(n_samples):
-        try:
-            value, _ = read_line(adc)
-            if value:
-                value = int(value)
-                value = bits_to_volts(value)
-                data.append(value)
-        except (ValueError, UnicodeDecodeError) as e:
-            print(e)
-
-    return data
+ADC_WAIT_TIME = 5
 
 
 @timing
@@ -50,21 +23,32 @@ def handshake(adc):
 
 
 @timing
-def acquire(adc, n_samples):
-    return adc.acquire(n_samples)
+def acquire(adc, **kwargs):
+    return adc.acquire(**kwargs)
 
 
-def main(n_samples=5):
+def resolve_adc_device():
+    if sys.platform == 'linux':
+        return ADC_LINUX_DEVICE
 
-    adc = ADC(ADC_DEVICE, b=ADC_BAUDRATE, timeout=ADC_TIMEOUT, wait=WAIT_TIME_AFTER_CONNECTION)
+    return ADC_WIN_DEVICE
+
+
+def main(n_samples, ch0, ch1):
+    print("Instantiating ADC...")
+    adc = ADC(resolve_adc_device(), b=ADC_BAUDRATE, timeout=ADC_TIMEOUT, wait=ADC_WAIT_TIME)
 
     print("Acquiring...")
-    data, elapsed_time = acquire(adc, n_samples=n_samples)
-
-    for d in data:
-        print("(A0, A1) = {}".format(d))
-
+    data, elapsed_time = acquire(adc, n_samples=n_samples, ch0=ch0, ch1=ch1)
     sps = n_samples / elapsed_time
+
+    channels_names_tuple = "({})".format(", ".join(data.keys()))
+
+    values = list(zip(*data.values()))
+
+    for d in values:
+        print("{} = {}".format(channels_names_tuple, d))
+
     print("Samples per second: {}".format(sps))
     print("Number of measurements: {}".format(len(data)))
 
@@ -74,9 +58,11 @@ def main(n_samples=5):
 if __name__ == '__main__':
     try:
         n_samples = int(sys.argv[1])
-    except ValueError as e:
+        ch0 = bool(int(sys.argv[2]))
+        ch1 = bool(int(sys.argv[3]))
+    except IndexError as e:
         print(e)
-        print("Input parameter must be a integer number!")
+        print("Need to pass input parameters are SAMPLES, CH0, CH1")
         exit(1)
 
-    main(n_samples)
+    main(n_samples, ch0, ch1)

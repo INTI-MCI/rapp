@@ -16,8 +16,11 @@ HELP_STEP = 'every how many degrees to take a measurement.'
 HELP_SAMPLES = 'n° of samples per angle.'
 HELP_DELAY_POSITION = 'delay (in seconds) after changing analyzer position (default: %(default)s).'
 HELP_VELOCITY = 'velocity of the analyzer in deg/s (default: %(default)s).'
+HELP_NOCH0 = 'excludes channel 0 from measurement (default: %(default)s).'
+HELP_NOCH1 = 'excludes channel 1 from measurement (default: %(default)s).'
 HELP_PREFIX = 'prefix for the filename in which to write results (default: %(default)s).'
-HELP_TEST = 'run on test mode. No real connections will be established (default: %(default)s).'
+HELP_TEST_ESP = 'use ESP mock object. (default: %(default)s).'
+HELP_TEST_ADC = 'use ADC mock object. (default: %(default)s).'
 HELP_PLOT = 'plot the results when the measurement is finished (default: %(default)s).'
 HELP_VERBOSE = 'whether to run with DEBUG log level (default: %(default)s).'
 HELP_METHOD = 'phase difference calculation method (default: %(default)s).'
@@ -49,8 +52,11 @@ def add_polarimeter_subparser(subparsers):
     p.add_argument('--samples', type=int, required=True, help=HELP_SAMPLES)
     p.add_argument('--delay_position', type=float, default=1, metavar='', help=HELP_DELAY_POSITION)
     p.add_argument('--velocity', type=float, default=4, metavar='', help=HELP_VELOCITY)
+    p.add_argument('--no-ch0', action='store_true', help=HELP_NOCH0)
+    p.add_argument('--no-ch1', action='store_true', help=HELP_NOCH1)
     p.add_argument('--prefix', type=str, default='test', metavar='', help=HELP_PREFIX)
-    p.add_argument('--test', action='store_true', help=HELP_TEST)
+    p.add_argument('--test_esp', action='store_true', help=HELP_TEST_ESP)
+    p.add_argument('--test_adc', action='store_true', help=HELP_TEST_ADC)
     p.add_argument('--plot', action='store_true', help=HELP_PLOT)
     p.add_argument('-v', '--verbose', action='store_true', help=HELP_VERBOSE)
 
@@ -115,8 +121,11 @@ def main():
                 samples=args.samples,
                 delay_position=args.delay_position,
                 velocity=args.velocity,
+                ch0=not args.no_ch0,
+                ch1=not args.no_ch1,
                 prefix=args.prefix,
-                test=args.test,
+                test_esp=args.test_esp,
+                test_adc=args.test_adc,
                 plot=args.plot
             )
     except ValueError as e:

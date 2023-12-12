@@ -1,14 +1,16 @@
 import os
+import sys
 import time
 import logging
 
 from datetime import datetime, date
 
 import numpy as np
-from rapp import constants as ct
 
+from rapp import constants as ct
 from rapp.esp import ESP
 from rapp.adc import ADC
+from rapp.utils import progressbar
 from rapp.mocks import ADCMock, ESPMock
 from rapp.signal.analysis import plot_two_signals
 
@@ -17,7 +19,9 @@ np.set_printoptions(threshold=0, edgeitems=5, suppress=True)
 logger = logging.getLogger(__name__)
 
 
-ADC_DEVICE = 'COM4'
+ADC_WIN_DEVICE = 'COM4'
+ADC_LINUX_DEVICE = '/dev/ttyACM0'
+
 ADC_BAUDRATE = 57600
 ADC_TIMEOUT = 0.1
 ADC_WAIT = 2
@@ -41,6 +45,13 @@ FILE_METADATA = (
     "# samples : {samples}\n"
     "# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#\n"
 )
+
+
+def resolve_adc_device():
+    if sys.platform == 'linux':
+        return ADC_LINUX_DEVICE
+
+    return ADC_WIN_DEVICE
 
 
 def open_file(filename, overwrite=False):
@@ -74,8 +85,8 @@ def generate_angles(cycles, step, init_position=0.0):
 
 
 def main(
-    cycles=1, step=10, samples=10, delay_position=1, velocity=2, prefix='test',
-    test=False, plot=False
+    cycles=1, step=10, samples=10, delay_position=1, velocity=2, ch0=True, ch1=True,
+    prefix='test', test_esp=False, test_adc=False, plot=False
 ):
     output_dir = os.path.join(ct.WORK_DIR, ct.OUTPUT_FOLDER_DATA)
     os.makedirs(output_dir, exist_ok=True)
@@ -90,17 +101,19 @@ def main(
     file_header = "{}{}\n".format(file_meta, FILE_COLUMNS)
     file.write(file_header)
 
-    if test:
-        # If this happens, we don't use real connections. We use mock objects to test the code.
-        # TODO: create a unit test and use the mocks from there.
-        adc = ADCMock()
+    if test_esp:
+        logger.warning("Using ESP mock object.")
         analyzer = ESPMock()
     else:
-        logger.info("Connecting to ADC...")
-        adc = ADC(ADC_DEVICE, b=ADC_BAUDRATE, timeout=ADC_TIMEOUT, wait=ADC_WAIT)
-
         logger.info("Connecting to ESP...")
         analyzer = ESP(ANALYZER_DEVICE, b=ANALYZER_BAUDRATE, axis=ANALYZER_AXIS)
+
+    if test_adc:
+        logger.warning("Using ADC mock object.")
+        adc = ADCMock()
+    else:
+        logger.info("Connecting to ADC...")
+        adc = ADC(resolve_adc_device(), b=ADC_BAUDRATE, timeout=ADC_TIMEOUT, wait=ADC_WAIT)
 
     logger.info("Setting analyzer velocity to {} deg/s.".format(velocity))
     analyzer.setvel(vel=velocity)
@@ -124,8 +137,6 @@ def main(
 
     logger.info("Will measure {} angles: {}.".format(len(angles), angles))
 
-    from rapp.utils import progressbar
-
     for angle in progressbar(angles, prefix="Measuring: ", size=100):
         logger.debug("Changing analyzer position...")
         analyzer.setpos(angle)
@@ -135,12 +146,19 @@ def main(
 
         for chunk_size in chunks_sizes:
             adc.flush_input()  # Clear buffer. Otherwise messes up values at the beginning.
-            data = adc.acquire(chunk_size, in_bytes=True)
+            data = adc.acquire(chunk_size, ch0=ch0, ch1=ch1, in_bytes=True)
 
-            for ch0, ch1 in data:
-                logger.debug("(CH0, CH1) = ({}, {})".format(ch0, ch1))
-                dt = datetime.now().isoformat()
-                row = FILE_ROW.format(angle=angle, ch0=ch0, ch1=ch1, datetime=dt, s=FILE_DELIMITER)
+            channels_names_tuple = "({})".format(", ".join(data.keys()))
+            ch0, ch1 = data.values()
+            for i in range(len(ch0)):
+                logger.debug("{} = ({}, {})".format(channels_names_tuple, ch0[i], ch1[i]))
+                row = FILE_ROW.format(
+                    angle=angle,
+                    ch0=ch0[i],
+                    ch1=ch1[i],
+                    datetime=datetime.now().isoformat(),
+                    s=FILE_DELIMITER
+                )
                 file.write(row.expandtabs(10))
                 file.write('\n')
 
