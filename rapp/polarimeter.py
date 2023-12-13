@@ -31,7 +31,7 @@ ANALYZER_DEVICE = "COM3"
 ANALYZER_BAUDRATE = 921600
 ANALYZER_AXIS = 1
 
-FILE_NAME = "{d}-{prefix}-cycles{cycles}-step{step}-samples{samples}.txt"
+FILE_NAME = "{prefix}-cycles{cycles}-step{step}-samples{samples}.txt"
 FILE_ROW = "{angle}{s}{ch0}{s}{ch1}{s}{datetime}"
 FILE_DELIMITER = "\t"
 FILE_COLUMNS = "ANGLE{s}CH0{s}CH1{s}DATETIME".format(s=FILE_DELIMITER).expandtabs(10)
@@ -96,7 +96,7 @@ def main(
     overwrite = ask_for_overwrite(filepath)
     file = open_file(filepath, overwrite)
 
-    file_meta = FILE_METADATA.format(d=today, cycles=cycles, step=step, samples=samples)
+    file_meta = FILE_METADATA.format(cycles=cycles, step=step, samples=samples)
     file_header = "{}{}\n".format(file_meta, FILE_COLUMNS)
     file.write(file_header)
 
