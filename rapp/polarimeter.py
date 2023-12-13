@@ -134,13 +134,14 @@ def main(
 
     if cycles == 0:
         angles = [init_position]
+        adc.progressbar = True
     else:
         angles = generate_angles(cycles, step, init_position=init_position)
         adc.progressbar = False
 
     logger.info("Will measure {} angles: {}.".format(len(angles), angles))
 
-    for angle in progressbar(angles, prefix="Angles:", enable=len(angles) > 0):
+    for angle in progressbar(angles, prefix="Angles:", enable=len(angles) > 1):
         logger.debug("Changing analyzer position...")
         analyzer.setpos(angle)
 
