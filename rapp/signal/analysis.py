@@ -111,20 +111,21 @@ def plot_noise_with_laser_off(output_folder, show=False):
     print("")
     logger.info("PROCESSING SIGNAL WITH LASER OFF (dark current)...")
 
-    file_params = 'darkcurrent-range4V-samples40000.txt', 59.5, ' ', [(5.93, 0.15), (9.45, 0.15), (28.38, 0.15)], 0.5  # noqa
+    # file_params = 'darkcurrent-range4V-samples40000-sps59.txt', 59.5, ' ', [(5.93, 0.15), (9.45, 0.15), (28.38, 0.15)], 0.5  # noqa
     # file_params = 'darkcurrent-range2V-samples100000.txt', 845, '\t', [(50, 10), (100, 1), (150, 1)], 26  # noqa
+    file_params = 'darkcurrent-range4V-samples100000.txt', 845, r"\s+", [(50, 10), (100, 1), (150, 1)], 26  # noqa
 
     filename, sps, sep, bpass, hpass = file_params
     filepath = os.path.join(ct.INPUT_DIR, filename)
 
     base_output_fname = "{}".format(os.path.join(output_folder, filename[:-4]))
 
-    data = np.loadtxt(filepath, delimiter=sep, skiprows=1, usecols=(1, 2), encoding=ct.ENCONDIG)
+    data = read_measurement_file(filepath, sep=sep)
 
     logger.info("Plotting raw data...")
     f, axs = plt.subplots(1, 2, figsize=(9, 4), sharey=True)
     for i, ax in enumerate(axs):
-        channel_data = data[:, i]
+        channel_data = data['CH{}'.format(i)]
         channel_data = channel_data - np.mean(channel_data)  # center signal
         res = stats.normaltest(channel_data)
         logger.info("Gaussian Test. p-value: {}".format(res.pvalue))
@@ -150,7 +151,7 @@ def plot_noise_with_laser_off(output_folder, show=False):
     logger.info("Plotting FFT...")
     f, axs = plt.subplots(1, 2, figsize=(7, 4), sharey=True)
     for i, ax in enumerate(axs):
-        channel_data = data[:, i]
+        channel_data = data['CH{}'.format(i)]
 
         fft = np.fft.fft(channel_data)
 
@@ -178,7 +179,7 @@ def plot_noise_with_laser_off(output_folder, show=False):
     logger.info("Filtering unwanted frequencies...")
     f, axs = plt.subplots(1, 2, figsize=(8, 4), sharey=True)
     for i, ax in enumerate(axs):
-        channel_data = data[:, i]
+        channel_data = data['CH{}'.format(i)]
 
         if i == 0:
             ax.set_ylabel(ct.LABEL_COUNTS)
@@ -249,10 +250,10 @@ def plot_noise_with_laser_on(output_folder, show=False):
     print("")
     logger.info("ANALYZING NOISE WITH LASER ON...")
 
-    filename, sep, sps, bpass, hpass = 'continuous-584nm-int-alta-samples10000.txt', ' ', 59.5, [(9.4, 0.3), (18.09, 0.3), (18.8, 0.3), (28.22, 0.3)], 2  # noqa
-    # filename, sep, sps, bpass, hpass = (
-    #    '2023-12-07-continuous-632nm-cycles0-step10-samples100000.txt', r"\s+", 845, [(50, 20), (100, 10), (150, 10), (200, 10), (250, 10), (300, 10), (350, 10), (400, 10)], 25  # noqa
-    # )
+    # filename, sep, sps, bpass, hpass = 'continuous-range4V-584nm-samples10000-sps59.txt', ' ', 59.5, [(9.4, 0.3), (18.09, 0.3), (18.8, 0.3), (28.22, 0.3)], 2  # noqa
+    filename, sep, sps, bpass, hpass = (
+        'continuous-range4V-632nm-samples100000.txt', r"\s+", 845, [(50, 20), (100, 10), (150, 10), (200, 10), (250, 10), (300, 10), (350, 10), (400, 10)], 25  # noqa
+    )
 
     filepath = os.path.join(ct.INPUT_DIR, filename)
 
@@ -622,7 +623,7 @@ def main(show):
     output_folder = os.path.join(ct.WORK_DIR, ct.OUTPUT_FOLDER_PLOTS)
     create_folder(output_folder)
 
-    plot_noise_with_laser_off(output_folder, show=show)
+    # plot_noise_with_laser_off(output_folder, show=show)
     plot_noise_with_laser_on(output_folder, show=show)
     # plot_drift(output_folder, show=show)
     # plot_signals_per_n_measurement(output_folder, show=show)
