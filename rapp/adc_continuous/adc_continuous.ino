@@ -39,7 +39,7 @@ void serial_write_short(short data){
     Serial.write(buffer, 2);  
 }
 
-void read_n_samples_from_channel(unsigned long n_samples, char channel){
+void read_n_samples_from_channel(unsigned long n_samples, byte channel){
     ads.startADCReading(MUX_BY_CHANNEL[channel], ADS_READING_MODE_CONTINUOUS);
     delay(ADS_READING_DELAY);
 

@@ -34,26 +34,45 @@ def timing(f):
     return wrap
 
 
-def progressbar(it, prefix="", size=60, out=sys.stdout):
+def progressbar(it, prefix="", size=100, out=sys.stdout, enable=True):
     count = len(it)
     start = time()
 
-    bar_string = "{}[{}{}] {}% Remaining time: {}"
+    step = max([int(count * 0.001), 1])
+
+    bar_string = "{}[{}{}] {}% | remaining time: {} | rate: {}"
+
+    last_time = start
 
     def show(j):
         x = int(size * j / count)
 
-        remaining = ((time() - start) / j) * (count - j)
+        current_time = time()
+        elapsed_time = current_time - start
+        time_per_batch = current_time - last_time
+
+        if time_per_batch == 0 or j == 1:
+            rate = 0
+        else:
+            rate = round(step / time_per_batch, 2)
+
+        remaining = (elapsed_time / j) * (count - j)
 
         mins, sec = divmod(remaining, 60)
         time_str = "{:02}:{:02}".format(int(mins), int(sec))
+        rate_str = "{:02} it/s".format(rate)
         pctg = round((j / count) * 100)
 
-        bar = bar_string.format(prefix, u'█'*x, ('.'*(size-x)), pctg, time_str)
+        bar = bar_string.format(prefix, u'='*x, ('.'*(size-x)), pctg, time_str, rate_str)
         print(bar, end='\r', file=out, flush=True)
+
+        return current_time
 
     for i, item in enumerate(it):
         yield item
-        show(i + 1)
 
-    print("\n", flush=True, file=out)
+        if enable:
+            if (i % step == 0 or i == count - 1):
+                last_time = show(i + 1)
+    if enable:
+        print("", flush=True, file=out)

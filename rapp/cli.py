@@ -12,12 +12,13 @@ HELP_PHASE_DIFF = 'Tool for calculating phase difference between two harmonic si
 HELP_ANALYSYS = "Tool for analyzing signals: noise, drift, etc."
 
 HELP_CYCLES = 'n° of cycles to run.'
-HELP_STEP = 'every how many degrees to take a measurement.'
+HELP_STEP = 'every how many degrees to take a measurement (default: %(default)s).'
 HELP_SAMPLES = 'n° of samples per angle.'
 HELP_DELAY_POSITION = 'delay (in seconds) after changing analyzer position (default: %(default)s).'
 HELP_VELOCITY = 'velocity of the analyzer in deg/s (default: %(default)s).'
 HELP_NOCH0 = 'excludes channel 0 from measurement (default: %(default)s).'
 HELP_NOCH1 = 'excludes channel 1 from measurement (default: %(default)s).'
+HELP_CHUNK_SIZE = 'measure data in chunks of this size. If 0, no chunks (default: %(default)s).'
 HELP_PREFIX = 'prefix for the filename in which to write results (default: %(default)s).'
 HELP_TEST_ESP = 'use ESP mock object. (default: %(default)s).'
 HELP_TEST_ADC = 'use ADC mock object. (default: %(default)s).'
@@ -50,6 +51,7 @@ def add_polarimeter_subparser(subparsers):
     p.add_argument('--cycles', type=int, required=True, help=HELP_CYCLES)
     p.add_argument('--step', type=float, default=10, help=HELP_STEP)
     p.add_argument('--samples', type=int, required=True, help=HELP_SAMPLES)
+    p.add_argument('--chunk_size', type=int, default=500, metavar='', help=HELP_CHUNK_SIZE)
     p.add_argument('--delay_position', type=float, default=1, metavar='', help=HELP_DELAY_POSITION)
     p.add_argument('--velocity', type=float, default=4, metavar='', help=HELP_VELOCITY)
     p.add_argument('--no-ch0', action='store_true', help=HELP_NOCH0)
@@ -121,8 +123,9 @@ def main():
                 samples=args.samples,
                 delay_position=args.delay_position,
                 velocity=args.velocity,
-                ch0=not args.no_ch0,
-                ch1=not args.no_ch1,
+                no_ch0=args.no_ch0,
+                no_ch1=args.no_ch1,
+                chunk_size=args.chunk_size,
                 prefix=args.prefix,
                 test_esp=args.test_esp,
                 test_adc=args.test_adc,
