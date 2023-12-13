@@ -29,6 +29,8 @@ REGEX_NUMBER_AFTER_WORD = r"(?<={word})\d+(?:\.\d+)?"
 
 PARAMETER_STRING = "cycles={}, step={}, samples={}."
 
+COVERAGE_FACTOR = 3
+
 
 def read_measurement_file(filepath, sep=r"\s+"):
     return pd.read_csv(
@@ -493,7 +495,7 @@ def plot_phase_difference(filepath, method, show=False):
     res = phase_difference(
         xs * 2, s1, s2, x_sigma=x_sigma, s1_sigma=s1err, s2_sigma=s2err, method=method)
 
-    error_deg = np.rad2deg(res.u / 2)
+    error_deg = np.rad2deg((res.u / 2) * COVERAGE_FACTOR)
     error_deg_rounded = round_to_n(error_deg, 2)
 
     # Obtain number of decimal places of the u:
