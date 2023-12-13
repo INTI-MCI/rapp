@@ -76,13 +76,14 @@ options:
 The polarimeter command:
 ```bash
 (.venv) $ rapp polarimeter -h
-usage: RAPP polarimeter [-h] --cycles CYCLES [--step STEP] --samples SAMPLES [--delay_position] [--velocity] [--no-ch0] [--no-ch1] [--prefix] [--test_esp] [--test_adc] [--plot] [-v]
+usage: RAPP polarimeter [-h] --cycles CYCLES [--step STEP] --samples SAMPLES [--chunk_size] [--delay_position] [--velocity] [--no-ch0] [--no-ch1] [--prefix] [--test_esp] [--test_adc] [--plot] [-v]
 
 options:
   -h, --help         show this help message and exit
   --cycles CYCLES    n° of cycles to run.
-  --step STEP        every how many degrees to take a measurement.
+  --step STEP        every how many degrees to take a measurement (default: 10).
   --samples SAMPLES  n° of samples per angle.
+  --chunk_size       measure data in chunks of this size. If 0, no chunks (default: 500).
   --delay_position   delay (in seconds) after changing analyzer position (default: 1).
   --velocity         velocity of the analyzer in deg/s (default: 4).
   --no-ch0           excludes channel 0 from measurement (default: False).
