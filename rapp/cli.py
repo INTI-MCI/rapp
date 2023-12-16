@@ -36,6 +36,11 @@ HELP_SIM_NAME = (
     'One of {}.'.format(simulator.SIMULATIONS)
 )
 
+HELP_ANALYSIS_NAME = (
+    'name of the analysis. '
+    'One of {}.'.format(analysis.ANALYSIS_NAMES)
+)
+
 EXAMPLE_POLARIMETER = "rapp polarimeter --cycles 1 --step 30 --samples 10 --delay_position 0"
 EPILOG_POLARIMETER = "Example: {}".format(EXAMPLE_POLARIMETER)
 
@@ -82,6 +87,7 @@ def add_phase_diff_subparser(subparsers):
 
 def add_analysis_subparser(subparsers):
     p = subparsers.add_parser("analysis", help=HELP_ANALYSYS)
+    p.add_argument('name', type=str, help=HELP_SIM_NAME)
     p.add_argument('--show', action='store_true', help=HELP_SHOW)
     p.add_argument('-v', '--verbose', action='store_true', help=HELP_VERBOSE)
 
@@ -109,7 +115,7 @@ def main():
 
         if args.command == 'analysis':
             setup_logger(args.verbose)
-            analysis.main(show=args.show)
+            analysis.main(args.name, show=args.show)
 
         if args.command == 'sim':
             setup_logger(args.verbose)

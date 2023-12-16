@@ -3,6 +3,8 @@ import re
 import decimal
 import logging
 
+from itertools import chain
+
 import numpy as np
 import pandas as pd
 
@@ -30,6 +32,52 @@ REGEX_NUMBER_AFTER_WORD = r"(?<={word})\d+(?:\.\d+)?"
 PARAMETER_STRING = "cycles={}, step={}, samples={}."
 
 COVERAGE_FACTOR = 3
+
+ANALYSIS_NAMES = [
+    'all',
+    'darkcurrent',
+    'noise',
+    'drift',
+]
+
+
+LINE_FREQUENCY = [(50 * x, 0.6) for x in range(1, 6)]
+ONE_HZ_HARMONICS = [(x, 0.5) for x in chain(range(1, 7), range(8, 14), range(15, 19))]
+
+FILE_PARAMS = {
+    "darkcurrent-range4V-samples40000-sps59.txt": {
+        "sps": 59.5,
+        "sep": " ",
+        "band_stop_freq": [(9.45, 0.1), (9.45 * 3, 0.1), (6, 0.1)],
+        "high_pass_freq": 0.5
+    },
+    "darkcurrent-range2V-samples100000.txt": {
+        "sps": 838,
+        "sep": "\t",
+        "band_stop_freq": [(50, 10), (100, 1), (150, 1)],
+        "high_pass_freq": 26
+    },
+    "darkcurrent-range4V-samples100000.txt": {
+        "sps": 837,
+        "sep": r"\s+",
+        "band_stop_freq": None,
+        "high_pass_freq": None
+    },
+    "continuous-range4V-584nm-samples10000-sps59.txt": {
+        "sps": 59.5,
+        "sep": " ",
+        "band_stop_freq": None,  # [(9.4, 0.3), (18.09, 0.3), (18.8, 0.3), (28.22, 0.3)],
+        "high_pass_freq": 2
+    },
+    "continuous-range4V-632nm-samples100000.txt": {
+        "sps": 837,
+        "sep": r"\s+",
+        "band_stop_freq": None,  # [
+        # (50, 5), (100, 5), (150, 5), (200, 5), (250, 5), # (300, 10), (350, 10), (400, 10)
+        # ],
+        "high_pass_freq": 20
+    }
+}
 
 
 def read_measurement_file(filepath, sep=r"\s+"):
@@ -82,7 +130,8 @@ def plot_histogram_and_pdf(data,  bins='quantized', prefix='', show=False):
         channel_bins = bins
         if channel_bins == 'quantized':
             # We create the list of bins, knowing we have dicretization.
-            d = np.diff(np.unique(channel_data)).min()
+            # d = np.diff(np.unique(channel_data)).min()
+            d = 0.125e-3
             left_of_first_bin = channel_data.min() - float(d) / 2
             right_of_last_bin = channel_data.max() + float(d) / 2
             channel_bins = np.arange(left_of_first_bin, right_of_last_bin + d, d)
@@ -111,11 +160,11 @@ def plot_noise_with_laser_off(output_folder, show=False):
     print("")
     logger.info("PROCESSING SIGNAL WITH LASER OFF (dark current)...")
 
-    # file_params = 'darkcurrent-range4V-samples40000-sps59.txt', 59.5, ' ', [(5.93, 0.15), (9.45, 0.15), (28.38, 0.15)], 0.5  # noqa
-    # file_params = 'darkcurrent-range2V-samples100000.txt', 845, '\t', [(50, 10), (100, 1), (150, 1)], 26  # noqa
-    file_params = 'darkcurrent-range4V-samples100000.txt', 845, r"\s+", [(50, 10), (100, 1), (150, 1)], 26  # noqa
+    filename = "darkcurrent-range4V-samples40000-sps59.txt"
+    # filename = "darkcurrent-range2V-samples100000.txt"
+    # filename = "darkcurrent-range4V-samples100000.txt"
 
-    filename, sps, sep, bpass, hpass = file_params
+    sps, sep, bstop, hpass = FILE_PARAMS[filename].values()
     filepath = os.path.join(ct.INPUT_DIR, filename)
 
     base_output_fname = "{}".format(os.path.join(output_folder, filename[:-4]))
@@ -163,7 +212,9 @@ def plot_noise_with_laser_off(output_folder, show=False):
 
         ax.set_xlabel(ct.LABEL_FREQUENCY)
         ax.set_title("Canal {}".format(i))
-        ax.semilogy(xs, np.abs(fft), color='k')
+        # ax.plot(xs[1:], np.abs(fft[1:]), color='k')
+        N = len(xs)
+        ax.semilogy(xs[:N // 2], np.abs(fft[:N // 2]), color='k')
 
     f.tight_layout()
 
@@ -187,22 +238,29 @@ def plot_noise_with_laser_off(output_folder, show=False):
         ax.set_xlabel(ct.LABEL_FREQUENCY)
         ax.set_title("Canal {}".format(i))
 
-        for fr, delta in bpass:
-            b, a = signal.butter(3, [fr - delta, fr + delta], btype='bandstop', fs=sps)
-            channel_data = signal.lfilter(b, a, channel_data)
+        if bstop is not None:
+            for fr, delta in bstop:
+                b, a = signal.butter(2, [fr - delta, fr + delta], btype='bandstop', fs=sps)
+                channel_data = signal.lfilter(b, a, channel_data)
 
-        b, a = signal.butter(3, hpass, btype='highpass', fs=sps)
-        channel_data = signal.filtfilt(b, a, channel_data)
+        if hpass is not None:
+            b, a = signal.butter(3, hpass, btype='highpass', fs=sps)
+            channel_data = signal.filtfilt(b, a, channel_data)
 
         fft = np.fft.fft(channel_data)
 
         xs = np.arange(0, len(fft))
         xs = (xs / len(fft)) * sps
-        ax.semilogy(xs, abs(fft), color='k')
+        # ax.plot(xs[1:], abs(fft[1:]), color='k')
+        N = len(xs)
+        ax.semilogy(xs[:N // 2], np.abs(fft[:N // 2]), color='k')
+
+        ax.set_xlim(0, xs[-1] // 2)
 
         res = stats.normaltest(channel_data)
         logger.info("Gaussian Test. p-value: {}".format(res.pvalue))
 
+        channel_data = channel_data - np.mean(channel_data)  # center signal
         filtered.append(channel_data)
 
     # Hide x labels and tick labels for top plots and y ticks for right plots.
@@ -218,8 +276,8 @@ def plot_noise_with_laser_off(output_folder, show=False):
     plt.close()
 
     f, axs = plt.subplots(1, 2, figsize=(8, 4), sharey=True)
-    for i, filtered_channel in enumerate(filtered, 0):
-        axs[i].plot(filtered_channel, color='k')
+    for i, channel_data in enumerate(filtered, 0):
+        axs[i].plot(channel_data, color='k')
         axs[i].set_ylabel(ct.LABEL_VOLTAGE)
         axs[i].set_xlabel(ct.LABEL_N_SAMPLE)
         axs[i].ticklabel_format(style='sci', scilimits=(0, 0), axis='y')
@@ -250,12 +308,12 @@ def plot_noise_with_laser_on(output_folder, show=False):
     print("")
     logger.info("ANALYZING NOISE WITH LASER ON...")
 
-    # filename, sep, sps, bpass, hpass = 'continuous-range4V-584nm-samples10000-sps59.txt', ' ', 59.5, [(9.4, 0.3), (18.09, 0.3), (18.8, 0.3), (28.22, 0.3)], 2  # noqa
-    filename, sep, sps, bpass, hpass = (
-        'continuous-range4V-632nm-samples100000.txt', r"\s+", 845, [(50, 20), (100, 10), (150, 10), (200, 10), (250, 10), (300, 10), (350, 10), (400, 10)], 25  # noqa
-    )
+    # filename = "continuous-range4V-584nm-samples10000-sps59.txt"
+    filename = "continuous-range4V-632nm-samples100000.txt"
 
     filepath = os.path.join(ct.INPUT_DIR, filename)
+
+    sps, sep, bstop, hpass = FILE_PARAMS[filename].values()
 
     data = read_measurement_file(filepath, sep=sep)
     data = data[1:]
@@ -310,7 +368,8 @@ def plot_noise_with_laser_on(output_folder, show=False):
 
         ax.set_xlabel(ct.LABEL_FREQUENCY)
         ax.set_title("Canal {}".format(i))
-        ax.semilogy(xs, np.abs(channel_fft), color='k')
+        N = len(xs)
+        ax.semilogy(xs[:N // 2], abs(channel_fft[:N // 2]), color='k')
 
     f.savefig("{}-fft".format(base_output_fname))
 
@@ -325,15 +384,17 @@ def plot_noise_with_laser_on(output_folder, show=False):
     for i, ax in enumerate(axs):
         channel_data = data['CH{}'.format(i)]
 
-        for fr, delta in bpass:
-            b, a = signal.butter(2, [fr - delta, fr + delta], btype='bandstop', fs=sps)
-            channel_data = signal.lfilter(b, a, channel_data)
+        if bstop is not None:
+            for fr, delta in bstop:
+                b, a = signal.butter(2, [fr - delta, fr + delta], btype='bandstop', fs=sps)
+                channel_data = signal.lfilter(b, a, channel_data)
 
-        b, a = signal.butter(3, hpass, btype='highpass', fs=sps)
-        channel_data = signal.filtfilt(b, a, channel_data)
+        if hpass is not None:
+            b, a = signal.butter(3, hpass, btype='highpass', fs=sps)
+            channel_data = signal.filtfilt(b, a, channel_data)
 
-        channel_data[channel_data > 0.00125] = 0
-        channel_data[channel_data < -0.00125] = 0
+        channel_data[channel_data > 0.0021] = 0
+        channel_data[channel_data < -0.0021] = 0
 
         data['CH{}'.format(i)] = channel_data
 
@@ -341,7 +402,8 @@ def plot_noise_with_laser_on(output_folder, show=False):
 
         xs = np.arange(0, len(fft))
         xs = (xs / len(fft)) * sps
-        ax.semilogy(xs, abs(fft), color='k')
+        N = len(xs)
+        ax.semilogy(xs[:N // 2], abs(fft[:N // 2]), color='k')
 
         res = stats.normaltest(channel_data)
         logger.info("Gaussian Test. p-value: {}".format(res.pvalue))
@@ -372,7 +434,7 @@ def plot_noise_with_laser_on(output_folder, show=False):
 
     data = data[['CH0', 'CH1']].to_numpy()
 
-    plot_histogram_and_pdf(data, bins='auto', prefix=base_output_fname, show=show)
+    plot_histogram_and_pdf(data, bins='quantized', prefix=base_output_fname, show=show)
 
     if show:
         plt.show()
@@ -619,15 +681,22 @@ def plot_two_signals(filepath, output_folder, sep='\t', usecols=(0, 1, 2), show=
     plot.close()
 
 
-def main(show):
+def main(name, show):
     output_folder = os.path.join(ct.WORK_DIR, ct.OUTPUT_FOLDER_PLOTS)
     create_folder(output_folder)
 
-    # plot_noise_with_laser_off(output_folder, show=show)
-    plot_noise_with_laser_on(output_folder, show=show)
-    # plot_drift(output_folder, show=show)
-    # plot_signals_per_n_measurement(output_folder, show=show)
-    # plot_signals_per_angle(output_folder, show=show)
+    # TODO: add another subparser and split these options in different commands with parameters
+    if name not in ANALYSIS_NAMES:
+        raise ValueError("Analysis with name {} not implemented".format(name))
+
+    if name in ['all', 'darkcurrent']:
+        plot_noise_with_laser_off(output_folder, show=show)
+
+    if name in ['all', 'noise']:
+        plot_noise_with_laser_on(output_folder, show=show)
+
+    if name in ['all', 'drift']:
+        plot_drift(output_folder, show=show)
 
 
 if __name__ == '__main__':
