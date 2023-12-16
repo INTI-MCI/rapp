@@ -3,8 +3,6 @@ import re
 import decimal
 import logging
 
-from itertools import chain
-
 import numpy as np
 import pandas as pd
 
@@ -41,15 +39,12 @@ ANALYSIS_NAMES = [
 ]
 
 
-LINE_FREQUENCY = [(50 * x, 0.6) for x in range(1, 6)]
-ONE_HZ_HARMONICS = [(x, 0.5) for x in chain(range(1, 7), range(8, 14), range(15, 19))]
-
 FILE_PARAMS = {
     "darkcurrent-range4V-samples40000-sps59.txt": {
         "sps": 59.5,
         "sep": " ",
         "band_stop_freq": [(9.45, 0.1), (9.45 * 3, 0.1), (6, 0.1)],
-        "high_pass_freq": 0.5,
+        "high_pass_freq": None,
         "outliers": None,
         "bins": "quantized"
     },
@@ -57,17 +52,23 @@ FILE_PARAMS = {
         "sps": 838,
         "sep": "\t",
         "band_stop_freq": [(50, 10), (100, 1), (150, 1)],
-        "high_pass_freq": 26,
+        "high_pass_freq": None,
         "outliers": None,
         "bins": "quantized"
     },
     "darkcurrent-range4V-samples100000.txt": {
-        "sps": 837,
+        "sps": 835,
         "sep": r"\s+",
-        "band_stop_freq": None,
-        "high_pass_freq": None,
-        "outliers": [],
-        "bins": "quantized"
+        "band_stop_freq": [
+            (50 * x, 0.5) for x in range(1, 6)] + [
+            (131.55, 0.5)] + [
+            (1 * x, 0.1) for x in range(1, 7)] + [
+            (1 * x, 0.1) for x in range(8, 14)] + [
+            (1 * x, 0.1) for x in range(15, 20)] + [
+            (23, 0.1), (24, 0.1)],
+        "high_pass_freq": 2,
+        "outliers": None,
+        "bins": [36, 36]
     },
     "continuous-range4V-584nm-samples10000-sps59.txt": {
         "sps": 59.5,
@@ -78,9 +79,9 @@ FILE_PARAMS = {
         "bins": "quantized"
     },
     "continuous-range4V-632nm-samples100000.txt": {
-        "sps": 847,
+        "sps": 847,  # This fits OK with line frequencies.
         "sep": r"\s+",
-        "band_stop_freq": [(50 * x, 5) for x in range(1, 8)],
+        "band_stop_freq": [(50 * x, 10 / x) for x in range(1, 8)],
         "high_pass_freq": 2,
         "outliers": [-0.0021, 0.0021],
         "bins": "quantized"
@@ -135,18 +136,21 @@ def plot_histogram_and_pdf(data,  bins='quantized', prefix='', show=False):
         pdf_x = np.linspace(min(channel_data), max(channel_data), num=1000)
         pdf_y = stats.norm.pdf(pdf_x, mu, sigma)
 
-        channel_bins = bins
+        channel_bins = bins[i] if isinstance(bins, list) else bins
         if channel_bins == 'quantized':
             # We create the list of bins, using the signal quantization step
             # d = np.diff(np.unique(channel_data)).min()
             d = 0.125e-3
-            logger.info("Discretization step: {}".format(d))
+            logger.info("CH{} - Discretization step: {}".format(i, d))
 
             left_of_first_bin = channel_data.min() - float(d) / 2
             right_of_last_bin = channel_data.max() + float(d) / 2
 
             channel_bins = np.arange(left_of_first_bin, right_of_last_bin + d, d)
-            logger.info("Amount of bins: {}".format(len(channel_bins)))
+
+        logger.info("CH{} - Amount of bins: {}".format(
+            i,
+            channel_bins if isinstance(channel_bins, int) else len(channel_bins)))
 
         counts, edges = np.histogram(channel_data, bins=channel_bins, density=True)
 
@@ -170,9 +174,9 @@ def plot_noise_with_laser_off(output_folder, show=False):
     print("")
     logger.info("PROCESSING SIGNAL WITH LASER OFF (dark current)...")
 
-    filename = "darkcurrent-range4V-samples40000-sps59.txt"
+    # filename = "darkcurrent-range4V-samples40000-sps59.txt"
     # filename = "darkcurrent-range2V-samples100000.txt"
-    # filename = "darkcurrent-range4V-samples100000.txt"
+    filename = "darkcurrent-range4V-samples100000.txt"
 
     sps, sep, bstop, hpass, outliers, bins = FILE_PARAMS[filename].values()
     filepath = os.path.join(ct.INPUT_DIR, filename)
@@ -226,14 +230,18 @@ def plot_noise_with_laser_off(output_folder, show=False):
         N = len(xs)
         ax.semilogy(xs[:N // 2], np.abs(fft[:N // 2]), color='k')
 
+        line_frequencies = [50 * x for x in range(1, 6)]
+        for i, freq in enumerate(line_frequencies, 0):
+            freq_label = None
+            if i == 0:
+                freq_label = "50 Hz y armónicos"
+            ax.axvline(x=freq, ls='--', lw=1, label=freq_label)
+
+        ax.legend(loc='upper right')
+
     f.tight_layout()
 
     f.savefig("{}-fft.png".format(base_output_fname))
-
-    if show:
-        plt.show()
-
-    plt.close()
 
     filtered = []
 
@@ -287,25 +295,17 @@ def plot_noise_with_laser_off(output_folder, show=False):
 
     plt.close()
 
-    f, axs = plt.subplots(1, 2, figsize=(8, 4), sharey=True)
-    for i, channel_data in enumerate(filtered, 0):
-        axs[i].plot(channel_data, color='k')
-        axs[i].set_ylabel(ct.LABEL_VOLTAGE)
-        axs[i].set_xlabel(ct.LABEL_N_SAMPLE)
-        axs[i].ticklabel_format(style='sci', scilimits=(0, 0), axis='y')
-        axs[i].xaxis.set_major_locator(plt.MaxNLocator(3))
+    plot = Plot(ylabel=ct.LABEL_VOLTAGE, xlabel=ct.LABEL_N_SAMPLE, ysci=True, folder=output_folder)
 
-    # Hide x labels and tick labels for top plots and y ticks for right plots.
-    for ax in axs.flat:
-        ax.label_outer()
+    for i, filtered_channel in enumerate(filtered, 0):
+        plot.add_data(filtered_channel, style='-', label='Canal {}'.format(i))
 
-    f.tight_layout()
-    f.savefig("{}-filtered-signal.png".format(base_output_fname))
+    plot._ax.xaxis.set_major_locator(plt.MaxNLocator(3))
+    height = max(abs(data.max()))
+    plot._ax.set_ylim(-height / 2, height / 2)
+    plot.legend(loc='upper right')
 
-    if show:
-        plt.show()
-
-    plt.close()
+    plot.save("{}-filtered-signal.png".format(filename[:-4]))
 
     data = np.array(filtered).T
     plot_histogram_and_pdf(data, bins=bins, prefix=base_output_fname, show=show)
@@ -454,21 +454,18 @@ def plot_noise_with_laser_on(output_folder, show=False):
     plt.close()
 
     plot = Plot(ylabel=ct.LABEL_VOLTAGE, xlabel=ct.LABEL_N_SAMPLE, ysci=True, folder=output_folder)
+    plot._ax.xaxis.set_major_locator(plt.MaxNLocator(3))
+
     for i, filtered_channel in enumerate(filtered, 0):
         plot.add_data(filtered_channel, style='-', label='Canal {}'.format(i))
-        plot._ax.xaxis.set_major_locator(plt.MaxNLocator(3))
 
-        original_data = data['CH{}'.format(i)]
-        height = max(original_data) - min(original_data)
-        plot._ax.set_ylim(-(height / 2), height / 2)
-        plot.legend(loc='upper right')
+    original_data = data['CH0', 'CH1']
+    height = max(original_data) - min(original_data)
+    original_data = original_data - np.mean(original_data)  # center signal
+    plot._ax.set_ylim(-(height / 2), height / 2)
+    plot.legend(loc='upper right')
 
     plot.save("{}-filtered-signal.png".format(filename[:-4]))
-
-    if show:
-        plt.show()
-
-    plt.close()
 
     data = np.array(filtered).T
 
