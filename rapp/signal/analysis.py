@@ -68,7 +68,8 @@ FILE_PARAMS = {
             (23, 0.1), (24, 0.1)],
         "high_pass_freq": 2,
         "outliers": None,
-        "bins": [36, 36]
+        "bins": 35
+        # "bins": "quantized"
     },
     "continuous-range4V-584nm-samples10000-sps59.txt": {
         "sps": 59.5,
@@ -117,6 +118,14 @@ def parse_input_parameters_from_filepath(filepath):
     )
 
 
+def generate_bins(data, step=0.125e-3):
+    centers = np.arange(data.min(), data.max() + step, step)
+    edges = centers - step / 2
+    edges = np.append(edges, max(edges) + step)
+
+    return centers, edges
+
+
 def plot_histogram_and_pdf(data,  bins='quantized', prefix='', show=False):
     """Plots a histogram and PDF for 2-channel data."""
     f, axs = plt.subplots(1, 2, figsize=(9, 4), sharey=True, sharex=True)
@@ -127,7 +136,7 @@ def plot_histogram_and_pdf(data,  bins='quantized', prefix='', show=False):
         if i == 0:
             ax.set_ylabel(ct.LABEL_COUNTS)
 
-        # Plot the PDF.
+        # Gaussian PDF.
         mu, sigma = stats.norm.fit(channel_data)
 
         mu_rounded = round_to_n(mu, 1)
@@ -142,23 +151,15 @@ def plot_histogram_and_pdf(data,  bins='quantized', prefix='', show=False):
 
         channel_bins = bins[i] if isinstance(bins, list) else bins
         if channel_bins == 'quantized':
-            # We create the list of bins, using the signal quantization step
-            # d = np.diff(np.unique(channel_data)).min()
-            d = 0.125e-3
-            logger.info("CH{} - Discretization step: {}".format(i, d))
+            centers, edges = generate_bins(channel_data, step=0.125e-3)
+            counts, edges = np.histogram(channel_data, bins=edges, density=True)
+        else:
+            counts, edges = np.histogram(channel_data, bins=channel_bins, density=True)
+            centers = (edges + np.diff(edges)[0] / 2)[:-1]
 
-            left_of_first_bin = channel_data.min() - float(d) / 2
-            right_of_last_bin = channel_data.max() + float(d) / 2
+        logger.info("CH{} - Amount of bins: {}".format(i, len(centers)))
 
-            channel_bins = np.arange(left_of_first_bin, right_of_last_bin + d, d)
-
-        logger.info("CH{} - Amount of bins: {}".format(
-            i,
-            channel_bins if isinstance(channel_bins, int) else len(channel_bins)))
-
-        counts, edges = np.histogram(channel_data, bins=channel_bins, density=True)
-
-        ax.bar(edges[:-1], counts, width=np.diff(edges), color='k', alpha=0.2, edgecolor='k')
+        ax.bar(centers, counts, width=np.diff(edges), color='k', alpha=0.2, edgecolor='k')
         ax.ticklabel_format(style='sci', scilimits=(0, 0), axis='y')
 
         fit_label = "µ = {:.1E}.\nσ = {}.".format(mu_rounded, sigma_rounded)
@@ -275,12 +276,13 @@ def plot_noise_with_laser_off(output_folder, show=False):
         ax.set_title("Canal {}".format(i))
 
         if bstop is not None:
-            logger.info("Filtering line frequencies: {}".format(bstop))
+            logger.info("Applying band-stop filtering on line frequencies...")
             for fr, delta in bstop:
                 b, a = signal.butter(2, [fr - delta, fr + delta], btype='bandstop', fs=sps)
                 channel_data = signal.lfilter(b, a, channel_data)
 
         if hpass is not None:
+            logger.info("Applying high-pass filtering on {} Hz...".format(hpass))
             b, a = signal.butter(3, hpass, btype='highpass', fs=sps)
             channel_data = signal.filtfilt(b, a, channel_data)
 
