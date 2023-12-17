@@ -89,7 +89,7 @@ FILE_PARAMS = {
 }
 
 
-def pink_noise(f, A, alpha):
+def pink_noise(f, alpha):
     return np.sqrt(1 / f ** alpha)
 
 
@@ -226,15 +226,23 @@ def plot_noise_with_laser_off(output_folder, show=False):
         xs = (xs / len(fft)) * sps
         N = len(xs)
 
-        popt, _ = curve_fit(pink_noise, xs[1:N // 2], fft[1:N // 2])
-        pink_y = pink_noise(xs[1:N // 2], *popt)
-        A, alpha = popt
+        popt, pcov = curve_fit(pink_noise, xs[1:N // 2], fft[1:N // 2])
 
-        logger.info("A/f^α noise estimation: α = {}, A = {}".format(alpha, A))
-        label = "Ajuste 1/f. α = {}".format(round(alpha, 2))
+        us = np.sqrt(np.diag(pcov))
+        alpha = popt[0]
+
+        alpha_u = round_to_n(us[0], 1)
+        # Obtain number of decimal places of the u:
+        d = abs(decimal.Decimal(str(alpha_u)).as_tuple().exponent)
+        alpha = round(alpha, d)
+
+        logger.info("A/f^α noise estimation: α = {} ± {}".format(alpha, alpha_u))
+        label = "Ajuste 1/f. α = {} ± {}".format(alpha, alpha_u)
 
         if i == 0:
             ax.set_ylabel(ct.LABEL_VOLTAGE)
+
+        pink_y = pink_noise(xs[1:N // 2], *popt)
 
         ax.set_xlabel(ct.LABEL_FREQUENCY)
         ax.set_title("Canal {}".format(i))
@@ -398,12 +406,19 @@ def plot_noise_with_laser_on(output_folder, show=False):
         xs = (xs / len(fft)) * sps
         N = len(xs)
 
-        popt, _ = curve_fit(pink_noise, xs[1:N // 2], fft[1:N // 2])
-        pink_y = pink_noise(xs[1:N // 2], *popt)
-        A, alpha = popt
+        popt, pcov = curve_fit(pink_noise, xs[1:N // 2], fft[1:N // 2])
+        us = np.sqrt(np.diag(pcov))
 
-        logger.info("A/f^α noise estimation: α = {}, A = {}".format(alpha, A))
-        label = "Ajuste 1/f. α = {}".format(round(alpha, 2))
+        pink_y = pink_noise(xs[1:N // 2], *popt)
+        alpha = popt[0]
+
+        alpha_u = round_to_n(us[0], 1)
+        # Obtain number of decimal places of the u:
+        d = abs(decimal.Decimal(str(alpha_u)).as_tuple().exponent)
+        alpha = round(alpha, d)
+
+        logger.info("A/f^α noise estimation: α = {} ± {}".format(alpha, alpha_u))
+        label = "Ajuste 1/f. α = {} ± {}".format(alpha, alpha_u)
 
         if i == 0:
             ax.set_ylabel(ct.LABEL_VOLTAGE)
@@ -418,7 +433,7 @@ def plot_noise_with_laser_on(output_folder, show=False):
             freq_label = None
             if i == 0:
                 freq_label = "50 Hz y armónicos"
-            ax.axvline(x=freq, ls='--', lw=1.5, label=freq_label)
+            ax.axvline(x=freq, ls='--', lw=1, label=freq_label)
 
         ax.legend(loc='upper right', fontsize=10)
 
