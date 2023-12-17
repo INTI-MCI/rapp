@@ -16,6 +16,7 @@ LABEL_STEP = "Paso"
 LABEL_VOLTAGE = "Tensión [V]"
 LABEL_MAX_V = "Tensión máxima [V]"
 LABEL_DEGREE = "Ángulo del rotador [°]"
+LABEL_PSD = "PSD"
 
 ENCONDIG = 'iso-8859-1'
 

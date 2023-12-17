@@ -89,6 +89,10 @@ FILE_PARAMS = {
 }
 
 
+def pink_noise(f, A, alpha):
+    return np.sqrt(1 / f ** alpha)
+
+
 def read_measurement_file(filepath, sep=r"\s+"):
     return pd.read_csv(
         filepath,
@@ -220,15 +224,22 @@ def plot_noise_with_laser_off(output_folder, show=False):
 
         xs = np.arange(0, len(fft))
         xs = (xs / len(fft)) * sps
+        N = len(xs)
+
+        popt, _ = curve_fit(pink_noise, xs[1:N // 2], fft[1:N // 2])
+        pink_y = pink_noise(xs[1:N // 2], *popt)
+        A, alpha = popt
+
+        logger.info("A/f^α noise estimation: α = {}, A = {}".format(alpha, A))
+        label = "Ajuste 1/f. α = {}".format(round(alpha, 2))
 
         if i == 0:
-            ax.set_ylabel(ct.LABEL_COUNTS)
+            ax.set_ylabel(ct.LABEL_VOLTAGE)
 
         ax.set_xlabel(ct.LABEL_FREQUENCY)
         ax.set_title("Canal {}".format(i))
-        # ax.plot(xs[1:], np.abs(fft[1:]), color='k')
-        N = len(xs)
         ax.semilogy(xs[:N // 2], np.abs(fft[:N // 2]), color='k')
+        ax.semilogy(xs[1:N // 2], pink_y, color='deeppink', lw=2, label=label)
 
         line_frequencies = [50 * x for x in range(1, 6)]
         for i, freq in enumerate(line_frequencies, 0):
@@ -237,7 +248,7 @@ def plot_noise_with_laser_off(output_folder, show=False):
                 freq_label = "50 Hz y armónicos"
             ax.axvline(x=freq, ls='--', lw=1, label=freq_label)
 
-        ax.legend(loc='upper right')
+        ax.legend(loc='upper right', fontsize=10)
 
     f.tight_layout()
 
@@ -250,7 +261,7 @@ def plot_noise_with_laser_off(output_folder, show=False):
         channel_data = data['CH{}'.format(i)]
 
         if i == 0:
-            ax.set_ylabel(ct.LABEL_COUNTS)
+            ax.set_ylabel(ct.LABEL_VOLTAGE)
 
         ax.set_xlabel(ct.LABEL_FREQUENCY)
         ax.set_title("Canal {}".format(i))
@@ -381,18 +392,26 @@ def plot_noise_with_laser_on(output_folder, show=False):
     f, axs = plt.subplots(1, 2, figsize=(8, 4), sharey=False)
     for i, ax in enumerate(axs):
         channel_data = data['CH{}'.format(i)]
-        channel_fft = np.fft.fft(channel_data)
+        fft = np.fft.fft(channel_data)
 
-        xs = np.arange(0, len(channel_fft))
-        xs = (xs / len(channel_fft)) * sps
+        xs = np.arange(0, len(fft))
+        xs = (xs / len(fft)) * sps
+        N = len(xs)
+
+        popt, _ = curve_fit(pink_noise, xs[1:N // 2], fft[1:N // 2])
+        pink_y = pink_noise(xs[1:N // 2], *popt)
+        A, alpha = popt
+
+        logger.info("A/f^α noise estimation: α = {}, A = {}".format(alpha, A))
+        label = "Ajuste 1/f. α = {}".format(round(alpha, 2))
 
         if i == 0:
-            ax.set_ylabel(ct.LABEL_COUNTS)
+            ax.set_ylabel(ct.LABEL_VOLTAGE)
 
         ax.set_xlabel(ct.LABEL_FREQUENCY)
         ax.set_title("Canal {}".format(i))
-        N = len(xs)
-        ax.semilogy(xs[1:N // 2], abs(channel_fft[1:N // 2]), color='k')
+        ax.semilogy(xs[1:N // 2], abs(fft[1:N // 2]), color='k')
+        ax.semilogy(xs[1:N // 2], pink_y, color='deeppink', lw=2, label=label)
 
         line_frequencies = [50 * x for x in range(1, int(xs[N // 2] / 50))]
         for i, freq in enumerate(line_frequencies, 0):
@@ -401,7 +420,7 @@ def plot_noise_with_laser_on(output_folder, show=False):
                 freq_label = "50 Hz y armónicos"
             ax.axvline(x=freq, ls='--', lw=1.5, label=freq_label)
 
-        ax.legend(loc='upper right')
+        ax.legend(loc='upper right', fontsize=10)
 
     for ax in axs.flat:
         ax.label_outer()
@@ -418,6 +437,11 @@ def plot_noise_with_laser_on(output_folder, show=False):
     f, axs = plt.subplots(1, 2, figsize=(8, 4), sharey=True)
     for i, ax in enumerate(axs):
         channel_data = data['CH{}'.format(i)]
+
+        if i == 0:
+            ax.set_ylabel(ct.LABEL_VOLTAGE)
+
+        ax.set_xlabel(ct.LABEL_FREQUENCY)
 
         if bstop is not None:
             logger.info("Filtering bandstop: {} Hz".format([i[0] for i in bstop]))
@@ -459,10 +483,8 @@ def plot_noise_with_laser_on(output_folder, show=False):
     for i, filtered_channel in enumerate(filtered, 0):
         plot.add_data(filtered_channel, style='-', label='Canal {}'.format(i))
 
-    original_data = data['CH0', 'CH1']
-    height = max(original_data) - min(original_data)
-    original_data = original_data - np.mean(original_data)  # center signal
-    plot._ax.set_ylim(-(height / 2), height / 2)
+    height = max(abs(data.max()))
+    plot._ax.set_ylim(-height / 20, height / 20)
     plot.legend(loc='upper right')
 
     plot.save("{}-filtered-signal.png".format(filename[:-4]))
