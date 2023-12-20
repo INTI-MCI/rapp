@@ -14,9 +14,10 @@ LABEL_N_SAMPLE = "No. de muestra"
 LABEL_PHI_ERR = "Error en φ (°)"
 LABEL_STEP = "Paso"
 LABEL_VOLTAGE = "Tensión [V]"
-LABEL_MAX_V = "Tensión máxima [V]"
+LABEL_DYNAMIC_RANGE_USE = "Uso del rango dinámico [%]"
 LABEL_DEGREE = "Ángulo del rotador [°]"
 LABEL_PSD = "PSD"
+SAMPLES_PER_ANGLE = "N° de muestras por ángulo"
 
 ENCONDIG = 'iso-8859-1'
 

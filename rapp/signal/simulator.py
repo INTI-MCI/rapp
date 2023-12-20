@@ -41,6 +41,7 @@ SIMULATIONS = [
     'error_vs_cycles',
     'error_vs_res',
     'error_vs_range',
+    'error_vs_samples',
     'noise_vs_range',
     'phase_diff',
 ]
@@ -464,12 +465,12 @@ def plot_error_vs_range(phi, folder, samples=5, step=0.01, cycles=5, reps=1, sho
     title = "reps={}, samples={}, step={}".format(reps, samples, step)
 
     plot = Plot(
-        ylabel=ct.LABEL_PHI_ERR, xlabel=ct.LABEL_MAX_V,
+        ylabel=ct.LABEL_PHI_ERR, xlabel=ct.LABEL_DYNAMIC_RANGE_USE,
         title=title, ysci=True, xint=False,
         folder=folder
     )
 
-    xs = np.arange(1, 1.7, step=0.1)
+    xs = np.arange(0.6, 2, step=0.1)
 
     errors = []
     for amplitude in xs:
@@ -491,7 +492,10 @@ def plot_error_vs_range(phi, folder, samples=5, step=0.01, cycles=5, reps=1, sho
     time = total_time(cycles) / 60
     logger.info("cycles={}, time={} m, φerr: {}.".format(cycles, time, error_degrees_sci))
 
-    plot.add_data(xs, errors, color='k', style='.-', lw=2)
+    percentages = ((xs * 2) / ADC_MAXV) * 100
+    plot.add_data(percentages, errors, color='k', style='o-', lw=1.5)
+
+    plot._ax.set_xticks(plot._ax.get_xticks())
 
     plot.save(
         filename="sim_error_vs_range-reps-{}-samples-{}-step-{}.png".format(reps, samples, step))
@@ -511,7 +515,7 @@ def plot_noise_vs_range(phi, folder, reps=1, show=False):
     title = "reps={}".format(reps)
 
     plot = Plot(
-        ylabel="p-valor", xlabel=ct.LABEL_MAX_V,
+        ylabel="p-valor", xlabel=ct.LABEL_DYNAMIC_RANGE_USE,
         title=title, ysci=True, xint=False,
         folder=folder
     )
@@ -543,6 +547,49 @@ def plot_noise_vs_range(phi, folder, reps=1, show=False):
     plot.add_data(xs, pvalues, color='k', style='.-', lw=2)
     plot._ax.axhline(y=0.05, ls='--', lw=2)
     plot.save(filename="sim_noise_vs_range-reps-{}.png".format(reps))
+
+    if show:
+        plot.show()
+
+    plot.close()
+
+    logger.info("Done.")
+
+
+def plot_error_vs_samples(phi, folder, step=1, reps=1, show=False):
+    print("")
+    logger.info("PHASE DIFFERENCE VS MAX TENSION")
+
+    plot = Plot(
+        ylabel=ct.LABEL_PHI_ERR, xlabel=ct.SAMPLES_PER_ANGLE, ysci=True, xint=False,
+        folder=folder
+    )
+
+    ss = np.arange(1, 200, step=10)
+
+    errors = []
+    for samples in ss:
+        fc = samples_per_cycle(step=step)
+
+        n_errors = n_simulations(
+            A=1.7, n=reps, method='curve_fit', cycles=2, fc=fc, phi=phi,
+            fa=samples, a0_noise=A0_NOISE, a1_noise=A1_NOISE, bits=ADC_BITS, all_positive=True
+        )
+
+        # RMSE
+        error_rad = np.sqrt(sum([abs(phi - e.value) ** 2 for e in n_errors]) / reps)
+        error_degrees = np.rad2deg(error_rad)
+        error_degrees_sci = "{:.2E}".format(error_degrees)
+
+        errors.append(error_degrees)
+        logger.info("samples={}, φerr: {}.".format(samples, error_degrees_sci))
+
+    label = "step={}°\nreps={}".format(step, reps)
+    plot.add_data(ss, errors, color='k', style='o-', lw=1.5, label=label)
+    plot.legend()
+
+    plot.save(
+        filename="sim_error_vs_samples-reps-{}-step-{}.png".format(reps, step))
 
     if show:
         plot.show()
@@ -612,7 +659,7 @@ def plot_phase_diff(phi, folder, samples=50, cycles=10, step=0.01, show=False):
     logger.info("Done.")
 
 
-def main(sim, reps=1, samples=1, show=False):
+def main(sim, reps=1, step=1, samples=1, show=False):
     print("")
     logger.info("STARTING SIMULATIONS...")
 
@@ -634,23 +681,26 @@ def main(sim, reps=1, samples=1, show=False):
         plot_simulation_steps(output_folder, show=show)
 
     if sim in ['all', 'methods']:
-        plot_methods(PHI, output_folder, samples, max_cycles=10, step=0.01, reps=reps, show=show)
+        plot_methods(PHI, output_folder, samples, max_cycles=10, step=step, reps=reps, show=show)
+
+    if sim in ['all', 'error_vs_samples']:
+        plot_error_vs_samples(PHI, output_folder, reps=reps, step=step, show=show)
 
     if sim in ['all', 'error_vs_cycles']:
         plot_error_vs_cycles(PHI, output_folder, samples, max_cycles=8, reps=reps, show=show)
 
     if sim in ['all', 'error_vs_res']:
         plot_error_vs_resolution(
-            PHI, output_folder, samples, max_cycles=5, step=0.01, reps=reps, show=show)
+            PHI, output_folder, samples, max_cycles=5, step=step, reps=reps, show=show)
 
     if sim in ['all', 'error_vs_range']:
-        plot_error_vs_range(PHI, output_folder, samples, step=0.1, cycles=2, reps=reps, show=show)
+        plot_error_vs_range(PHI, output_folder, samples, step=step, cycles=2, reps=reps, show=show)
 
     if sim in ['all', 'noise_vs_range']:
         plot_noise_vs_range(PHI, output_folder, reps=reps, show=show)
 
     if sim in ['all', 'phase_diff']:
-        plot_phase_diff(PHI, output_folder, samples, cycles=10, step=0.01, show=show)
+        plot_phase_diff(PHI, output_folder, samples, cycles=10, step=step, show=show)
 
 
 if __name__ == '__main__':
