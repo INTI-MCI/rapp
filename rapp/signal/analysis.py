@@ -126,6 +126,26 @@ def generate_bins(data, step=0.125e-3):
     return centers, edges
 
 
+def average_data(data):
+    data = data.groupby([COLUMN_ANGLE], as_index=False)
+
+    group_size = int(data.size()['size'][0])
+
+    data = data.agg({
+        COLUMN_CH0: ['mean', 'std'],
+        COLUMN_CH1: ['mean', 'std']
+    })
+
+    xs = np.deg2rad(np.array(data[COLUMN_ANGLE]))
+    s1 = np.array(data[COLUMN_CH0]['mean'])
+    s2 = np.array(data[COLUMN_CH1]['mean'])
+
+    s1err = np.array(data[COLUMN_CH0]['std']) / np.sqrt(int(group_size))
+    s2err = np.array(data[COLUMN_CH1]['std']) / np.sqrt(int(group_size))
+
+    return xs, s1, s2, s1err, s2err
+
+
 def plot_histogram_and_pdf(data,  bins='quantized', prefix='', show=False):
     """Plots a histogram and PDF for 2-channel data."""
     f, axs = plt.subplots(1, 2, figsize=(9, 4), sharey=True, sharex=True)
@@ -601,47 +621,93 @@ def plot_drift(output_folder, show=False):
     # plt.show()
 
 
+def averaged_phase_difference(folder, method, show=False):
+    logger.info("Calculating phase difference for {}...".format(folder))
+
+    files = [os.path.join(folder, x) for x in os.listdir(folder)]
+
+    from uncertainties import ufloat
+
+    values = []
+    for filepath in files:
+        cycles, step, samples = parse_input_parameters_from_filepath(filepath)
+
+        data = read_measurement_file(filepath)
+
+        if len(data.index) == 1:
+            raise ValueError("This is a file with only one angle!.")
+
+        xs, s1, s2, s1err, s2err = average_data(data)
+
+        x_sigma = ct.ANALYZER_MIN_STEP / (2 * np.sqrt(3))
+
+        res = phase_difference(
+            xs * 2, s1, s2, x_sigma=x_sigma, s1_sigma=s1err, s2_sigma=s2err, method=method
+        )
+
+        xs = np.rad2deg(xs)
+
+        phase_diff = res.value / 2
+        phase_diff_u = res.u / 2
+
+        phase_diff_u_rounded = round_to_n(phase_diff_u * COVERAGE_FACTOR, 2)
+
+        # Obtain number of decimal places of the u:
+        d = abs(decimal.Decimal(str(phase_diff_u_rounded)).as_tuple().exponent)
+
+        phase_diff_rounded = round(phase_diff, d)
+
+        phi_label = "φ=({} ± {})°.".format(phase_diff_rounded, phase_diff_u_rounded)
+        title = "{}\ncycles={}, step={}, samples={}.".format(phi_label, cycles, step, samples)
+
+        logger.info(
+            "Detected phase difference: {}"
+            .format(phi_label)
+        )
+
+        logger.info(title)
+
+        values.append(ufloat(phase_diff, phase_diff_u))
+
+    N = len(values)
+    avg_phase_diff = sum(values) / N
+
+    logger.info("Averaged phase difference over {} measurements: {}".format(N, avg_phase_diff))
+
+    return avg_phase_diff
+
+
 def plot_phase_difference(filepath, method, show=False):
     logger.info("Calculating phase difference for {}...".format(filepath))
 
     cycles, step, samples = parse_input_parameters_from_filepath(filepath)
 
-    data = pd.read_csv(
-        filepath,
-        sep=r"\s+", skip_blank_lines=True, comment='#', header=0, usecols=(0, 1, 2),
-        encoding=ct.ENCONDIG
-    )
-
-    data = data.groupby([COLUMN_ANGLE], as_index=False).agg({
-        COLUMN_CH0: ['mean', 'std'],
-        COLUMN_CH1: ['mean', 'std']
-    })
+    data = read_measurement_file(filepath)
 
     if len(data.index) == 1:
         raise ValueError("This is a file with only one angle!.")
 
-    xs = np.deg2rad(np.array(data[COLUMN_ANGLE]))
-    s1 = np.array(data[COLUMN_CH0]['mean'])
-    s2 = np.array(data[COLUMN_CH1]['mean'])
-
-    s1err = np.array(data[COLUMN_CH0]['std']) / np.sqrt(int(samples))
-    s2err = np.array(data[COLUMN_CH1]['std']) / np.sqrt(int(samples))
+    xs, s1, s2, s1err, s2err = average_data(data)
 
     x_sigma = ct.ANALYZER_MIN_STEP / (2 * np.sqrt(3))
 
     res = phase_difference(
-        xs * 2, s1, s2, x_sigma=x_sigma, s1_sigma=s1err, s2_sigma=s2err, method=method)
+        xs * 2, s1, s2, x_sigma=x_sigma, s1_sigma=s1err, s2_sigma=s2err, method=method
+    )
 
-    error_deg = np.rad2deg((res.u / 2) * COVERAGE_FACTOR)
-    error_deg_rounded = round_to_n(error_deg, 2)
+    xs = np.rad2deg(xs)
+
+    phase_diff = res.value / 2
+    phase_diff_u = res.u / 2
+
+    phase_diff_u_rounded = round_to_n(phase_diff_u * COVERAGE_FACTOR, 2)
 
     # Obtain number of decimal places of the u:
-    d = abs(decimal.Decimal(str(error_deg_rounded)).as_tuple().exponent)
+    d = abs(decimal.Decimal(str(phase_diff_u_rounded)).as_tuple().exponent)
 
-    phase_diff_deg = np.rad2deg(res.value / 2)
-    phase_diff_deg_rounded = round(phase_diff_deg, d)
+    phase_diff_rounded = round(phase_diff, d)
 
-    phi_label = "φ=({} ± {})°.".format(phase_diff_deg_rounded, error_deg_rounded)
+    phi_label = "φ=({} ± {})°.".format(phase_diff_rounded, phase_diff_u_rounded)
     title = "{}\ncycles={}, step={}, samples={}.".format(phi_label, cycles, step, samples)
 
     logger.info(
@@ -656,13 +722,11 @@ def plot_phase_difference(filepath, method, show=False):
 
     plot = Plot(ylabel=ct.LABEL_VOLTAGE, xlabel=ct.LABEL_DEGREE, title=title, folder=output_folder)
 
-    xs = np.rad2deg(xs)
     plot.add_data(xs, s1, yerr=s1err, ms=6, color='k', mew=0.5, markevery=5, alpha=0.8)
     plot.add_data(xs, s2, yerr=s2err, ms=6, color='k', mew=0.5, markevery=5, alpha=0.8)
 
     if res.fitx is not None:
         fitx = res.fitx / 2
-        fitx = np.rad2deg(fitx)
         plot.add_data(fitx, res.fits1, style='-', color='k', lw=1.5)
         plot.add_data(fitx, res.fits2, style='-', color='k', lw=1.5)
 
@@ -677,7 +741,7 @@ def plot_phase_difference(filepath, method, show=False):
 
     plot.close()
 
-    return phase_diff_deg
+    return phase_diff
 
 
 def plot_signals_per_n_measurement(output_folder, show=False):
