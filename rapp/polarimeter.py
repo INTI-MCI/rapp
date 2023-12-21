@@ -90,16 +90,6 @@ def main(
     output_dir = os.path.join(ct.WORK_DIR, ct.OUTPUT_FOLDER_DATA)
     os.makedirs(output_dir, exist_ok=True)
 
-    today = date.today()
-    filename = FILE_NAME.format(d=today, prefix=prefix, cycles=cycles, step=step, samples=samples)
-    filepath = os.path.join(output_dir, filename)
-    overwrite = ask_for_overwrite(filepath)
-    file = open_file(filepath, overwrite)
-
-    file_meta = FILE_METADATA.format(cycles=cycles, step=step, samples=samples)
-    file_header = "{}{}\n".format(file_meta, FILE_COLUMNS)
-    file.write(file_header)
-
     if test_esp:
         logger.warning("Using ESP mock object.")
         analyzer = ESPMock()
@@ -116,9 +106,11 @@ def main(
 
     logger.info("Setting analyzer velocity to {} deg/s.".format(velocity))
     analyzer.setvel(vel=velocity)
+    analyzer.setvel(vel=velocity, axis=2)
 
     logger.info("Setting analyzer home velocity to {} deg/s.".format(velocity))
     analyzer.sethomevel(vel=velocity)
+    analyzer.sethomevel(vel=velocity, axis=2)
 
     logger.info("Samples to measure in each angle: {}.".format(samples))
     logger.info("Maximum chunk size: {}.".format(chunk_size))
@@ -129,42 +121,59 @@ def main(
     else:
         chunks_sizes = [samples]
 
-    init_position = analyzer.getpos()
-    logger.info("Analyzer current position: {}".format(init_position))
+    for hwp_angle in [0, 4.5]:
+        for rep in range(1, 6):
+            prefix_new = "{}-hwp{}-rep{}".format(prefix, hwp_angle, rep)
+            filename = FILE_NAME.format(prefix=prefix_new, cycles=cycles, step=step, samples=samples)
+            filepath = os.path.join(output_dir, filename)
+            overwrite = ask_for_overwrite(filepath)
+            file = open_file(filepath, overwrite)
 
-    if cycles == 0:
-        angles = [init_position]
-        adc.progressbar = True
-    else:
-        angles = generate_angles(cycles, step, init_position=init_position)
-        adc.progressbar = False
+            today = date.today()
+            file_meta = FILE_METADATA.format(d=today, cycles=cycles, step=step, samples=samples)
+            file_header = "{}{}\n".format(file_meta, FILE_COLUMNS)
+            file.write(file_header)
 
-    logger.info("Will measure {} angles: {}.".format(len(angles), angles))
+            analyzer.setpos(hwp_angle, axis=2)
+            logger.info("Waiting 5 seconds after changing half wave plate position...")
+            time.sleep(5)
 
-    for angle in progressbar(angles, prefix="Angles:", enable=len(angles) > 1):
-        logger.debug("Changing analyzer position...")
-        analyzer.setpos(angle)
+            init_position = analyzer.getpos()
+            logger.info("Analyzer current position: {}".format(init_position))
 
-        logger.debug("Waiting {}s after changing position...".format(delay_position))
-        time.sleep(delay_position)
+            if cycles == 0:
+                angles = [init_position]
+                adc.progressbar = True
+            else:
+                angles = generate_angles(cycles, step, init_position=init_position)
+                adc.progressbar = False
 
-        for chunk_size in chunks_sizes:
-            adc.flush_input()  # Clear buffer. Otherwise messes up values at the beginning.
-            data = adc.acquire(chunk_size, ch0=not no_ch0, ch1=not no_ch1, in_bytes=True)
+            logger.info("Will measure {} angles: {}.".format(len(angles), angles))
 
-            channels_names_tuple = "({})".format(", ".join(data.keys()))
-            ch0, ch1 = data.values()
-            for i in range(len(ch0)):
-                logger.debug("{} = ({}, {})".format(channels_names_tuple, ch0[i], ch1[i]))
-                row = FILE_ROW.format(
-                    angle=angle,
-                    ch0=ch0[i],
-                    ch1=ch1[i],
-                    datetime=datetime.now().isoformat(),
-                    s=FILE_DELIMITER
-                )
-                file.write(row.expandtabs(10))
-                file.write('\n')
+            for angle in progressbar(angles, prefix="Angles:", enable=len(angles) > 1):
+                logger.debug("Changing analyzer position...")
+                analyzer.setpos(angle)
+
+                logger.debug("Waiting {}s after changing position...".format(delay_position))
+                time.sleep(delay_position)
+
+                for chunk_size in chunks_sizes:
+                    adc.flush_input()  # Clear buffer. Otherwise messes up values at the beginning.
+                    data = adc.acquire(chunk_size, ch0=not no_ch0, ch1=not no_ch1, in_bytes=True)
+
+                    channels_names_tuple = "({})".format(", ".join(data.keys()))
+                    ch0, ch1 = data.values()
+                    for i in range(len(ch0)):
+                        logger.debug("{} = ({}, {})".format(channels_names_tuple, ch0[i], ch1[i]))
+                        row = FILE_ROW.format(
+                            angle=angle,
+                            ch0=ch0[i],
+                            ch1=ch1[i],
+                            datetime=datetime.now().isoformat(),
+                            s=FILE_DELIMITER
+                        )
+                        file.write(row.expandtabs(10))
+                        file.write('\n')
 
     file.close()
     adc.close()
