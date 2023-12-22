@@ -121,8 +121,13 @@ def main(
     else:
         chunks_sizes = [samples]
 
-    for hwp_angle in [0, 4.5]:
-        for rep in range(1, 6):
+    reps = 3
+    analyzer.motor_on(axis=2)
+    for hwp_angle in [-4.5]:
+        analyzer.setpos(hwp_angle, axis=2)
+        logger.info("Waiting 5 seconds after changing half wave plate position...")
+        time.sleep(5)
+        for rep in range(1, reps + 1):
             prefix_new = "{}-hwp{}-rep{}".format(prefix, hwp_angle, rep)
             filename = FILE_NAME.format(prefix=prefix_new, cycles=cycles, step=step, samples=samples)
             filepath = os.path.join(output_dir, filename)
@@ -133,10 +138,6 @@ def main(
             file_meta = FILE_METADATA.format(d=today, cycles=cycles, step=step, samples=samples)
             file_header = "{}{}\n".format(file_meta, FILE_COLUMNS)
             file.write(file_header)
-
-            analyzer.setpos(hwp_angle, axis=2)
-            logger.info("Waiting 5 seconds after changing half wave plate position...")
-            time.sleep(5)
 
             init_position = analyzer.getpos()
             logger.info("Analyzer current position: {}".format(init_position))
