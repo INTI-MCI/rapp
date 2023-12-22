@@ -6,6 +6,7 @@ import logging
 import numpy as np
 import pandas as pd
 
+from uncertainties import ufloat
 from matplotlib import pyplot as plt
 
 from scipy import signal
@@ -136,7 +137,7 @@ def average_data(data):
         COLUMN_CH1: ['mean', 'std']
     })
 
-    xs = np.deg2rad(np.array(data[COLUMN_ANGLE]))
+    xs = np.array(data[COLUMN_ANGLE])
     s1 = np.array(data[COLUMN_CH0]['mean'])
     s2 = np.array(data[COLUMN_CH1]['mean'])
 
@@ -621,12 +622,10 @@ def plot_drift(output_folder, show=False):
     # plt.show()
 
 
-def averaged_phase_difference(folder, method, show=False):
+def averaged_phase_difference(folder, method):
     logger.info("Calculating phase difference for {}...".format(folder))
 
     files = [os.path.join(folder, x) for x in os.listdir(folder)]
-
-    from uncertainties import ufloat
 
     values = []
     for filepath in files:
@@ -642,10 +641,9 @@ def averaged_phase_difference(folder, method, show=False):
         x_sigma = ct.ANALYZER_MIN_STEP / (2 * np.sqrt(3))
 
         res = phase_difference(
-            xs * 2, s1, s2, x_sigma=x_sigma, s1_sigma=s1err, s2_sigma=s2err, method=method
+            np.deg2rad(xs) * 2, s1, s2, x_sigma=x_sigma, s1_sigma=s1err, s2_sigma=s2err,
+            method=method
         )
-
-        xs = np.rad2deg(xs)
 
         phase_diff = res.value / 2
         phase_diff_u = res.u / 2
@@ -677,6 +675,21 @@ def averaged_phase_difference(folder, method, show=False):
     return avg_phase_diff
 
 
+def optical_rotation(folder1, folder2, method):
+    logger.info("Calculating optical rotation...")
+    logger.info("Folder without optical active sample measurements {}...".format(folder1))
+    logger.info("Folder with optical active sample measurements {}...".format(folder2))
+
+    phase_diff_without_sample = averaged_phase_difference(folder1, method=method)
+    phase_diff_with_sample = averaged_phase_difference(folder2, method=method)
+
+    optical_rotation = (phase_diff_with_sample - phase_diff_without_sample) / 2
+
+    logger.info("Optical rotation measured: {}".format(optical_rotation))
+
+    return optical_rotation
+
+
 def plot_phase_difference(filepath, method, show=False):
     logger.info("Calculating phase difference for {}...".format(filepath))
 
@@ -689,13 +702,17 @@ def plot_phase_difference(filepath, method, show=False):
 
     xs, s1, s2, s1err, s2err = average_data(data)
 
+    s1_sigma = None if np.isnan(s1err).any() else s1err
+    s2_sigma = None if np.isnan(s1err).any() else s2err
+
+    print(s1_sigma)
+    print(s2_sigma)
+
     x_sigma = ct.ANALYZER_MIN_STEP / (2 * np.sqrt(3))
 
     res = phase_difference(
-        xs * 2, s1, s2, x_sigma=x_sigma, s1_sigma=s1err, s2_sigma=s2err, method=method
+        np.deg2rad(xs) * 2, s1, s2, x_sigma=x_sigma, s1_sigma=s1err, s2_sigma=s2err, method=method
     )
-
-    xs = np.rad2deg(xs)
 
     phase_diff = res.value / 2
     phase_diff_u = res.u / 2
