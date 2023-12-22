@@ -128,8 +128,8 @@ def main(
         logger.info("Waiting 5 seconds after changing half wave plate position...")
         time.sleep(5)
         for rep in range(1, reps + 1):
-            prefix_new = "{}-hwp{}-rep{}".format(prefix, hwp_angle, rep)
-            filename = FILE_NAME.format(prefix=prefix_new, cycles=cycles, step=step, samples=samples)
+            prefix_ = "{}-hwp{}-rep{}".format(prefix, hwp_angle, rep)
+            filename = FILE_NAME.format(prefix=prefix_, cycles=cycles, step=step, samples=samples)
             filepath = os.path.join(output_dir, filename)
             overwrite = ask_for_overwrite(filepath)
             file = open_file(filepath, overwrite)

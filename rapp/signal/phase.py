@@ -40,7 +40,7 @@ def sine_fit(xs, ys, p0=None, x_sigma=None, y_sigma=None, method='curve_fit'):
     fitx = np.arange(min(xs), max(xs), step=0.01)
 
     if method == 'curve_fit':
-        popt, pcov = curve_fit(sine, xs, ys, p0=p0, sigma=y_sigma, absolute_sigma=True)
+        popt, pcov = curve_fit(sine, xs, ys, p0=p0, sigma=y_sigma, absolute_sigma=False)
 
         us = np.sqrt(np.diag(pcov))
         fity = sine(fitx, *popt)

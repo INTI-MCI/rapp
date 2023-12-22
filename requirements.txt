@@ -4,5 +4,6 @@ matplotlib<4
 pandas<3
 pyserial<4
 scipy<2
+uncertainties<4
 
 -e .
