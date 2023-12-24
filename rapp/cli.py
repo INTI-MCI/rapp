@@ -8,7 +8,9 @@ from rapp.log import setup_logger
 
 HELP_POLARIMETER = "Tool for measuring signals with the polarimeter."
 HELP_SIM = "Tool for making numerical simulations."
-HELP_PHASE_DIFF = 'Tool for calculating phase difference between two harmonic signals.'
+HELP_PHASE_DIFF = 'Tool for calculating phase difference from single polarimeter measurement.'
+HELP_AVG_PHASE_DIFF = 'Tool for calculating phase difference averaging N polarimeter measurements.'
+HELP_OR = 'Tool for calculating optical rotation.'
 HELP_ANALYSYS = "Tool for analyzing signals: noise, drift, etc."
 
 HELP_CYCLES = 'n° of cycles to run.'
@@ -29,7 +31,11 @@ HELP_METHOD = 'phase difference calculation method (default: %(default)s).'
 HELP_SIM_REPS = 'number of repetitions in each simulated iteration (default: %(default)s).'
 
 HELP_SHOW = 'whether to show the plot.'
-HELP_FILEPATH = 'the file containing the measurements.'
+HELP_FILEPATH = 'file containing the measurements.'
+HELP_FOLDER = 'folder containing the measurements.'
+
+HELP_FOLDER_WITHOUT_SAMPLE = 'folder containing the measurements without optical active sample.'
+HELP_FOLDER_WITH_SAMPLE = 'folder containing the measurements with optical active sample.'
 
 HELP_SIM_NAME = (
     'name of the simulation. '
@@ -86,6 +92,23 @@ def add_phase_diff_subparser(subparsers):
     p.add_argument('-v', '--verbose', action='store_true', help=HELP_VERBOSE)
 
 
+def add_avg_phase_diff_subparser(subparsers):
+    p = subparsers.add_parser("avg_phase_diff", help=HELP_AVG_PHASE_DIFF, epilog=EPILOG_PHASE_DIFF)
+    p.add_argument('folder', type=str, help=HELP_FOLDER)
+    p.add_argument('--method', type=str, default='odr', help=HELP_METHOD)
+    p.add_argument('--show', action='store_true', help=HELP_SHOW)
+    p.add_argument('-v', '--verbose', action='store_true', help=HELP_VERBOSE)
+
+
+def add_or_subparser(subparsers):
+    p = subparsers.add_parser("or", help=HELP_OR, epilog=EPILOG_PHASE_DIFF)
+    p.add_argument('folder1', type=str, help=HELP_FOLDER_WITHOUT_SAMPLE)
+    p.add_argument('folder2', type=str, help=HELP_FOLDER_WITH_SAMPLE)
+    p.add_argument('--method', type=str, default='odr', help=HELP_METHOD)
+    p.add_argument('--show', action='store_true', help=HELP_SHOW)
+    p.add_argument('-v', '--verbose', action='store_true', help=HELP_VERBOSE)
+
+
 def add_analysis_subparser(subparsers):
     p = subparsers.add_parser("analysis", help=HELP_ANALYSYS)
     p.add_argument('name', type=str, help=HELP_SIM_NAME)
@@ -104,6 +127,8 @@ def main():
 
     add_polarimeter_subparser(subparsers)
     add_phase_diff_subparser(subparsers)
+    add_avg_phase_diff_subparser(subparsers)
+    add_or_subparser(subparsers)
     add_analysis_subparser(subparsers)
     add_sim_subparser(subparsers)
 
@@ -113,6 +138,14 @@ def main():
         if args.command == 'phase_diff':
             setup_logger(args.verbose)
             analysis.plot_phase_difference(args.filepath, method=args.method, show=args.show)
+
+        if args.command == 'avg_phase_diff':
+            setup_logger(args.verbose)
+            analysis.averaged_phase_difference(args.folder, method=args.method)
+
+        if args.command == 'or':
+            setup_logger(args.verbose)
+            analysis.optical_rotation(args.folder1, args.folder2, method=args.method)
 
         if args.command == 'analysis':
             setup_logger(args.verbose)
