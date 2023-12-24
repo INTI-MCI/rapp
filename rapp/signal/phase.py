@@ -2,11 +2,11 @@ import logging
 
 import numpy as np
 
+from scipy import signal
 from scipy.optimize import curve_fit
 from scipy.odr import ODR, Model, RealData
 
-
-PHASE_DIFFERENCE_METHODS = ['cossim', 'curve_fit', 'odr']
+PHASE_DIFFERENCE_METHODS = ['cossim', 'curve_fit', 'odr', 'hilbert']
 
 
 logger = logging.getLogger(__name__)
@@ -61,6 +61,18 @@ def sine_fit(xs, ys, p0=None, x_sigma=None, y_sigma=None, method='curve_fit'):
         return output.beta, us, fitx, fity
 
 
+def hilbert_transform(s1, s2):
+    s1 -= s1.mean()
+    s2 -= s2.mean()
+
+    x1h = signal.hilbert(s1)
+    x2h = signal.hilbert(s2)
+    c = np.inner(
+        x1h, np.conj(x2h)) / np.sqrt(np.inner(x1h, np.conj(x1h)) * np.inner(x2h, np.conj(x2h)))
+
+    return np.angle(c)
+
+
 def phase_difference(
     xs, s1, s2, x_sigma=None, s1_sigma=None, s2_sigma=None, method='curve_fit', degrees=True
 ) -> PhaseDifferenceResult:
@@ -71,6 +83,9 @@ def phase_difference(
 
     if method == 'cossim':
         phase_diff = cosine_similarity(s1, s2)
+        if degrees:
+            phase_diff = np.rad2deg(phase_diff)
+
         return PhaseDifferenceResult(phase_diff, uncertainty=0)
 
     if method in ['curve_fit', 'odr']:
@@ -100,3 +115,10 @@ def phase_difference(
             fitx1 = np.rad2deg(fitx1)
 
         return PhaseDifferenceResult(phase_diff, phase_diff_u, fitx1, fity1, fity2)
+
+    if method == 'hilbert':
+        phase_diff = hilbert_transform(s1, s2)
+        if degrees:
+            phase_diff = np.rad2deg(phase_diff)
+
+        return PhaseDifferenceResult(phase_diff, uncertainty=0)
