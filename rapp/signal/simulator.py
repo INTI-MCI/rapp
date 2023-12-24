@@ -190,6 +190,7 @@ def n_simulations(n=1, method='curve_fit', **kwargs):
             s2_sigma = None
 
         res = phase_difference(xs * 2, s1, s2, s1_sigma=s1_sigma, s2_sigma=s2_sigma, method=method)
+
         results.append(res)
 
     return results
@@ -311,7 +312,9 @@ def plot_methods(phi, folder, samples=5, step=1, max_cycles=10, reps=1, show=Fal
         folder=folder
     )
 
-    for method in PHASE_DIFFERENCE_METHODS:
+    methods = PHASE_DIFFERENCE_METHODS
+    methods = ['curve_fit']
+    for method in methods:
         fc = samples_per_cycle(step=step)
         logger.info("Method: {}, fc={}, reps={}".format(method, fc, reps))
 
@@ -324,14 +327,13 @@ def plot_methods(phi, folder, samples=5, step=1, max_cycles=10, reps=1, show=Fal
             )
 
             # RMSE
-            error_rad = np.sqrt(sum([abs(phi - e.value) ** 2 for e in n_errors]) / reps)
-            error_degrees = np.rad2deg(error_rad)
-            error_degrees_sci = "{:.2E}".format(error_degrees)
+            error = np.sqrt(sum([abs(phi - e.value) ** 2 for e in n_errors]) / reps)
+            error_sci = "{:.2E}".format(error)
 
-            errors.append(error_degrees)
+            errors.append(error)
 
             time = total_time(cycles) / 60
-            logger.info("cycles={}, time={} m, φerr: {}.".format(cycles, time, error_degrees_sci))
+            logger.info("cycles={}, time={} m, φerr: {}.".format(cycles, time, error_sci))
 
         label = "{}".format(method)
         plot.add_data(cycles_list, errors, style='o-', lw=2, label=label)
