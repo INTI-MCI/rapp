@@ -149,7 +149,8 @@ def average_data(data):
 
 def plot_histogram_and_pdf(data,  bins='quantized', prefix='', show=False):
     """Plots a histogram and PDF for 2-channel data."""
-    f, axs = plt.subplots(1, 2, figsize=(9, 4), sharey=True, sharex=True)
+    f, axs = plt.subplots(
+        1, 2, figsize=(8, 5), subplot_kw=dict(box_aspect=1), sharey=True, sharex=True)
 
     for i, ax in enumerate(axs):
         channel_data = data[:, i]
@@ -193,6 +194,8 @@ def plot_histogram_and_pdf(data,  bins='quantized', prefix='', show=False):
 
         ax.xaxis.set_major_locator(plt.MaxNLocator(3))
 
+    f.tight_layout()
+    f.subplots_adjust(wspace=0.03)
     f.savefig("{}-histogram.png".format(prefix))
 
 
@@ -212,7 +215,8 @@ def plot_noise_with_laser_off(output_folder, show=False):
     data = read_measurement_file(filepath, sep=sep)
 
     logger.info("Plotting raw data...")
-    f, axs = plt.subplots(1, 2, figsize=(9, 4), sharey=True)
+    f, axs = plt.subplots(1, 2, figsize=(8, 5), subplot_kw=dict(box_aspect=1), sharey=True)
+
     for i, ax in enumerate(axs):
         channel_data = data['CH{}'.format(i)]
         channel_data = channel_data - np.mean(channel_data)  # center signal
@@ -230,6 +234,9 @@ def plot_noise_with_laser_off(output_folder, show=False):
     for ax in axs.flat:
         ax.label_outer()
 
+    f.subplots_adjust(hspace=0)
+    f.tight_layout()
+
     f.savefig("{}-signal.png".format(base_output_fname))
 
     if show:
@@ -237,8 +244,42 @@ def plot_noise_with_laser_off(output_folder, show=False):
 
     plt.close()
 
+    logger.info("Plotting zoomed-FFT...")
+    f, axs = plt.subplots(1, 2, figsize=(8, 5), subplot_kw=dict(box_aspect=1), sharey=True)
+    for i, ax in enumerate(axs):
+        channel_data = data['CH{}'.format(i)]
+
+        fft = np.fft.fft(channel_data)
+
+        xs = np.arange(0, len(fft))
+        xs = (xs / len(fft)) * sps
+        N = len(xs)
+
+        if i == 0:
+            ax.set_ylabel(ct.LABEL_VOLTAGE)
+
+        ax.set_xlabel(ct.LABEL_FREQUENCY)
+        ax.set_title("Canal {}".format(i))
+        ax.semilogy(xs[:N // 2], np.abs(fft[:N // 2]), color='k')
+        ax.set_xlim(0, 20)
+        ax.set_ylim(10e-5, 40)
+
+        line_frequencies = list(range(1, 7)) + list(range(8, 14)) + list(range(15, 20))
+        for i, freq in enumerate(line_frequencies, 0):
+            freq_label = None
+            if i == 0:
+                freq_label = "1 Hz y armónicos"
+            ax.axvline(x=freq, ls='--', lw=1, label=freq_label)
+
+        ax.legend(loc='upper right', fontsize=12)
+
+    f.subplots_adjust(wspace=0.03)
+
+    f.tight_layout()
+    f.savefig("{}-fft-zoom.png".format(base_output_fname))
+
     logger.info("Plotting FFT...")
-    f, axs = plt.subplots(1, 2, figsize=(7, 4), sharey=True)
+    f, axs = plt.subplots(1, 2, figsize=(8, 5), subplot_kw=dict(box_aspect=1), sharey=True)
     for i, ax in enumerate(axs):
         channel_data = data['CH{}'.format(i)]
 
@@ -259,7 +300,7 @@ def plot_noise_with_laser_off(output_folder, show=False):
         alpha = round(alpha, d)
 
         logger.info("A/f^α noise estimation: α = {} ± {}".format(alpha, alpha_u))
-        label = "Ajuste 1/f. α = {} ± {}".format(alpha, alpha_u)
+        label = "Ajuste 1/fᵅ (α = {} ± {})".format(alpha, alpha_u)
 
         if i == 0:
             ax.set_ylabel(ct.LABEL_VOLTAGE)
@@ -278,15 +319,15 @@ def plot_noise_with_laser_off(output_folder, show=False):
                 freq_label = "50 Hz y armónicos"
             ax.axvline(x=freq, ls='--', lw=1, label=freq_label)
 
-        ax.legend(loc='upper right', fontsize=10)
+        ax.legend(loc='upper right', fontsize=11)
 
+    f.subplots_adjust(wspace=0.03)
     f.tight_layout()
-
     f.savefig("{}-fft.png".format(base_output_fname))
 
     filtered = []
 
-    f, axs = plt.subplots(1, 2, figsize=(8, 4), sharey=True)
+    f, axs = plt.subplots(1, 2, figsize=(8, 5), subplot_kw=dict(box_aspect=1), sharey=True)
     for i, ax in enumerate(axs):
         channel_data = data['CH{}'.format(i)]
 
@@ -299,8 +340,9 @@ def plot_noise_with_laser_off(output_folder, show=False):
         if bstop is not None:
             logger.info("Applying band-stop filtering on line frequencies...")
             for fr, delta in bstop:
-                b, a = signal.butter(2, [fr - delta, fr + delta], btype='bandstop', fs=sps)
-                channel_data = signal.lfilter(b, a, channel_data)
+                a = signal.butter(
+                    2, [fr - delta, fr + delta], btype='bandstop', fs=sps, output='sos')
+                channel_data = signal.sosfilt(a, channel_data)
 
         if hpass is not None:
             logger.info("Applying high-pass filtering on {} Hz...".format(hpass))
@@ -329,6 +371,7 @@ def plot_noise_with_laser_off(output_folder, show=False):
     for ax in axs.flat:
         ax.label_outer()
 
+    f.subplots_adjust(wspace=0.03)
     f.tight_layout()
     f.savefig("{}-filtered-fft.png".format(base_output_fname))
 
@@ -374,7 +417,7 @@ def plot_noise_with_laser_on(output_folder, show=False):
     base_output_fname = "{}".format(os.path.join(output_folder, filename[:-4]))
 
     logger.info("Fitting raw data to 2-degree polynomial...")
-    f, axs = plt.subplots(1, 2, figsize=(9, 4), sharey=False)
+    f, axs = plt.subplots(1, 2, figsize=(8, 5), subplot_kw=dict(box_aspect=1), sharey=False)
     for i, ax in enumerate(axs):
         channel_data = data['CH{}'.format(i)]
 
@@ -404,10 +447,12 @@ def plot_noise_with_laser_on(output_folder, show=False):
 
         ax.set_title('Canal {}'.format(i))
 
-        ax.yaxis.set_major_formatter(plt.FormatStrFormatter('%.2f'))
+        ax.yaxis.set_major_formatter(plt.FormatStrFormatter('%.1f'))
         ax.yaxis.set_major_locator(plt.MaxNLocator(3))
         ax.xaxis.set_major_locator(plt.MaxNLocator(3))
 
+    f.subplots_adjust(hspace=0)
+    f.tight_layout()
     f.savefig("{}-poly-fit".format(base_output_fname))
 
     if show:
@@ -420,7 +465,7 @@ def plot_noise_with_laser_on(output_folder, show=False):
         data['CH{}'.format(i)] = detrend_poly(data['CH{}'.format(i)], poly_2)
 
     logger.info("Plotting FFT...")
-    f, axs = plt.subplots(1, 2, figsize=(8, 4), sharey=False)
+    f, axs = plt.subplots(1, 2, figsize=(8, 5), subplot_kw=dict(box_aspect=1), sharey=False)
     for i, ax in enumerate(axs):
         channel_data = data['CH{}'.format(i)]
         fft = np.fft.fft(channel_data)
@@ -441,7 +486,7 @@ def plot_noise_with_laser_on(output_folder, show=False):
         alpha = round(alpha, d)
 
         logger.info("A/f^α noise estimation: α = {} ± {}".format(alpha, alpha_u))
-        label = "Ajuste 1/f. α = {} ± {}".format(alpha, alpha_u)
+        label = "Ajuste 1/fᵅ (α = {} ± {})".format(alpha, alpha_u)
 
         if i == 0:
             ax.set_ylabel(ct.LABEL_VOLTAGE)
@@ -463,6 +508,7 @@ def plot_noise_with_laser_on(output_folder, show=False):
     for ax in axs.flat:
         ax.label_outer()
 
+    f.subplots_adjust(hspace=0)
     f.tight_layout()
     f.savefig("{}-fft".format(base_output_fname))
 
@@ -472,7 +518,7 @@ def plot_noise_with_laser_on(output_folder, show=False):
     plt.close()
 
     filtered = []
-    f, axs = plt.subplots(1, 2, figsize=(8, 4), sharey=True)
+    f, axs = plt.subplots(1, 2, figsize=(8, 5), subplot_kw=dict(box_aspect=1), sharey=True)
     for i, ax in enumerate(axs):
         channel_data = data['CH{}'.format(i)]
 
@@ -508,6 +554,8 @@ def plot_noise_with_laser_on(output_folder, show=False):
         N = len(xs)
         ax.semilogy(xs[:N // 2], abs(fft[:N // 2]), color='k')
 
+    f.subplots_adjust(hspace=0)
+    f.tight_layout()
     f.savefig("{}-filtered-fft".format(base_output_fname))
 
     if show:
@@ -542,7 +590,7 @@ def plot_drift(output_folder, show=False):
     logger.info("PROCESSING LASER DRIFT...")
 
     reencendido = np.loadtxt(
-        "data/laser-16-reencendido-1M.txt",
+        "data/old/continuous-range4V-584nm-16-reencendido-samples1M.txt",
         delimiter=' ', skiprows=1, usecols=(1, 2), encoding=ct.ENCONDIG)
 
     r0 = reencendido[:, 0]
