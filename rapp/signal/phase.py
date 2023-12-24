@@ -40,7 +40,7 @@ def sine_fit(xs, ys, p0=None, x_sigma=None, y_sigma=None, method='curve_fit'):
     fitx = np.arange(min(xs), max(xs), step=0.01)
 
     if method == 'curve_fit':
-        popt, pcov = curve_fit(sine, xs, ys, p0=p0, sigma=y_sigma, absolute_sigma=True)
+        popt, pcov = curve_fit(sine, xs, ys, p0=p0, sigma=y_sigma, absolute_sigma=False)
 
         us = np.sqrt(np.diag(pcov))
         fity = sine(fitx, *popt)
@@ -62,7 +62,7 @@ def sine_fit(xs, ys, p0=None, x_sigma=None, y_sigma=None, method='curve_fit'):
 
 
 def phase_difference(
-    xs, s1, s2, x_sigma=None, s1_sigma=None, s2_sigma=None, method='curve_fit'
+    xs, s1, s2, x_sigma=None, s1_sigma=None, s2_sigma=None, method='curve_fit', degrees=True
 ) -> PhaseDifferenceResult:
     """Computes phase difference between two harmonic signals (xs, s1) and (xs, s2)."""
 
@@ -93,5 +93,10 @@ def phase_difference(
         logger.debug("φ1 = {}".format(phi1))
         logger.debug("φ2 = {}".format(phi2))
         logger.debug("|φ1 - φ2| = {}".format(phase_diff))
+
+        if degrees:
+            phase_diff = np.rad2deg(phase_diff)
+            phase_diff_u = np.rad2deg(phase_diff_u)
+            fitx1 = np.rad2deg(fitx1)
 
         return PhaseDifferenceResult(phase_diff, phase_diff_u, fitx1, fity1, fity2)
