@@ -244,40 +244,6 @@ def plot_noise_with_laser_off(output_folder, show=False):
 
     plt.close()
 
-    logger.info("Plotting zoomed-FFT...")
-    f, axs = plt.subplots(1, 2, figsize=(8, 5), subplot_kw=dict(box_aspect=1), sharey=True)
-    for i, ax in enumerate(axs):
-        channel_data = data['CH{}'.format(i)]
-
-        fft = np.fft.fft(channel_data)
-
-        xs = np.arange(0, len(fft))
-        xs = (xs / len(fft)) * sps
-        N = len(xs)
-
-        if i == 0:
-            ax.set_ylabel(ct.LABEL_VOLTAGE)
-
-        ax.set_xlabel(ct.LABEL_FREQUENCY)
-        ax.set_title("Canal {}".format(i))
-        ax.semilogy(xs[:N // 2], np.abs(fft[:N // 2]), color='k')
-        ax.set_xlim(0, 20)
-        ax.set_ylim(10e-5, 40)
-
-        line_frequencies = list(range(1, 7)) + list(range(8, 14)) + list(range(15, 20))
-        for i, freq in enumerate(line_frequencies, 0):
-            freq_label = None
-            if i == 0:
-                freq_label = "1 Hz y armónicos"
-            ax.axvline(x=freq, ls='--', lw=1, label=freq_label)
-
-        ax.legend(loc='upper right', fontsize=12)
-
-    f.subplots_adjust(wspace=0.03)
-
-    f.tight_layout()
-    f.savefig("{}-fft-zoom.png".format(base_output_fname))
-
     logger.info("Plotting FFT...")
     f, axs = plt.subplots(1, 2, figsize=(8, 5), subplot_kw=dict(box_aspect=1), sharey=True)
     for i, ax in enumerate(axs):
@@ -289,7 +255,9 @@ def plot_noise_with_laser_off(output_folder, show=False):
         xs = (xs / len(fft)) * sps
         N = len(xs)
 
-        popt, pcov = curve_fit(pink_noise, xs[1:N // 2], fft[1:N // 2])
+        end = N // 2
+        pink_x = xs[1:end]
+        popt, pcov = curve_fit(pink_noise, pink_x, fft[1:end])
 
         us = np.sqrt(np.diag(pcov))
         alpha = popt[0]
@@ -305,12 +273,11 @@ def plot_noise_with_laser_off(output_folder, show=False):
         if i == 0:
             ax.set_ylabel(ct.LABEL_VOLTAGE)
 
-        pink_y = pink_noise(xs[1:N // 2], *popt)
-
+        pink_y = pink_noise(pink_x, *popt)
         ax.set_xlabel(ct.LABEL_FREQUENCY)
         ax.set_title("Canal {}".format(i))
-        ax.semilogy(xs[:N // 2], np.abs(fft[:N // 2]), color='k')
-        ax.semilogy(xs[1:N // 2], pink_y, color='deeppink', lw=2, label=label)
+        ax.loglog(xs[:N // 2], np.abs(fft[:N // 2]), color='k')
+        ax.loglog(pink_x, pink_y, color='deeppink', lw=2, label=label)
 
         line_frequencies = [50 * x for x in range(1, 6)]
         for i, freq in enumerate(line_frequencies, 0):
@@ -319,14 +286,25 @@ def plot_noise_with_laser_off(output_folder, show=False):
                 freq_label = "50 Hz y armónicos"
             ax.axvline(x=freq, ls='--', lw=1, label=freq_label)
 
+        line_frequencies = list(range(1, 7)) + list(range(8, 14)) + list(range(15, 20))
+        for i, freq in enumerate(line_frequencies, 0):
+            freq_label = None
+            if i == 0:
+                freq_label = "1 Hz y armónicos"
+            ax.axvline(x=freq, ls='--', lw=1, color='C01', alpha=0.5, label=freq_label)
+
         ax.legend(loc='upper right', fontsize=11)
 
     f.subplots_adjust(wspace=0.03)
     f.tight_layout()
     f.savefig("{}-fft.png".format(base_output_fname))
 
-    filtered = []
+    if show:
+        plt.show()
 
+    plt.close()
+
+    filtered = []
     f, axs = plt.subplots(1, 2, figsize=(8, 5), subplot_kw=dict(box_aspect=1), sharey=True)
     for i, ax in enumerate(axs):
         channel_data = data['CH{}'.format(i)]
@@ -375,8 +353,8 @@ def plot_noise_with_laser_off(output_folder, show=False):
     f.tight_layout()
     f.savefig("{}-filtered-fft.png".format(base_output_fname))
 
-    if show:
-        plt.show()
+    # if show:
+    #    plt.show()
 
     plt.close()
 
@@ -391,6 +369,11 @@ def plot_noise_with_laser_off(output_folder, show=False):
     plot.legend(loc='upper right')
 
     plot.save("{}-filtered-signal.png".format(filename[:-4]))
+
+    # if show:
+    #    plt.show()
+
+    plt.close()
 
     data = np.array(filtered).T
     plot_histogram_and_pdf(data, bins=bins, prefix=base_output_fname, show=show)
@@ -493,8 +476,8 @@ def plot_noise_with_laser_on(output_folder, show=False):
 
         ax.set_xlabel(ct.LABEL_FREQUENCY)
         ax.set_title("Canal {}".format(i))
-        ax.semilogy(xs[1:N // 2], abs(fft[1:N // 2]), color='k')
-        ax.semilogy(xs[1:N // 2], pink_y, color='deeppink', lw=2, label=label)
+        ax.loglog(xs[1:N // 2], abs(fft[1:N // 2]), color='k')
+        ax.loglog(xs[1:N // 2], pink_y, color='deeppink', lw=2, label=label)
 
         line_frequencies = [50 * x for x in range(1, int(xs[N // 2] / 50))]
         for i, freq in enumerate(line_frequencies, 0):
@@ -558,8 +541,8 @@ def plot_noise_with_laser_on(output_folder, show=False):
     f.tight_layout()
     f.savefig("{}-filtered-fft".format(base_output_fname))
 
-    if show:
-        plt.show()
+    # if show:
+    #    plt.show()
 
     plt.close()
 
@@ -574,6 +557,8 @@ def plot_noise_with_laser_on(output_folder, show=False):
     plot.legend(loc='upper right')
 
     plot.save("{}-filtered-signal.png".format(filename[:-4]))
+
+    plt.close()
 
     data = np.array(filtered).T
 
