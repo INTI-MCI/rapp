@@ -91,8 +91,12 @@ FILE_PARAMS = {
 }
 
 
-def pink_noise(f, alpha):
-    return np.sqrt(1 / f ** alpha)
+def linear(f, a, b):
+    return - a * f + b
+
+
+def pink_noise(f, alpha, a):
+    return a / f ** alpha
 
 
 def read_measurement_file(filepath, sep=r"\s+"):
@@ -239,8 +243,8 @@ def plot_noise_with_laser_off(output_folder, show=False):
 
     f.savefig("{}-signal.png".format(base_output_fname))
 
-    if show:
-        plt.show()
+    # if show:
+    #    plt.show()
 
     plt.close()
 
@@ -249,15 +253,19 @@ def plot_noise_with_laser_off(output_folder, show=False):
     for i, ax in enumerate(axs):
         channel_data = data['CH{}'.format(i)]
 
-        fft = np.fft.fft(channel_data)
+        psd = (2 * np.abs(np.fft.fft(channel_data)) ** 2) / (sps * len(channel_data))
 
-        xs = np.arange(0, len(fft))
-        xs = (xs / len(fft)) * sps
+        xs = np.arange(0, len(psd))
+        xs = (xs / len(psd)) * sps
         N = len(xs)
 
         end = N // 2
+        end = np.where(xs < 10)[0][-1]  # 1/f noise only below 10 Hz
+
         pink_x = xs[1:end]
-        popt, pcov = curve_fit(pink_noise, pink_x, fft[1:end])
+
+        popt, pcov = curve_fit(linear, np.log(pink_x), np.log(psd[1:end]))
+        # popt, pcov = curve_fit(pink_noise, pink_x, psd[1:end])
 
         us = np.sqrt(np.diag(pcov))
         alpha = popt[0]
@@ -267,16 +275,19 @@ def plot_noise_with_laser_off(output_folder, show=False):
         d = abs(decimal.Decimal(str(alpha_u)).as_tuple().exponent)
         alpha = round(alpha, d)
 
-        logger.info("A/f^α noise estimation: α = {} ± {}".format(alpha, alpha_u))
-        label = "Ajuste 1/fᵅ (α = {} ± {})".format(alpha, alpha_u)
+        logger.info("A/f^α noise estimation: α = {} ± {}".format(alpha, 0))
+        logger.info("A/f^α noise estimation: scale = {} ± {}".format(popt[1], us[1]))
+
+        label = "Ajuste 1/fᵅ (α = {:.2f} ± {:.2f})".format(alpha, alpha_u)
 
         if i == 0:
-            ax.set_ylabel(ct.LABEL_VOLTAGE)
+            ax.set_ylabel(ct.LABEL_PSD)
 
-        pink_y = pink_noise(pink_x, *popt)
+        pink_y = pink_noise(pink_x, alpha, np.exp(popt[1]))
+
         ax.set_xlabel(ct.LABEL_FREQUENCY)
         ax.set_title("Canal {}".format(i))
-        ax.loglog(xs[:N // 2], np.abs(fft[:N // 2]), color='k')
+        ax.loglog(xs[:N // 2], psd[:N // 2], color='k')
         ax.loglog(pink_x, pink_y, color='deeppink', lw=2, label=label)
 
         line_frequencies = [50 * x for x in range(1, 6)]
@@ -430,8 +441,9 @@ def plot_noise_with_laser_on(output_folder, show=False):
 
         ax.set_title('Canal {}'.format(i))
 
-        ax.yaxis.set_major_formatter(plt.FormatStrFormatter('%.1f'))
+        ax.yaxis.set_major_formatter(plt.FormatStrFormatter('%.2f'))
         ax.yaxis.set_major_locator(plt.MaxNLocator(3))
+        # ax.ticklabel_format(style='sci', scilimits=(0, 0), axis='y')
         ax.xaxis.set_major_locator(plt.MaxNLocator(3))
 
     f.subplots_adjust(hspace=0)
@@ -451,16 +463,23 @@ def plot_noise_with_laser_on(output_folder, show=False):
     f, axs = plt.subplots(1, 2, figsize=(8, 5), subplot_kw=dict(box_aspect=1), sharey=False)
     for i, ax in enumerate(axs):
         channel_data = data['CH{}'.format(i)]
-        fft = np.fft.fft(channel_data)
 
-        xs = np.arange(0, len(fft))
-        xs = (xs / len(fft)) * sps
+        psd = (2 * np.abs(np.fft.fft(channel_data)) ** 2) / (sps * len(channel_data))
+
+        xs = np.arange(0, len(psd))
+        xs = (xs / len(psd)) * sps
         N = len(xs)
 
-        popt, pcov = curve_fit(pink_noise, xs[1:N // 2], fft[1:N // 2])
+        end = N // 2
+        end = np.where(xs < 10)[0][-1]  # 1/f noise only below 10 Hz
+
+        pink_x = xs[1:end]
+
+        popt, pcov = curve_fit(linear, np.log(pink_x), np.log(psd[1:end]))
+        # popt, pcov = curve_fit(pink_noise, pink_x, psd[1:end])
+
         us = np.sqrt(np.diag(pcov))
 
-        pink_y = pink_noise(xs[1:N // 2], *popt)
         alpha = popt[0]
 
         alpha_u = round_to_n(us[0], 1)
@@ -469,15 +488,19 @@ def plot_noise_with_laser_on(output_folder, show=False):
         alpha = round(alpha, d)
 
         logger.info("A/f^α noise estimation: α = {} ± {}".format(alpha, alpha_u))
-        label = "Ajuste 1/fᵅ (α = {} ± {})".format(alpha, alpha_u)
+        logger.info("A/f^α noise estimation: scale = {} ± {}".format(popt[1], us[1]))
+
+        label = "Ajuste 1/fᵅ (α = {:.2f} ± {:.2f})".format(alpha, alpha_u)
+
+        pink_y = pink_noise(xs[1:end], alpha, np.exp(popt[1]))[:end]
 
         if i == 0:
-            ax.set_ylabel(ct.LABEL_VOLTAGE)
+            ax.set_ylabel(ct.LABEL_PSD)
 
         ax.set_xlabel(ct.LABEL_FREQUENCY)
         ax.set_title("Canal {}".format(i))
-        ax.loglog(xs[1:N // 2], abs(fft[1:N // 2]), color='k')
-        ax.loglog(xs[1:N // 2], pink_y, color='deeppink', lw=2, label=label)
+        ax.loglog(xs[1:N // 2], psd[1:N // 2], color='k')
+        ax.loglog(pink_x, pink_y, color='deeppink', lw=2, label=label)
 
         line_frequencies = [50 * x for x in range(1, int(xs[N // 2] / 50))]
         for i, freq in enumerate(line_frequencies, 0):
@@ -531,11 +554,34 @@ def plot_noise_with_laser_on(output_folder, show=False):
 
         filtered.append(channel_data)
 
-        fft = np.fft.fft(channel_data)
-        xs = np.arange(0, len(fft))
-        xs = (xs / len(fft)) * sps
+        psd = np.abs(np.fft.fft(channel_data)) ** 2
+
+        pink_x = xs[1:end]
+
+        popt, pcov = curve_fit(linear, np.log(pink_x), np.log(psd[1:end]))
+        # popt, pcov = curve_fit(pink_noise, pink_x, psd[1:end])
+
+        us = np.sqrt(np.diag(pcov))
+
+        alpha = popt[0]
+
+        alpha_u = round_to_n(us[0], 1)
+        # Obtain number of decimal places of the u:
+        d = abs(decimal.Decimal(str(alpha_u)).as_tuple().exponent)
+        alpha = round(alpha, d)
+
+        logger.info("A/f^α noise estimation: α = {} ± {}".format(alpha, alpha_u))
+        logger.info("A/f^α noise estimation: scale = {} ± {}".format(popt[1], us[1]))
+
+        label = "Ajuste 1/fᵅ (α = {} ± {})".format(alpha, alpha_u)
+
+        pink_y = pink_noise(xs[1:end], alpha, np.exp(popt[1]))[:end]
+
+        xs = np.arange(0, len(psd))
+        xs = (xs / len(psd)) * sps
         N = len(xs)
-        ax.semilogy(xs[:N // 2], abs(fft[:N // 2]), color='k')
+        ax.loglog(xs[:N // 2], psd[:N // 2], color='k')
+        ax.loglog(pink_x, pink_y, color='deeppink', lw=2, label=label)
 
     f.subplots_adjust(hspace=0)
     f.tight_layout()

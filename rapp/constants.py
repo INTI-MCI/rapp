@@ -16,7 +16,7 @@ LABEL_STEP = "Paso"
 LABEL_VOLTAGE = "Tensión [V]"
 LABEL_DYNAMIC_RANGE_USE = "Uso del rango dinámico [%]"
 LABEL_DEGREE = "Ángulo del rotador [°]"
-LABEL_PSD = "PSD"
+LABEL_PSD = "PSD [V² / Hz]"
 SAMPLES_PER_ANGLE = "N° de muestras por ángulo"
 
 ENCONDIG = 'iso-8859-1'
