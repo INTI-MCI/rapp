@@ -107,7 +107,8 @@ def phase_difference(
 
         logger.debug("φ1 = {}".format(phi1))
         logger.debug("φ2 = {}".format(phi2))
-        logger.debug("|φ1 - φ2| = {}".format(phase_diff))
+        logger.debug("|φ1 - φ2| = {} ± {} degrees".format(
+            np.rad2deg(phase_diff), np.rad2deg(phase_diff_u)))
 
         if degrees:
             phase_diff = np.rad2deg(phase_diff)
