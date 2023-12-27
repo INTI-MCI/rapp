@@ -102,7 +102,7 @@ def phase_difference(
         phi2 = p2[1]
         phi2_u = p2_u[1]
 
-        phase_diff = abs(abs(phi1) - abs(phi2))
+        phase_diff = abs(phi1) - abs(phi2)
         phase_diff_u = np.sqrt(phi1_u**2 + phi2_u**2)
 
         logger.debug("φ1 = {}".format(phi1))
