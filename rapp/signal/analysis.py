@@ -168,9 +168,7 @@ def plot_histogram_and_pdf(data,  bins='quantized', prefix='', show=False):
         mu_rounded = round_to_n(mu, 1)
         sigma_rounded = round_to_n(sigma, 1)
 
-        logger.info(
-            "CH{} noise (mu, sigma) = ({}, {})"
-            .format(i, mu_rounded, sigma_rounded))
+        logger.info("CH{} noise (mu, sigma) = ({}, {})".format(i, mu, sigma))
 
         pdf_x = np.linspace(min(channel_data), max(channel_data), num=1000)
         pdf_y = stats.norm.pdf(pdf_x, mu, sigma)
@@ -767,7 +765,7 @@ def optical_rotation(folder1, folder2, method):
         phase_diff_without_sample = plot_phase_difference(files_i[i], method='odr')
         phase_diff_with_sample = plot_phase_difference(files_f[i], method='odr')
 
-        optical_rotation = (phase_diff_with_sample - phase_diff_without_sample) / 2
+        optical_rotation = (phase_diff_with_sample - phase_diff_without_sample)
 
         ors.append(optical_rotation)
 
@@ -777,7 +775,7 @@ def optical_rotation(folder1, folder2, method):
     values = [o.n for o in ors]
     rep = np.std(values) / np.sqrt(len(values))
 
-    rmse = np.sqrt(sum([abs(-4.5 - v) ** 2 for v in values]) / len(values))
+    rmse = np.sqrt(sum([abs(-9 - v) ** 2 for v in values]) / len(values))
 
     logger.info("Optical rotation measured: {}".format(avg_or))
     logger.info("Repetitbility uncertainty: {}".format(rep))
