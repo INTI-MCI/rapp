@@ -189,7 +189,11 @@ def n_simulations(n=1, method='curve_fit', **kwargs):
         if np.isnan(s2_sigma).any() or (s2_sigma == 0).any():
             s2_sigma = None
 
-        res = phase_difference(xs * 2, s1, s2, s1_sigma=s1_sigma, s2_sigma=s2_sigma, method=method)
+        x_sigma = ct.ANALYZER_MIN_STEP / (2 * np.sqrt(3))
+
+        res = phase_difference(
+            xs * 2, s1, s2, x_sigma=x_sigma, s1_sigma=s1_sigma, s2_sigma=s2_sigma, method=method,
+            degrees=False)
 
         results.append(res)
 
@@ -313,7 +317,7 @@ def plot_methods(phi, folder, samples=5, step=1, max_cycles=10, reps=1, show=Fal
     )
 
     methods = PHASE_DIFFERENCE_METHODS
-    methods = ['curve_fit']
+    methods = ['curve_fit', 'odr']
     for method in methods:
         fc = samples_per_cycle(step=step)
         logger.info("Method: {}, fc={}, reps={}".format(method, fc, reps))
@@ -327,13 +331,14 @@ def plot_methods(phi, folder, samples=5, step=1, max_cycles=10, reps=1, show=Fal
             )
 
             # RMSE
-            error = np.sqrt(sum([abs(phi - e.value) ** 2 for e in n_errors]) / reps)
-            error_sci = "{:.2E}".format(error)
+            error_rad = np.sqrt(sum([abs(phi - e.value) ** 2 for e in n_errors]) / reps)
+            error_degrees = np.rad2deg(error_rad)
+            error_degrees_sci = "{:.2E}".format(error_degrees)
 
-            errors.append(error)
+            errors.append(error_degrees)
 
             time = total_time(cycles) / 60
-            logger.info("cycles={}, time={} m, φerr: {}.".format(cycles, time, error_sci))
+            logger.info("cycles={}, time={} m, φerr: {}.".format(cycles, time, error_degrees_sci))
 
         label = "{}".format(method)
         plot.add_data(cycles_list, errors, style='o-', lw=2, label=label)
@@ -350,7 +355,7 @@ def plot_methods(phi, folder, samples=5, step=1, max_cycles=10, reps=1, show=Fal
     logger.info("Done.")
 
 
-def plot_error_vs_cycles(phi, folder, samples=5, max_cycles=10, reps=1, show=False):
+def plot_error_vs_cycles(phi, folder, samples=5, max_cycles=8, reps=1, show=False):
     print("")
     logger.info("PHASE DIFFERENCE VS # OF CYCLES")
 
@@ -683,7 +688,7 @@ def main(sim, reps=1, step=1, samples=1, show=False):
         plot_simulation_steps(output_folder, show=show)
 
     if sim in ['all', 'methods']:
-        plot_methods(PHI, output_folder, samples, max_cycles=10, step=step, reps=reps, show=show)
+        plot_methods(PHI, output_folder, samples, max_cycles=8, step=step, reps=reps, show=show)
 
     if sim in ['all', 'error_vs_samples']:
         plot_error_vs_samples(PHI, output_folder, reps=reps, step=step, show=show)

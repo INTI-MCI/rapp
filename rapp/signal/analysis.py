@@ -759,12 +759,30 @@ def optical_rotation(folder1, folder2, method):
     logger.info("Folder without optical active sample measurements {}...".format(folder1))
     logger.info("Folder with optical active sample measurements {}...".format(folder2))
 
-    phase_diff_without_sample = averaged_phase_difference(folder1, method=method)
-    phase_diff_with_sample = averaged_phase_difference(folder2, method=method)
+    ors = []
+    for i in range(3):
+        files_i = [os.path.join(folder1, x) for x in os.listdir(folder1)]
+        files_f = [os.path.join(folder2, x) for x in os.listdir(folder2)]
 
-    optical_rotation = (phase_diff_with_sample - phase_diff_without_sample) / 2
+        phase_diff_without_sample = plot_phase_difference(files_i[i], method='odr')
+        phase_diff_with_sample = plot_phase_difference(files_f[i], method='odr')
 
-    logger.info("Optical rotation measured: {}".format(optical_rotation))
+        optical_rotation = (phase_diff_with_sample - phase_diff_without_sample) / 2
+
+        ors.append(optical_rotation)
+
+    N = len(ors)
+    avg_or = sum(ors) / N
+
+    values = [o.n for o in ors]
+    rep = np.std(values) / np.sqrt(len(values))
+
+    rmse = np.sqrt(sum([abs(-4.5 - v) ** 2 for v in values]) / len(values))
+
+    logger.info("Optical rotation measured: {}".format(avg_or))
+    logger.info("Repetitbility uncertainty: {}".format(rep))
+    logger.info("RMSE: {}".format(rmse))
+    logger.info("difference: {}".format(avg_or + 4.5))
 
     return optical_rotation
 
@@ -784,13 +802,11 @@ def plot_phase_difference(filepath, method, show=False):
     s1_sigma = None if np.isnan(s1err).any() else s1err
     s2_sigma = None if np.isnan(s1err).any() else s2err
 
-    print(s1_sigma)
-    print(s2_sigma)
-
     x_sigma = ct.ANALYZER_MIN_STEP / (2 * np.sqrt(3))
 
     res = phase_difference(
-        np.deg2rad(xs) * 2, s1, s2, x_sigma=x_sigma, s1_sigma=s1err, s2_sigma=s2err, method=method
+        np.deg2rad(xs) * 2, s1, s2, x_sigma=x_sigma, s1_sigma=s1_sigma, s2_sigma=s2_sigma,
+        method=method
     )
 
     phase_diff = res.value / 2
@@ -837,7 +853,7 @@ def plot_phase_difference(filepath, method, show=False):
 
     plot.close()
 
-    return phase_diff
+    return ufloat(phase_diff, phase_diff_u)
 
 
 def plot_signals_per_n_measurement(output_folder, show=False):
