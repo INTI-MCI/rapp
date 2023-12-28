@@ -313,10 +313,8 @@ def plot_error_vs_method(phi, folder, samples=5, reps=10, step=1, max_cycles=10,
 
     cycles_list = np.arange(1, max_cycles + 1, step=1)
 
-    title = "samples={}, step={}°".format(samples, step)
     plot = Plot(
-        ylabel=ct.LABEL_PHI_ERR, xlabel=ct.LABEL_N_CYCLES,
-        title=title, ysci=True, xint=True,
+        ylabel=ct.LABEL_PHI_ERR, xlabel=ct.LABEL_N_CYCLES, ysci=True, xint=True,
         folder=folder
     )
 
@@ -348,11 +346,14 @@ def plot_error_vs_method(phi, folder, samples=5, reps=10, step=1, max_cycles=10,
 
         label = "{}".format(method)
         plot.add_data(cycles_list, errors, style=ms[i], ls=ls[i], color='k', lw=2, label=label)
-        plot._ax.set_yscale('log')
 
+    annotation = "samples={}\nstep={}°".format(samples, step)
+    plot._ax.annotate(annotation, (1, 0.01))
+    plot._ax.set_yscale('log')
     plot.legend(fontsize=12)
 
-    plot.save(filename="sim_methods-reps-{}-samples-{}-step-{}.png".format(reps, samples, step))
+    filename = "sim_error_vs_method-reps-{}-samples-{}-step-{}.png"
+    plot.save(filename=filename.format(reps, samples, step))
 
     if show:
         plot.show()
@@ -405,7 +406,7 @@ def plot_error_vs_step(phi, folder, samples=5, cycles=2, reps=1, show=False):
 
     plot.legend(fontsize=12)
 
-    plot.save(filename="sim_error_vs_step-samples-{}".format(samples))
+    plot.save(filename="sim_error_vs_step-samples-{}-reps{}".format(samples, reps))
 
     if show:
         plot.show()
