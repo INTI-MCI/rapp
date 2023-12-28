@@ -26,7 +26,7 @@ COLUMN_CH0 = 'CH0'
 COLUMN_CH1 = 'CH1'
 COLUMN_ANGLE = 'ANGLE'
 
-REGEX_NUMBER_AFTER_WORD = r"(?<={word})\d+(?:\.\d+)?"
+REGEX_NUMBER_AFTER_WORD = r"(?<={word})-?\d+(?:\.\d+)?"
 
 PARAMETER_STRING = "cycles={}, step={}, samples={}."
 
@@ -752,15 +752,23 @@ def averaged_phase_difference(folder, method):
     return avg_phase_diff
 
 
-def optical_rotation(folder1, folder2, method):
+def optical_rotation(folder, method):
     logger.info("Calculating optical rotation...")
-    logger.info("Folder without optical active sample measurements {}...".format(folder1))
-    logger.info("Folder with optical active sample measurements {}...".format(folder2))
+
+    i_folder = os.path.join(folder, 'initial')
+    f_folder = os.path.join(folder, 'final')
+
+    or_angle = float(re.findall(REGEX_NUMBER_AFTER_WORD.format(word="hwp"), folder)[0])
+
+    logger.info("Expected angle: {}".format(or_angle))
+
+    logger.info("Folder without optical active sample measurements {}...".format(i_folder))
+    logger.info("Folder with optical active sample measurements {}...".format(f_folder))
 
     ors = []
     for i in range(3):
-        files_i = [os.path.join(folder1, x) for x in os.listdir(folder1)]
-        files_f = [os.path.join(folder2, x) for x in os.listdir(folder2)]
+        files_i = [os.path.join(i_folder, x) for x in os.listdir(i_folder)]
+        files_f = [os.path.join(f_folder, x) for x in os.listdir(f_folder)]
 
         phase_diff_without_sample = plot_phase_difference(files_i[i], method='odr')
         phase_diff_with_sample = plot_phase_difference(files_f[i], method='odr')
@@ -775,12 +783,12 @@ def optical_rotation(folder1, folder2, method):
     values = [o.n for o in ors]
     rep = np.std(values) / np.sqrt(len(values))
 
-    rmse = np.sqrt(sum([abs(-9 - v) ** 2 for v in values]) / len(values))
+    rmse = np.sqrt(sum([abs(abs(or_angle) - abs(v)) ** 2 for v in values]) / len(values))
 
     logger.info("Optical rotation measured: {}".format(avg_or))
     logger.info("Repetitbility uncertainty: {}".format(rep))
     logger.info("RMSE: {}".format(rmse))
-    logger.info("difference: {}".format(avg_or + 4.5))
+    logger.info("difference: {}".format(abs(or_angle) - abs(avg_or)))
 
     return optical_rotation
 
