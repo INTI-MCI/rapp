@@ -123,11 +123,11 @@ def main(
 
     reps = 3
     analyzer.motor_on(axis=2)
-    for hwp_angle in [-4.5]:
-        analyzer.setpos(hwp_angle, axis=2)
-        logger.info("Waiting 5 seconds after changing half wave plate position...")
-        time.sleep(5)
-        for rep in range(1, reps + 1):
+    for rep in range(2, reps + 1):
+        for hwp_angle in [0, 4.5, 29]:
+            analyzer.setpos(hwp_angle, axis=2)
+            logger.info("Waiting 5 seconds after changing half wave plate position...")
+            time.sleep(5)
             prefix_ = "{}-hwp{}-rep{}".format(prefix, hwp_angle, rep)
             filename = FILE_NAME.format(prefix=prefix_, cycles=cycles, step=step, samples=samples)
             filepath = os.path.join(output_dir, filename)
