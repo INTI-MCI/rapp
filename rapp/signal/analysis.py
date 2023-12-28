@@ -192,7 +192,7 @@ def plot_histogram_and_pdf(data,  bins='quantized', prefix='', show=False):
         ax.set_title("Canal {}".format(i))
 
         ax.plot(pdf_x, pdf_y, 'k', lw=2, label=fit_label)
-        ax.legend(loc='upper right', fontsize=10)
+        ax.legend(loc='upper right', fontsize=13, frameon=False)
 
         ax.xaxis.set_major_locator(plt.MaxNLocator(3))
 
