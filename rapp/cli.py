@@ -10,7 +10,7 @@ HELP_POLARIMETER = "Tool for measuring signals with the polarimeter."
 HELP_SIM = "Tool for making numerical simulations."
 HELP_PHASE_DIFF = 'Tool for calculating phase difference from single polarimeter measurement.'
 HELP_AVG_PHASE_DIFF = 'Tool for calculating phase difference averaging N polarimeter measurements.'
-HELP_OR = 'Tool for calculating optical rotation.'
+HELP_OR = 'Tool for calculating optical rotation from initial phase and final phase measurements.'
 HELP_ANALYSYS = "Tool for analyzing signals: noise, drift, etc."
 
 HELP_CYCLES = 'n° of cycles to run.'
@@ -33,9 +33,6 @@ HELP_SIM_REPS = 'number of repetitions in each simulated iteration (default: %(d
 HELP_SHOW = 'whether to show the plot.'
 HELP_FILEPATH = 'file containing the measurements.'
 HELP_FOLDER = 'folder containing the measurements.'
-
-HELP_FOLDER_WITHOUT_SAMPLE = 'folder containing the measurements without optical active sample.'
-HELP_FOLDER_WITH_SAMPLE = 'folder containing the measurements with optical active sample.'
 
 HELP_SIM_NAME = (
     'name of the simulation. '
@@ -102,8 +99,7 @@ def add_avg_phase_diff_subparser(subparsers):
 
 def add_or_subparser(subparsers):
     p = subparsers.add_parser("or", help=HELP_OR, epilog=EPILOG_PHASE_DIFF)
-    p.add_argument('folder1', type=str, help=HELP_FOLDER_WITHOUT_SAMPLE)
-    p.add_argument('folder2', type=str, help=HELP_FOLDER_WITH_SAMPLE)
+    p.add_argument('folder', type=str, help=HELP_FOLDER)
     p.add_argument('--method', type=str, default='odr', help=HELP_METHOD)
     p.add_argument('--show', action='store_true', help=HELP_SHOW)
     p.add_argument('-v', '--verbose', action='store_true', help=HELP_VERBOSE)
@@ -145,7 +141,7 @@ def main():
 
         if args.command == 'or':
             setup_logger(args.verbose)
-            analysis.optical_rotation(args.folder1, args.folder2, method=args.method)
+            analysis.optical_rotation(args.folder, method=args.method)
 
         if args.command == 'analysis':
             setup_logger(args.verbose)
