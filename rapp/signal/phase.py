@@ -6,7 +6,7 @@ from scipy import signal
 from scipy.optimize import curve_fit
 from scipy.odr import ODR, Model, RealData
 
-PHASE_DIFFERENCE_METHODS = ['cossim', 'curve_fit', 'odr', 'hilbert']
+PHASE_DIFFERENCE_METHODS = ['CS', 'HILBERT', 'NLS', 'ODR']
 
 
 logger = logging.getLogger(__name__)
@@ -39,7 +39,7 @@ def cosine_similarity(s1, s2):
 def sine_fit(xs, ys, p0=None, x_sigma=None, y_sigma=None, method='curve_fit'):
     fitx = np.arange(min(xs), max(xs), step=0.01)
 
-    if method == 'curve_fit':
+    if method == 'NLS':
         popt, pcov = curve_fit(sine, xs, ys, p0=p0, sigma=y_sigma, absolute_sigma=False)
 
         us = np.sqrt(np.diag(pcov))
@@ -47,7 +47,7 @@ def sine_fit(xs, ys, p0=None, x_sigma=None, y_sigma=None, method='curve_fit'):
 
         return popt, us, fitx, fity
 
-    if method == 'odr':
+    if method == 'ODR':
         data = RealData(xs, ys, sx=x_sigma, sy=y_sigma)
         odr = ODR(data, Model(sine_model),  beta0=p0 or [1, 0, 0])
         odr.set_job(fit_type=2)
@@ -81,14 +81,14 @@ def phase_difference(
     if method not in PHASE_DIFFERENCE_METHODS:
         raise ValueError("Phase difference method: {} not implemented.".format(method))
 
-    if method == 'cossim':
+    if method == 'CS':
         phase_diff = cosine_similarity(s1, s2)
         if degrees:
             phase_diff = np.rad2deg(phase_diff)
 
         return PhaseDifferenceResult(phase_diff, uncertainty=0)
 
-    if method in ['curve_fit', 'odr']:
+    if method in ['NLS', 'ODR']:
 
         p1, p1_u, fitx1, fity1 = sine_fit(
             xs, s1, x_sigma=x_sigma, y_sigma=s1_sigma, method=method)
@@ -117,7 +117,7 @@ def phase_difference(
 
         return PhaseDifferenceResult(phase_diff, phase_diff_u, fitx1, fity1, fity2)
 
-    if method == 'hilbert':
+    if method == 'HILBERT':
         phase_diff = hilbert_transform(s1, s2)
         if degrees:
             phase_diff = np.rad2deg(phase_diff)
