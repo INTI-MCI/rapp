@@ -15,7 +15,7 @@ FOLDER = 'output-plots'
 class Plot:
     """Encapsulates the creation of plots."""
     def __init__(self, title='', ylabel=None, xlabel=None, ysci=False, xint=False, folder=FOLDER):
-        self._fig, self._ax = plt.subplots()
+        self._fig, self._ax = plt.subplots(figsize=(4, 4))
         self._ax.set_title(title, size=12)
 
         if ysci:
@@ -30,7 +30,7 @@ class Plot:
 
         self._folder = folder
 
-    def add_data(self, xs, ys=None, style='o', mew=0.5, xrad=False, **kwargs):
+    def add_data(self, xs, ys=None, style='o', mew=0.5, mfc=None, xrad=False, **kwargs):
         """Adds data to the plot."""
 
         ax = self._ax
@@ -44,14 +44,14 @@ class Plot:
             ax.xaxis.set_major_formatter(tck.FormatStrFormatter('%g $\\pi$'))
             ax.xaxis.set_major_locator(tck.MultipleLocator(base=1.0))
 
-        ax.errorbar(xs, ys, fmt=style, mfc='None', mew=mew, **kwargs)
+        ax.errorbar(xs, ys, fmt=style, mfc=mfc, mew=mew, **kwargs)
 
     def save(self, filename):
         """Saves the plot."""
         create_folder(self._folder)
         self._fig.savefig(os.path.join(self._folder, filename))
 
-    def legend(self, fontsize=10, **kwargs):
+    def legend(self, fontsize=11, **kwargs):
         self._ax.legend(fontsize=fontsize, **kwargs)
 
     def show(self):

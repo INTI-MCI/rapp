@@ -35,19 +35,23 @@ A1_NOISE = [3.817173720425239e-06, 0.0002145422291402638]
 
 SIMULATIONS = [
     'all',
-    'signals_out_of_phase',
-    'sim_steps',
-    'methods',
-    'error_vs_cycles',
-    'error_vs_res',
+    'error_vs_method',
+    'error_vs_step',
     'error_vs_range',
     'error_vs_samples',
+    'error_vs_res',
+    'signals_out_of_phase',
+    'sim_steps',
     'noise_vs_range',
     'phase_diff',
 ]
 
 
 np.random.seed(1)  # To make random simulations repeatable.
+
+
+def rmse(true_value, values):
+    return np.sqrt(sum([(abs(true_value) - abs(v)) ** 2 for v in values]) / len(values))
 
 
 def harmonic(
@@ -154,8 +158,8 @@ def total_time(n_cycles):
     return n_cycles * (180 / ANALYZER_VELOCITY)
 
 
-def n_simulations(n=1, method='curve_fit', **kwargs):
-    """Performs n simulations and returned a list of n errors.
+def n_simulations(n=1, method='ODR', **kwargs):
+    """Performs n simulations and returned a list of n phase difference results.
 
     Args:
         n: number of simulations.
@@ -192,8 +196,8 @@ def n_simulations(n=1, method='curve_fit', **kwargs):
         x_sigma = ct.ANALYZER_MIN_STEP / (2 * np.sqrt(3))
 
         res = phase_difference(
-            xs * 2, s1, s2, x_sigma=x_sigma, s1_sigma=s1_sigma, s2_sigma=s2_sigma, method=method,
-            degrees=False)
+            xs * 2, s1, s2,
+            x_sigma=x_sigma, s1_sigma=s1_sigma, s2_sigma=s2_sigma, method=method, degrees=False)
 
         results.append(res)
 
@@ -303,13 +307,13 @@ def plot_simulation_steps(folder, show=False):
     logger.info("Done.")
 
 
-def plot_methods(phi, folder, samples=5, step=1, max_cycles=10, reps=1, show=False):
+def plot_error_vs_method(phi, folder, samples=5, reps=10, step=1, max_cycles=10, show=False):
     print("")
     logger.info("PHASE DIFFERENCE METHODS VS # OF CYCLES")
 
     cycles_list = np.arange(1, max_cycles + 1, step=1)
 
-    title = "reps={}, samples={}, step={}".format(reps, samples, step)
+    title = "samples={}, step={}°".format(samples, step)
     plot = Plot(
         ylabel=ct.LABEL_PHI_ERR, xlabel=ct.LABEL_N_CYCLES,
         title=title, ysci=True, xint=True,
@@ -317,21 +321,23 @@ def plot_methods(phi, folder, samples=5, step=1, max_cycles=10, reps=1, show=Fal
     )
 
     methods = PHASE_DIFFERENCE_METHODS
-    methods = ['curve_fit', 'odr']
-    for method in methods:
+    ms = ['-', '--', 'd', '-']
+    ls = ['solid', 'dashed', 'solid', 'dotted']
+    n_reps = [1, 1, reps, reps]
+    for i, method in enumerate(methods, 0):
         fc = samples_per_cycle(step=step)
+        reps = n_reps[i]
         logger.info("Method: {}, fc={}, reps={}".format(method, fc, reps))
 
         errors = []
         for cycles in cycles_list:
-            n_errors = n_simulations(
+            n_res = n_simulations(
                 n=reps, method=method, cycles=cycles, fc=fc, phi=phi,
                 fa=samples, a0_noise=A0_NOISE, a1_noise=A1_NOISE,
                 bits=ADC_BITS, all_positive=True
             )
 
-            # RMSE
-            error_rad = np.sqrt(sum([abs(phi - e.value) ** 2 for e in n_errors]) / reps)
+            error_rad = rmse(phi, [e.value for e in n_res])
             error_degrees = np.rad2deg(error_rad)
             error_degrees_sci = "{:.2E}".format(error_degrees)
 
@@ -341,7 +347,8 @@ def plot_methods(phi, folder, samples=5, step=1, max_cycles=10, reps=1, show=Fal
             logger.info("cycles={}, time={} m, φerr: {}.".format(cycles, time, error_degrees_sci))
 
         label = "{}".format(method)
-        plot.add_data(cycles_list, errors, style='o-', lw=2, label=label)
+        plot.add_data(cycles_list, errors, style=ms[i], ls=ls[i], color='k', lw=2, label=label)
+        plot._ax.set_yscale('log')
 
     plot.legend(fontsize=12)
 
@@ -355,54 +362,144 @@ def plot_methods(phi, folder, samples=5, step=1, max_cycles=10, reps=1, show=Fal
     logger.info("Done.")
 
 
-def plot_error_vs_cycles(phi, folder, samples=5, max_cycles=8, reps=1, show=False):
+def plot_error_vs_step(phi, folder, samples=5, cycles=2, reps=1, show=False):
     print("")
-    logger.info("PHASE DIFFERENCE VS # OF CYCLES")
-
-    cycles_list = np.arange(1, max_cycles + 1, step=1)
-
-    title = "samples={}".format(samples)
+    logger.info("PHASE DIFFERENCE VS # STEP")
 
     plot = Plot(
-        ylabel=ct.LABEL_PHI_ERR, xlabel=ct.LABEL_N_CYCLES, title=title, ysci=True, xint=True,
+        ylabel=ct.LABEL_PHI_ERR, xlabel=ct.LABEL_STEP, ysci=True, xint=True,
         folder=folder
     )
 
-    n_reps = [1, 5, 10, 50]
-    steps = [0.001, 0.01, 0.1, 1]
+    errors = []
+    steps = [0.001, 0.01, 0.1, 1, 2, 4]
+    n_reps = [1, 10, 20, 50, 100, 200]
     for i, step in enumerate(steps, 0):
         fc = samples_per_cycle(step=step)
         reps = n_reps[i]
-        logger.info("Method: {}, fc={}, reps={}".format('curve_fit', fc, reps))
+        logger.info("Method: {}, fc={}, reps={}".format('ODR', fc, reps))
 
-        errors = []
-        for cycles in cycles_list:
-            n_res = n_simulations(
-                n=reps, method='curve_fit', cycles=cycles, fc=fc, phi=phi,
-                fa=samples, a0_noise=A0_NOISE, a1_noise=A1_NOISE, bits=ADC_BITS, all_positive=True
-            )
+        n_res = n_simulations(
+            n=reps, method='ODR', cycles=cycles, fc=fc, phi=phi,
+            fa=samples, a0_noise=A0_NOISE, a1_noise=A1_NOISE, bits=ADC_BITS, all_positive=True
+        )
 
-            # RMSE
-            error_rad = np.sqrt(sum([abs(phi - e.value) ** 2 for e in n_res]) / reps)
-            error_degrees = np.rad2deg(error_rad)
-            error_degrees_sci = "{:.2E}".format(error_degrees)
+        error_rad = rmse(phi, [e.value for e in n_res])
+        error_degrees = np.rad2deg(error_rad)
+        error_degrees_sci = "{:.2E}".format(error_degrees)
 
-            mean_u = sum([r.u for r in n_res]) / len(n_res)
+        mean_u = sum([r.u for r in n_res]) / len(n_res)
 
-            errors.append(error_degrees)
+        errors.append(error_degrees)
 
-            time = total_time(cycles) / 60
-            logger.info(
-                "cycles={}, time={} m, φerr: {}, u: {}.".format(
-                    cycles, time, error_degrees_sci, mean_u)
-            )
+        time = total_time(cycles) / 60
+        logger.info(
+            "cycles={}, time={} m, φerr: {}, u: {}.".format(
+                cycles, time, error_degrees_sci, mean_u)
+        )
 
-        label = "step={}, reps={}".format(step, reps)
-        plot.add_data(cycles_list, errors, style='.-', lw=2, label=label)
+        label = "samples={}\nreps={}".format(samples, reps)
 
-    plot.legend()
+    plot.add_data(steps, errors, style='s-', mfc='k', color='k', lw=1, label=label)
+    plot._ax.set_yscale('log')
 
-    plot.save(filename="sim_error_vs_cycles-samples-{}".format(samples))
+    plot.legend(fontsize=12)
+
+    plot.save(filename="sim_error_vs_step-samples-{}".format(samples))
+
+    if show:
+        plot.show()
+
+    plot.close()
+
+    logger.info("Done.")
+
+
+def plot_error_vs_samples(phi, folder, step=1, reps=1, show=False):
+    print("")
+    logger.info("PHASE DIFFERENCE VS SAMPLES")
+
+    plot = Plot(
+        ylabel=ct.LABEL_PHI_ERR, xlabel=ct.SAMPLES_PER_ANGLE, ysci=True, xint=False,
+        folder=folder
+    )
+
+    ss = np.arange(1, 200, step=20)
+
+    errors = []
+    for samples in ss:
+        fc = samples_per_cycle(step=step)
+
+        n_results = n_simulations(
+            A=1.7, n=reps, method='ODR', cycles=2, fc=fc, phi=phi,
+            fa=samples, a0_noise=A0_NOISE, a1_noise=A1_NOISE, bits=ADC_BITS, all_positive=True
+        )
+
+        error_rad = rmse(phi, [e.value for e in n_results])
+        error_degrees = np.rad2deg(error_rad)
+        error_degrees_sci = "{:.2E}".format(error_degrees)
+
+        errors.append(error_degrees)
+        logger.info("samples={}, φerr: {}.".format(samples, error_degrees_sci))
+
+    label = "step={}°\nreps={}".format(step, reps)
+    plot.add_data(ss, errors, color='k', style='s-', lw=1.5, label=label)
+    plot.legend(fontsize=12)
+    plot._ax.set_yscale('log')
+
+    plot.save(
+        filename="sim_error_vs_samples-reps-{}-step-{}.png".format(reps, step))
+
+    if show:
+        plot.show()
+
+    plot.close()
+
+    logger.info("Done.")
+
+
+def plot_error_vs_range(phi, folder, samples=5, step=0.01, cycles=5, reps=1, show=False):
+    print("")
+    logger.info("PHASE DIFFERENCE VS MAX TENSION")
+
+    plot = Plot(
+        ylabel=ct.LABEL_PHI_ERR, xlabel=ct.LABEL_DYNAMIC_RANGE_USE,
+        ysci=True, xint=False,
+        folder=folder
+    )
+
+    xs = np.arange(0.1, 2, step=0.2)
+
+    errors = []
+    for amplitude in xs:
+        fc = samples_per_cycle(step=step)
+        logger.info("A={}".format(amplitude))
+
+        n_results = n_simulations(
+            A=amplitude, n=reps, method='ODR', cycles=cycles, fc=fc, phi=phi,
+            fa=samples, a0_noise=A0_NOISE, a1_noise=A1_NOISE, bits=ADC_BITS, all_positive=True
+        )
+
+        error_rad = rmse(phi, [e.value for e in n_results])
+        error_degrees = np.rad2deg(error_rad)
+        error_degrees_sci = "{:.2E}".format(error_degrees)
+
+        errors.append(error_degrees)
+
+    time = total_time(cycles) / 60
+    logger.info("cycles={}, time={} m, φerr: {}.".format(cycles, time, error_degrees_sci))
+
+    label = "reps={}\nstep={}°\nsamples={}".format(reps, step, samples)
+
+    percentages = ((xs * 2) / ADC_MAXV) * 100
+    plot.add_data(percentages, errors, color='k', style='s-', lw=1.5, label=label)
+
+    plot._ax.set_xticks(plot._ax.get_xticks())
+    plot._ax.set_yscale('log')
+    plot.legend(fontsize=12)
+
+    plot.save(
+        filename="sim_error_vs_range-reps-{}-samples-{}-step-{}.png".format(reps, samples, step))
 
     if show:
         plot.show()
@@ -418,7 +515,7 @@ def plot_error_vs_resolution(phi, folder, samples=5, step=1, max_cycles=10, reps
 
     cycles_list = np.arange(1, max_cycles + 1, step=1)
 
-    title = "step={}, samples={}, reps={}".format(step, samples, reps)
+    title = "step={}°, samples={}, reps={}".format(step, samples, reps)
 
     plot = Plot(
         ylabel=ct.LABEL_PHI_ERR, xlabel=ct.LABEL_N_CYCLES, title=title, ysci=True, xint=True,
@@ -435,12 +532,12 @@ def plot_error_vs_resolution(phi, folder, samples=5, step=1, max_cycles=10, reps
         errors = []
         for cycles in cycles_list:
             n_results = n_simulations(
-                A=amplitude, bits=bits, max_v=maxv, n=reps, method='curve_fit', cycles=cycles,
+                A=amplitude, bits=bits, max_v=maxv, n=reps, method='ODR', cycles=cycles,
                 fc=fc, phi=phi, fa=samples, a0_noise=A0_NOISE, a1_noise=A1_NOISE, all_positive=True
             )
 
             # RMSE
-            error_rad = np.sqrt(sum([abs(phi - res.value) ** 2 for res in n_results]) / reps)
+            error_rad = rmse(phi, [e.value for e in n_results])
             error_degrees = np.rad2deg(error_rad)
             error_degrees_sci = "{:.2E}".format(error_degrees)
 
@@ -456,56 +553,6 @@ def plot_error_vs_resolution(phi, folder, samples=5, step=1, max_cycles=10, reps
 
     filename = "sim_error_vs_resolution-step-{}-samples-{}-reps{}.png".format(step, samples, reps)
     plot.save(filename=filename)
-
-    if show:
-        plot.show()
-
-    plot.close()
-
-    logger.info("Done.")
-
-
-def plot_error_vs_range(phi, folder, samples=5, step=0.01, cycles=5, reps=1, show=False):
-    print("")
-    logger.info("PHASE DIFFERENCE VS MAX TENSION")
-
-    title = "reps={}, samples={}, step={}".format(reps, samples, step)
-
-    plot = Plot(
-        ylabel=ct.LABEL_PHI_ERR, xlabel=ct.LABEL_DYNAMIC_RANGE_USE,
-        title=title, ysci=True, xint=False,
-        folder=folder
-    )
-
-    xs = np.arange(0.6, 2, step=0.1)
-
-    errors = []
-    for amplitude in xs:
-        fc = samples_per_cycle(step=step)
-        logger.info("A={}".format(amplitude))
-
-        n_errors = n_simulations(
-            A=amplitude, n=reps, method='curve_fit', cycles=cycles, fc=fc, phi=phi,
-            fa=samples, a0_noise=A0_NOISE, a1_noise=A1_NOISE, bits=ADC_BITS, all_positive=True
-        )
-
-        # RMSE
-        error_rad = np.sqrt(sum([abs(phi - e.value) ** 2 for e in n_errors]) / reps)
-        error_degrees = np.rad2deg(error_rad)
-        error_degrees_sci = "{:.2E}".format(error_degrees)
-
-        errors.append(error_degrees)
-
-    time = total_time(cycles) / 60
-    logger.info("cycles={}, time={} m, φerr: {}.".format(cycles, time, error_degrees_sci))
-
-    percentages = ((xs * 2) / ADC_MAXV) * 100
-    plot.add_data(percentages, errors, color='k', style='o-', lw=1.5)
-
-    plot._ax.set_xticks(plot._ax.get_xticks())
-
-    plot.save(
-        filename="sim_error_vs_range-reps-{}-samples-{}-step-{}.png".format(reps, samples, step))
 
     if show:
         plot.show()
@@ -563,49 +610,6 @@ def plot_noise_vs_range(phi, folder, reps=1, show=False):
     logger.info("Done.")
 
 
-def plot_error_vs_samples(phi, folder, step=1, reps=1, show=False):
-    print("")
-    logger.info("PHASE DIFFERENCE VS MAX TENSION")
-
-    plot = Plot(
-        ylabel=ct.LABEL_PHI_ERR, xlabel=ct.SAMPLES_PER_ANGLE, ysci=True, xint=False,
-        folder=folder
-    )
-
-    ss = np.arange(1, 200, step=10)
-
-    errors = []
-    for samples in ss:
-        fc = samples_per_cycle(step=step)
-
-        n_errors = n_simulations(
-            A=1.7, n=reps, method='curve_fit', cycles=2, fc=fc, phi=phi,
-            fa=samples, a0_noise=A0_NOISE, a1_noise=A1_NOISE, bits=ADC_BITS, all_positive=True
-        )
-
-        # RMSE
-        error_rad = np.sqrt(sum([abs(phi - e.value) ** 2 for e in n_errors]) / reps)
-        error_degrees = np.rad2deg(error_rad)
-        error_degrees_sci = "{:.2E}".format(error_degrees)
-
-        errors.append(error_degrees)
-        logger.info("samples={}, φerr: {}.".format(samples, error_degrees_sci))
-
-    label = "step={}°\nreps={}".format(step, reps)
-    plot.add_data(ss, errors, color='k', style='o-', lw=1.5, label=label)
-    plot.legend()
-
-    plot.save(
-        filename="sim_error_vs_samples-reps-{}-step-{}.png".format(reps, step))
-
-    if show:
-        plot.show()
-
-    plot.close()
-
-    logger.info("Done.")
-
-
 def plot_phase_diff(phi, folder, samples=50, cycles=10, step=0.01, show=False):
     print("")
     logger.info("PHASE DIFFERENCE OF TWO SIMULATED SIGNALS")
@@ -619,17 +623,17 @@ def plot_phase_diff(phi, folder, samples=50, cycles=10, step=0.01, show=False):
     )
 
     logger.info("Calculating phase difference...")
-    res = phase_difference(xs * 2, s1, s2, method='curve_fit')
+    res = phase_difference(xs * 2, s1, s2, method='ODR')
 
     error = abs(phi - res.value)
     error_degrees = np.rad2deg(error)
 
     logger.info("Detected phase difference: {}".format(np.rad2deg(res.value)))
-    logger.info("cycles={}, fc={}, step={}, φerr: {}.".format(cycles, fc, step, error_degrees))
+    logger.info("cycles={}, fc={}, step={}°, φerr: {}.".format(cycles, fc, step, error_degrees))
 
     label = (
         "fc={}. \n"
-        "step={} deg. \n"
+        "step={}° deg. \n"
         "# cycles={}. \n"
         "|φ1 - φ2| = {}°. \n"
     ).format(fc, step, cycles, round(np.rad2deg(phi)))
@@ -687,14 +691,15 @@ def main(sim, reps=1, step=1, samples=1, show=False):
     if sim in ['all', 'sim_steps']:
         plot_simulation_steps(output_folder, show=show)
 
-    if sim in ['all', 'methods']:
-        plot_methods(PHI, output_folder, samples, max_cycles=8, step=step, reps=reps, show=show)
+    if sim in ['all', 'error_vs_method']:
+        plot_error_vs_method(
+            PHI, output_folder, samples, max_cycles=8, reps=reps, step=step, show=show)
+
+    if sim in ['all', 'error_vs_step']:
+        plot_error_vs_step(PHI, output_folder, samples, cycles=1, reps=reps, show=show)
 
     if sim in ['all', 'error_vs_samples']:
         plot_error_vs_samples(PHI, output_folder, reps=reps, step=step, show=show)
-
-    if sim in ['all', 'error_vs_cycles']:
-        plot_error_vs_cycles(PHI, output_folder, samples, max_cycles=8, reps=reps, show=show)
 
     if sim in ['all', 'error_vs_res']:
         plot_error_vs_resolution(
@@ -707,8 +712,8 @@ def main(sim, reps=1, step=1, samples=1, show=False):
         plot_noise_vs_range(PHI, output_folder, reps=reps, show=show)
 
     if sim in ['all', 'phase_diff']:
-        plot_phase_diff(PHI, output_folder, samples, cycles=10, step=step, show=show)
+        plot_phase_diff(PHI, output_folder, samples, cycles=8, step=step, show=show)
 
 
 if __name__ == '__main__':
-    main(sim='error_vs_cycles', show=True)
+    main(sim='error_vs_step', show=True)

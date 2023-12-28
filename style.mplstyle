@@ -52,4 +52,4 @@ ytick.minor.pad         :   4  # default 3.5
 legend.frameon          :   True
 legend.handletextpad    :   0.2
 
-axes.labelsize 			:   17
+axes.labelsize 			:   15
