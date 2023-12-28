@@ -276,7 +276,7 @@ def plot_noise_with_laser_off(output_folder, show=False):
         logger.info("A/f^α noise estimation: α = {} ± {}".format(alpha, 0))
         logger.info("A/f^α noise estimation: scale = {} ± {}".format(popt[1], us[1]))
 
-        label = "Ajuste 1/fᵅ (α = {:.2f} ± {:.2f})".format(alpha, alpha_u)
+        label = "1/fᵅ (α = {:.2f} ± {:.2f})".format(alpha, alpha_u)
 
         if i == 0:
             ax.set_ylabel(ct.LABEL_PSD)
@@ -302,7 +302,7 @@ def plot_noise_with_laser_off(output_folder, show=False):
                 freq_label = "1 Hz y armónicos"
             ax.axvline(x=freq, ls='--', lw=1, color='C01', alpha=0.5, label=freq_label)
 
-        ax.legend(loc='upper right', fontsize=11)
+        ax.legend(loc='upper left', frameon=False, fontsize=12)
 
     f.subplots_adjust(wspace=0.03)
     f.tight_layout()
@@ -430,7 +430,7 @@ def plot_noise_with_laser_on(output_folder, show=False):
 
         ax.plot(fitx, fity, '-', lw=2, label="Ajuste polinomial")
         ax.set_ylim(min(slice_data), max(slice_data))
-        ax.legend(loc='lower left')
+        ax.legend(loc='lower left', frameon=False, fontsize=12)
 
         if i == 0:
             ax.set_ylabel(ct.LABEL_VOLTAGE)
@@ -488,7 +488,7 @@ def plot_noise_with_laser_on(output_folder, show=False):
         logger.info("A/f^α noise estimation: α = {} ± {}".format(alpha, alpha_u))
         logger.info("A/f^α noise estimation: scale = {} ± {}".format(popt[1], us[1]))
 
-        label = "Ajuste 1/fᵅ (α = {:.2f} ± {:.2f})".format(alpha, alpha_u)
+        label = "1/fᵅ (α = {:.2f} ± {:.2f})".format(alpha, alpha_u)
 
         pink_y = pink_noise(xs[1:end], alpha, np.exp(popt[1]))[:end]
 
@@ -507,7 +507,7 @@ def plot_noise_with_laser_on(output_folder, show=False):
                 freq_label = "50 Hz y armónicos"
             ax.axvline(x=freq, ls='--', lw=1, label=freq_label)
 
-        ax.legend(loc='upper right', fontsize=10)
+        ax.legend(loc='lower left', frameon=False, fontsize=12)
 
     for ax in axs.flat:
         ax.label_outer()
