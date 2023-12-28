@@ -52,7 +52,7 @@ class Plot:
         self._fig.savefig(os.path.join(self._folder, filename))
 
     def legend(self, fontsize=11, **kwargs):
-        self._ax.legend(fontsize=fontsize, **kwargs)
+        self._ax.legend(fontsize=fontsize, frameon=False, **kwargs)
 
     def show(self):
         """Shows the plot."""
