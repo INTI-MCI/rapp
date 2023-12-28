@@ -752,30 +752,38 @@ def averaged_phase_difference(folder, method):
     return avg_phase_diff
 
 
-def optical_rotation(folder, method):
+def optical_rotation(folder_i, folder_f, method):
     logger.info("Calculating optical rotation...")
 
-    i_folder = os.path.join(folder, 'initial')
-    f_folder = os.path.join(folder, 'final')
+    initial_poisition = float(re.findall(REGEX_NUMBER_AFTER_WORD.format(word="hwp"), folder_i)[0])
+    final_position = float(re.findall(REGEX_NUMBER_AFTER_WORD.format(word="hwp"), folder_f)[0])
 
-    or_angle = float(re.findall(REGEX_NUMBER_AFTER_WORD.format(word="hwp"), folder)[0])
+    logger.info("Initial position: {}".format(initial_poisition))
+    logger.info("Final position: {}".format(final_position))
+
+    or_angle = final_position - initial_poisition
 
     logger.info("Expected angle: {}".format(or_angle))
 
-    logger.info("Folder without optical active sample measurements {}...".format(i_folder))
-    logger.info("Folder with optical active sample measurements {}...".format(f_folder))
+    logger.info("Folder without optical active sample measurements {}...".format(folder_i))
+    logger.info("Folder with optical active sample measurements {}...".format(folder_f))
 
     ors = []
-    for i in range(3):
-        files_i = [os.path.join(i_folder, x) for x in os.listdir(i_folder)]
-        files_f = [os.path.join(f_folder, x) for x in os.listdir(f_folder)]
+    files_i = sorted([os.path.join(folder_i, x) for x in os.listdir(folder_i)])
 
-        phase_diff_without_sample = plot_phase_difference(files_i[i], method='odr')
-        phase_diff_with_sample = plot_phase_difference(files_f[i], method='odr')
+    files_f = sorted([os.path.join(folder_f, x) for x in os.listdir(folder_f)])
 
-        optical_rotation = (phase_diff_with_sample - phase_diff_without_sample)
+    for i in range(len(files_i)):
+
+        phase_diff_without_sample = plot_phase_difference(files_i[i], method='ODR')
+        phase_diff_with_sample = plot_phase_difference(files_f[i], method='ODR')
+
+        print()
+        optical_rotation = abs(phase_diff_with_sample - phase_diff_without_sample) / 2
 
         ors.append(optical_rotation)
+
+    print(ors)
 
     N = len(ors)
     avg_or = sum(ors) / N
