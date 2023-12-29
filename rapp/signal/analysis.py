@@ -770,20 +770,15 @@ def optical_rotation(folder_i, folder_f, method):
 
     ors = []
     files_i = sorted([os.path.join(folder_i, x) for x in os.listdir(folder_i)])
-
     files_f = sorted([os.path.join(folder_f, x) for x in os.listdir(folder_f)])
 
     for i in range(len(files_i)):
-
         phase_diff_without_sample = plot_phase_difference(files_i[i], method='ODR')
         phase_diff_with_sample = plot_phase_difference(files_f[i], method='ODR')
 
-        print()
         optical_rotation = abs(phase_diff_with_sample - phase_diff_without_sample) / 2
 
         ors.append(optical_rotation)
-
-    print(ors)
 
     N = len(ors)
     avg_or = sum(ors) / N
@@ -791,7 +786,7 @@ def optical_rotation(folder_i, folder_f, method):
     values = [o.n for o in ors]
     rep = np.std(values) / np.sqrt(len(values))
 
-    rmse = np.sqrt(sum([abs(abs(or_angle) - abs(v)) ** 2 for v in values]) / len(values))
+    rmse = np.sqrt(sum([(or_angle - v) ** 2 for v in values]) / len(values))
 
     logger.info("Optical rotation measured: {}".format(avg_or))
     logger.info("Repetitbility uncertainty: {}".format(rep))
