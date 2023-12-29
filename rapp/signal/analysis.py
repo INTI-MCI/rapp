@@ -37,6 +37,7 @@ ANALYSIS_NAMES = [
     'darkcurrent',
     'noise',
     'drift',
+    'paper'
 ]
 
 
@@ -752,21 +753,19 @@ def averaged_phase_difference(folder, method):
     return avg_phase_diff
 
 
-def optical_rotation(folder_i, folder_f, method):
-    logger.info("Calculating optical rotation...")
-
+def optical_rotation(folder_i, folder_f, method='ODR', correction_factor=None):
     initial_poisition = float(re.findall(REGEX_NUMBER_AFTER_WORD.format(word="hwp"), folder_i)[0])
     final_position = float(re.findall(REGEX_NUMBER_AFTER_WORD.format(word="hwp"), folder_f)[0])
 
-    logger.info("Initial position: {}".format(initial_poisition))
-    logger.info("Final position: {}".format(final_position))
+    logger.debug("Initial position: {}".format(initial_poisition))
+    logger.debug("Final position: {}".format(final_position))
 
-    or_angle = (final_position - initial_poisition) * 2  # because half wave plate.
+    or_angle = (final_position - initial_poisition)
 
-    logger.info("Expected angle: {}".format(or_angle))
+    logger.info("Expected optical rotation: {}".format(or_angle))
 
-    logger.info("Folder without optical active sample measurements {}...".format(folder_i))
-    logger.info("Folder with optical active sample measurements {}...".format(folder_f))
+    logger.debug("Folder without optical active sample measurements {}...".format(folder_i))
+    logger.debug("Folder with optical active sample measurements {}...".format(folder_f))
 
     ors = []
     files_i = sorted([os.path.join(folder_i, x) for x in os.listdir(folder_i)])
@@ -777,6 +776,10 @@ def optical_rotation(folder_i, folder_f, method):
         phase_diff_with_sample = plot_phase_difference(files_f[i], method='ODR')
 
         optical_rotation = abs(phase_diff_with_sample - phase_diff_without_sample)
+
+        if correction_factor is not None:
+            optical_rotation = optical_rotation * correction_factor
+
         logger.info("Optical rotation {}: {}".format(i, optical_rotation))
 
         ors.append(optical_rotation)
@@ -787,12 +790,12 @@ def optical_rotation(folder_i, folder_f, method):
     values = [o.n for o in ors]
     rep = np.std(values) / np.sqrt(len(values))
 
-    rmse = np.sqrt(sum([(or_angle - v) ** 2 for v in values]) / len(values))
+    rmse = np.sqrt(sum([(abs(or_angle) - abs(v)) ** 2 for v in values]) / len(values))
 
-    logger.info("Optical rotation measured: {}".format(avg_or))
-    logger.info("Repetitbility uncertainty: {}".format(rep))
+    logger.info("Optical rotation measured (average): {}".format(avg_or))
+    logger.debug("Repeatability uncertainty: {}".format(rep))
     logger.info("RMSE: {}".format(rmse))
-    logger.info("difference: {}".format(abs(or_angle) - abs(avg_or)))
+    logger.info("Difference between average and nominal: {}".format(abs(or_angle) - abs(avg_or)))
 
     return optical_rotation
 
@@ -957,6 +960,12 @@ def main(name, show):
 
     if name in ['all', 'drift']:
         plot_drift(output_folder, show=show)
+
+    if name == 'paper':
+        optical_rotation('data/22-12-2023/hwp0/', 'data/22-12-2023/hwp4.5/', correction_factor=0.5)
+        optical_rotation('data/28-12-2023/hwp0/', 'data/28-12-2023/hwp4.5/', correction_factor=0.5)
+        optical_rotation('data/28-12-2023/hwp0/', 'data/28-12-2023/hwp29/', correction_factor=0.5)
+        optical_rotation('data/29-12-2023/hwp0/', 'data/29-12-2023/hwp-9/')
 
 
 if __name__ == '__main__':
