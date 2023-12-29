@@ -761,7 +761,7 @@ def optical_rotation(folder_i, folder_f, method):
     logger.info("Initial position: {}".format(initial_poisition))
     logger.info("Final position: {}".format(final_position))
 
-    or_angle = final_position - initial_poisition
+    or_angle = (final_position - initial_poisition) * 2  # because half wave plate.
 
     logger.info("Expected angle: {}".format(or_angle))
 
@@ -776,7 +776,8 @@ def optical_rotation(folder_i, folder_f, method):
         phase_diff_without_sample = plot_phase_difference(files_i[i], method='ODR')
         phase_diff_with_sample = plot_phase_difference(files_f[i], method='ODR')
 
-        optical_rotation = abs(phase_diff_with_sample - phase_diff_without_sample) / 2
+        optical_rotation = abs(phase_diff_with_sample - phase_diff_without_sample)
+        logger.info("Optical rotation {}: {}".format(i, optical_rotation))
 
         ors.append(optical_rotation)
 
@@ -797,7 +798,7 @@ def optical_rotation(folder_i, folder_f, method):
 
 
 def plot_phase_difference(filepath, method, show=False):
-    logger.info("Calculating phase difference for {}...".format(filepath))
+    logger.debug("Calculating phase difference for {}...".format(filepath))
 
     cycles, step, samples = parse_input_parameters_from_filepath(filepath)
 
@@ -831,20 +832,20 @@ def plot_phase_difference(filepath, method, show=False):
     phi_label = "φ=({} ± {})°.".format(phase_diff_rounded, phase_diff_u_rounded)
     title = "{}\ncycles={}, step={}, samples={}.".format(phi_label, cycles, step, samples)
 
-    logger.info(
+    logger.debug(
         "Detected phase difference: {}"
         .format(phi_label)
     )
 
-    logger.info(title)
+    logger.debug(title)
 
     output_folder = os.path.join(ct.WORK_DIR, ct.OUTPUT_FOLDER_PLOTS)
     create_folder(output_folder)
 
     plot = Plot(ylabel=ct.LABEL_VOLTAGE, xlabel=ct.LABEL_DEGREE, title=title, folder=output_folder)
 
-    plot.add_data(xs, s1, yerr=s1err, ms=6, color='k', mew=0.5, markevery=5, alpha=0.8)
-    plot.add_data(xs, s2, yerr=s2err, ms=6, color='k', mew=0.5, markevery=5, alpha=0.8)
+    plot.add_data(xs, s1, yerr=s1err, ms=6, mew=0.5, markevery=5, alpha=0.8)
+    plot.add_data(xs, s2, yerr=s2err, ms=6, mew=0.5, markevery=5, alpha=0.8)
 
     if res.fitx is not None:
         fitx = res.fitx / 2
