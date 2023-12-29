@@ -124,7 +124,7 @@ def main(
     reps = 3
     analyzer.motor_on(axis=2)
     for rep in range(2, reps + 1):
-        for hwp_angle in [0, 4.5, 29]:
+        for hwp_angle in [0, -4.5]:
             analyzer.setpos(hwp_angle, axis=2)
             logger.info("Waiting 5 seconds after changing half wave plate position...")
             time.sleep(5)
