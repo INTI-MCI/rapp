@@ -99,10 +99,10 @@ def pink_noise(f, alpha, a):
     return a / f ** alpha
 
 
-def read_measurement_file(filepath, sep=r"\s+"):
+def read_measurement_file(filepath, sep=r"\s+", usecols=(0, 1, 2)):
     return pd.read_csv(
         filepath,
-        sep=sep, skip_blank_lines=True, comment='#', usecols=(0, 1, 2), encoding=ct.ENCONDIG
+        sep=sep, skip_blank_lines=True, comment='#', usecols=usecols, encoding=ct.ENCONDIG
     )
 
 
