@@ -96,13 +96,13 @@ def phase_difference(
         p2, p2_u, fitx2, fity2 = sine_fit(
             xs, s2, x_sigma=x_sigma, y_sigma=s2_sigma, method=method)
 
-        phi1 = p1[1]
+        phi1 = p1[1] % np.pi
         phi1_u = p1_u[1]
 
-        phi2 = p2[1]
+        phi2 = p2[1] % np.pi
         phi2_u = p2_u[1]
 
-        phase_diff = phi2 - phi1
+        phase_diff = (phi2 - phi1)
         phase_diff_u = np.sqrt(phi1_u**2 + phi2_u**2)
 
         logger.debug("φ1 = {}".format(phi1))
