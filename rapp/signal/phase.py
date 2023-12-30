@@ -6,7 +6,7 @@ from scipy import signal
 from scipy.optimize import curve_fit
 from scipy.odr import ODR, Model, RealData
 
-PHASE_DIFFERENCE_METHODS = ['CS', 'HILBERT', 'NLS', 'ODR']
+PHASE_DIFFERENCE_METHODS = ['COSINE', 'HILBERT', 'NLS', 'ODR']
 
 
 logger = logging.getLogger(__name__)
@@ -67,6 +67,7 @@ def hilbert_transform(s1, s2):
 
     x1h = signal.hilbert(s1)
     x2h = signal.hilbert(s2)
+
     c = np.inner(
         x1h, np.conj(x2h)) / np.sqrt(np.inner(x1h, np.conj(x1h)) * np.inner(x2h, np.conj(x2h)))
 
@@ -81,7 +82,7 @@ def phase_difference(
     if method not in PHASE_DIFFERENCE_METHODS:
         raise ValueError("Phase difference method: {} not implemented.".format(method))
 
-    if method == 'CS':
+    if method == 'COSINE':
         phase_diff = cosine_similarity(s1, s2)
         if degrees:
             phase_diff = np.rad2deg(phase_diff)

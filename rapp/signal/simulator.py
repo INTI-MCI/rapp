@@ -10,7 +10,7 @@ from scipy import stats
 from rapp import constants as ct
 from rapp.utils import create_folder
 from rapp.signal.plot import Plot
-from rapp.signal.phase import phase_difference, PHASE_DIFFERENCE_METHODS
+from rapp.signal.phase import phase_difference
 
 
 logger = logging.getLogger(__name__)
@@ -318,10 +318,10 @@ def plot_error_vs_method(phi, folder, samples=5, reps=10, step=1, max_cycles=10,
         folder=folder
     )
 
-    methods = PHASE_DIFFERENCE_METHODS
-    ms = ['-', '--', 'd', '-']
-    ls = ['solid', 'dashed', 'solid', 'dotted']
-    n_reps = [1, 1, reps, reps]
+    methods = ['COSINE', 'NLS', 'ODR']
+    ms = ['-', 'd', '-']
+    ls = ['solid', 'solid', 'dotted']
+    n_reps = [1, reps, reps]
     for i, method in enumerate(methods, 0):
         fc = samples_per_cycle(step=step)
         reps = n_reps[i]
