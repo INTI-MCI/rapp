@@ -37,7 +37,7 @@ ANALYSIS_NAMES = [
     'darkcurrent',
     'noise',
     'drift',
-    'paper'
+    'OR',
 ]
 
 
@@ -753,16 +753,16 @@ def averaged_phase_difference(folder, method):
     return avg_phase_diff
 
 
-def optical_rotation(folder_i, folder_f, method='ODR', correction_factor=None):
+def optical_rotation(folder_i, folder_f, method='ODR', factor=None):
     initial_poisition = float(re.findall(REGEX_NUMBER_AFTER_WORD.format(word="hwp"), folder_i)[0])
     final_position = float(re.findall(REGEX_NUMBER_AFTER_WORD.format(word="hwp"), folder_f)[0])
 
-    logger.debug("Initial position: {}".format(initial_poisition))
-    logger.debug("Final position: {}".format(final_position))
+    logger.debug("Initial position: {}°".format(initial_poisition))
+    logger.debug("Final position: {}°".format(final_position))
 
     or_angle = (final_position - initial_poisition)
 
-    logger.info("Expected optical rotation: {}".format(or_angle))
+    logger.info("Expected optical rotation: {}°".format(or_angle))
 
     logger.debug("Folder without optical active sample measurements {}...".format(folder_i))
     logger.debug("Folder with optical active sample measurements {}...".format(folder_f))
@@ -777,10 +777,10 @@ def optical_rotation(folder_i, folder_f, method='ODR', correction_factor=None):
 
         optical_rotation = abs(phase_diff_with_sample - phase_diff_without_sample)
 
-        if correction_factor is not None:
-            optical_rotation = optical_rotation * correction_factor
+        if factor is not None:
+            optical_rotation = ufloat(optical_rotation.n * factor, optical_rotation.s)
 
-        logger.info("Optical rotation {}: {}".format(i, optical_rotation))
+        logger.info("Optical rotation {}: {}°".format(i + 1, optical_rotation))
 
         ors.append(optical_rotation)
 
@@ -788,16 +788,16 @@ def optical_rotation(folder_i, folder_f, method='ODR', correction_factor=None):
     avg_or = sum(ors) / N
 
     values = [o.n for o in ors]
-    rep = np.std(values) / np.sqrt(len(values))
+    repeatability_u = np.std(values) / np.sqrt(len(values))
 
     rmse = np.sqrt(sum([(abs(or_angle) - abs(v)) ** 2 for v in values]) / len(values))
 
     logger.info("Optical rotation measured (average): {}".format(avg_or))
-    logger.debug("Repeatability uncertainty: {}".format(rep))
-    logger.info("RMSE: {}".format(rmse))
-    logger.info("Difference between average and nominal: {}".format(abs(or_angle) - abs(avg_or)))
+    logger.debug("Repeatability uncertainty: {}".format(repeatability_u))
+    logger.info("Error:: {}".format(abs(or_angle) - abs(avg_or)))
+    logger.debug("RMSE: {}".format(rmse))
 
-    return optical_rotation
+    return avg_or, ors
 
 
 def plot_phase_difference(filepath, method, show=False):
@@ -961,11 +961,26 @@ def main(name, show):
     if name in ['all', 'drift']:
         plot_drift(output_folder, show=show)
 
-    if name == 'paper':
-        optical_rotation('data/22-12-2023/hwp0/', 'data/22-12-2023/hwp4.5/', correction_factor=0.5)
-        optical_rotation('data/28-12-2023/hwp0/', 'data/28-12-2023/hwp4.5/', correction_factor=0.5)
-        optical_rotation('data/28-12-2023/hwp0/', 'data/28-12-2023/hwp29/', correction_factor=0.5)
-        optical_rotation('data/29-12-2023/hwp0/', 'data/29-12-2023/hwp-9/')
+    if name == 'OR':
+
+        _, ors1 = optical_rotation('data/22-12-2023/hwp0/', 'data/22-12-2023/hwp4.5/', factor=0.5)
+        _, ors2 = optical_rotation('data/28-12-2023/hwp0/', 'data/28-12-2023/hwp4.5/', factor=0.5)
+        _, ors3 = optical_rotation('data/28-12-2023/hwp0/', 'data/28-12-2023/hwp29/', factor=0.5)
+        _, ors4 = optical_rotation('data/29-12-2023/hwp0/', 'data/29-12-2023/hwp-9/')
+
+        measurement_u = max([o.s for o in ors1 + ors2 + ors3 + ors4])
+
+        logger.info("Measurement Uncertainty: {}°".format(measurement_u))
+
+        all_45_ors = [o.n for o in ors1 + ors2]
+        logger.debug("Values taken into account for repeatability: {}".format(all_45_ors))
+
+        repeatability_u = np.std(all_45_ors) / len(all_45_ors)
+        logger.info("Repeatability Uncertainty: {}°". format(repeatability_u))
+
+        combined_u = np.sqrt(measurement_u ** 2 + repeatability_u ** 2)
+
+        logger.info("Combined Uncertainty (k=2): {}°". format(combined_u * 2))
 
 
 if __name__ == '__main__':
