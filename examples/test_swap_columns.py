@@ -1,6 +1,6 @@
 from rapp.signal.analysis import read_measurement_file
 
-filepath = 'data/29-12-2023/hwp0/sine-hwp0-rep1-cycles1-step1.0-samples50.txt'
+filepath = r'data\28-12-2023\hwp29\sine-hwp29-rep3-cycles1-step1.0-samples50.txt'
 
 data = read_measurement_file(filepath, usecols=None)
 
