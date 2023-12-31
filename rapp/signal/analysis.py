@@ -866,7 +866,7 @@ def plot_phase_difference(filepath, method, show=False):
 
     plt.legend(frameon=False)
 
-    plot._ax.set_xlim(500)
+    plot._ax.set_xlim(min(xs) - 90)
 
     # plot._ax.xaxis.set_major_locator(plt.MaxNLocator(5))
 
