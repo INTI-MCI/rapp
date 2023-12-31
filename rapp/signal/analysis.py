@@ -845,19 +845,30 @@ def plot_phase_difference(filepath, method, show=False):
     output_folder = os.path.join(ct.WORK_DIR, ct.OUTPUT_FOLDER_PLOTS)
     create_folder(output_folder)
 
-    plot = Plot(ylabel=ct.LABEL_VOLTAGE, xlabel=ct.LABEL_DEGREE, title=title, folder=output_folder)
+    plot = Plot(ylabel=ct.LABEL_VOLTAGE, xlabel=ct.LABEL_DEGREE, folder=output_folder)
 
-    plot.add_data(xs, s1, yerr=s1err, ms=6, mew=0.5, markevery=5, alpha=0.8)
-    plot.add_data(xs, s2, yerr=s2err, ms=6, mew=0.5, markevery=5, alpha=0.8)
+    plot.add_data(
+        xs, s1, yerr=s1err,
+        ms=6, mfc='None', color='k', mew=1,
+        markevery=5, alpha=0.8, label='CH0',
+        style='D'
+    )
+
+    plot.add_data(
+        xs, s2, yerr=s2err,
+        ms=6, mfc='None', color='k', mew=1, markevery=5, alpha=0.8, label='CH1',
+    )
 
     if res.fitx is not None:
         fitx = res.fitx / 2
-        plot.add_data(fitx, res.fits1, style='-', color='k', lw=1.5)
-        plot.add_data(fitx, res.fits2, style='-', color='k', lw=1.5)
+        plot.add_data(fitx, res.fits1, style='-', color='k', lw=1, label='Ajuste')
+        plot.add_data(fitx, res.fits2, style='-', color='k', lw=1)
 
-    # plt.legend(loc='upper right', fancybox=True)
+    plt.legend(frameon=False)
 
-    plot._ax.xaxis.set_major_locator(plt.MaxNLocator(5))
+    plot._ax.set_xlim(500)
+
+    # plot._ax.xaxis.set_major_locator(plt.MaxNLocator(5))
 
     plot.save(filename="{}.png".format(os.path.basename(filepath)[:-4]))
 
