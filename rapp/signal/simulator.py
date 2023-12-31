@@ -348,7 +348,7 @@ def plot_error_vs_method(phi, folder, samples=5, reps=10, step=1, max_cycles=10,
         plot.add_data(cycles_list, errors, style=ms[i], ls=ls[i], color='k', lw=2, label=label)
 
     annotation = "samples={}\nstep={}°".format(samples, step)
-    plot._ax.annotate(annotation, (1, 0.01))
+    plot._ax.annotate(annotation, (1, 0.0025))
     plot._ax.set_yscale('log')
     plot.legend(fontsize=12)
 
@@ -399,7 +399,7 @@ def plot_error_vs_step(phi, folder, samples=5, cycles=2, reps=1, show=False):
                 cycles, time, error_degrees_sci, mean_u)
         )
 
-        label = "samples={}\nreps={}".format(samples, reps)
+        label = "cycles={}\nsamples={}\nreps={}".format(cycles, samples, reps)
 
     plot.add_data(steps, errors, style='s-', mfc='k', color='k', lw=1, label=label)
     plot._ax.set_yscale('log')
@@ -416,7 +416,7 @@ def plot_error_vs_step(phi, folder, samples=5, cycles=2, reps=1, show=False):
     logger.info("Done.")
 
 
-def plot_error_vs_samples(phi, folder, step=1, reps=1, show=False):
+def plot_error_vs_samples(phi, folder, step=1, reps=1, cycles=2, show=False):
     print("")
     logger.info("PHASE DIFFERENCE VS SAMPLES")
 
@@ -432,7 +432,7 @@ def plot_error_vs_samples(phi, folder, step=1, reps=1, show=False):
         fc = samples_per_cycle(step=step)
 
         n_results = n_simulations(
-            A=1.7, n=reps, method='ODR', cycles=2, fc=fc, phi=phi,
+            A=1.7, n=reps, method='ODR', cycles=cycles, fc=fc, phi=phi,
             fa=samples, a0_noise=A0_NOISE, a1_noise=A1_NOISE, bits=ADC_BITS, all_positive=True
         )
 
@@ -443,7 +443,7 @@ def plot_error_vs_samples(phi, folder, step=1, reps=1, show=False):
         errors.append(error_degrees)
         logger.info("samples={}, φerr: {}.".format(samples, error_degrees_sci))
 
-    label = "step={}°\nreps={}".format(step, reps)
+    label = "cycles={}\nstep={}°\nreps={}".format(cycles, step, reps)
     plot.add_data(ss, errors, color='k', style='s-', lw=1.5, label=label)
     plot.legend(fontsize=12)
     plot._ax.set_yscale('log')
@@ -459,7 +459,7 @@ def plot_error_vs_samples(phi, folder, step=1, reps=1, show=False):
     logger.info("Done.")
 
 
-def plot_error_vs_range(phi, folder, samples=5, step=0.01, cycles=5, reps=1, show=False):
+def plot_error_vs_range(phi, folder, samples=5, step=0.01, cycles=2, reps=1, show=False):
     print("")
     logger.info("PHASE DIFFERENCE VS MAX TENSION")
 
@@ -490,7 +490,7 @@ def plot_error_vs_range(phi, folder, samples=5, step=0.01, cycles=5, reps=1, sho
     time = total_time(cycles) / 60
     logger.info("cycles={}, time={} m, φerr: {}.".format(cycles, time, error_degrees_sci))
 
-    label = "reps={}\nstep={}°\nsamples={}".format(reps, step, samples)
+    label = "cycles={}\nsamples={}\nstep={}°\nreps={}".format(cycles, samples, step, reps)
 
     percentages = ((xs * 2) / ADC_MAXV) * 100
     plot.add_data(percentages, errors, color='k', style='s-', lw=1.5, label=label)
@@ -697,14 +697,14 @@ def main(sim, reps=1, step=1, samples=1, show=False):
             PHI, output_folder, samples, max_cycles=8, reps=reps, step=step, show=show)
 
     if sim in ['all', 'error_vs_step']:
-        plot_error_vs_step(PHI, output_folder, samples, cycles=1, reps=reps, show=show)
+        plot_error_vs_step(PHI, output_folder, samples, cycles=2, reps=reps, show=show)
 
     if sim in ['all', 'error_vs_samples']:
-        plot_error_vs_samples(PHI, output_folder, reps=reps, step=step, show=show)
+        plot_error_vs_samples(PHI, output_folder, reps=reps, cycles=2, step=step, show=show)
 
     if sim in ['all', 'error_vs_res']:
         plot_error_vs_resolution(
-            PHI, output_folder, samples, max_cycles=5, step=step, reps=reps, show=show)
+            PHI, output_folder, samples, max_cycles=8, step=step, reps=reps, show=show)
 
     if sim in ['all', 'error_vs_range']:
         plot_error_vs_range(PHI, output_folder, samples, step=step, cycles=2, reps=reps, show=show)
@@ -713,7 +713,7 @@ def main(sim, reps=1, step=1, samples=1, show=False):
         plot_noise_vs_range(PHI, output_folder, reps=reps, show=show)
 
     if sim in ['all', 'phase_diff']:
-        plot_phase_diff(PHI, output_folder, samples, cycles=8, step=step, show=show)
+        plot_phase_diff(PHI, output_folder, samples, cycles=2, step=step, show=show)
 
 
 if __name__ == '__main__':
