@@ -6,12 +6,15 @@ import serial
 
 
 def test_adc_init():
-    adc.ADC(wait=0)
+
+    with pytest.raises(adc.ADCError):
+        adc.ADC(wait=0)
+
     adc.ADC(mocks.SerialMock(), wait=0)
 
 
 def test_build(monkeypatch):
-    with pytest.raises(serial.serialutil.SerialException):
+    with pytest.raises(adc.ADCError):
         adc.ADC.build(dev='BADDEVICE')
 
     monkeypatch.setattr(serial, "Serial", lambda *x, **y: mocks.SerialMock())

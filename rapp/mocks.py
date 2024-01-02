@@ -1,8 +1,6 @@
 import time
 import random
 
-from rapp.adc import ADC
-
 
 class SerialMock:
     """Mock object for serial.Serial."""
@@ -28,43 +26,3 @@ class SerialMock:
 
     def _random_value(self):
         return random.randint(1000, 5000)
-
-
-class ADCMock(ADC):
-    """Mock object for serial.Serial."""
-    def __init__(self, progressbar=True):
-        self._serial = SerialMock()
-        self._max_V, self._multiplier_mV = (4.096, 0.125)
-        self.progressbar = progressbar
-
-    def close(self):
-        pass
-
-    def flush_input(self):
-        pass
-
-
-class ESPMock:
-    """Mock object for esp.ESP."""
-    pos = 0
-    vel = 2
-
-    def setpos(self, pos, axis=None):
-        self.pos = pos
-        return pos
-
-    def motor_on(self, axis=None):
-        pass
-
-    def getpos(self, axis=None):
-        return self.pos
-
-    def setvel(self, vel, axis=None):
-        self.vel = vel
-        return vel
-
-    def sethomevel(self, vel, axis=None):
-        pass
-
-    def close(self):
-        pass

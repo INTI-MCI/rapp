@@ -10,7 +10,7 @@ import numpy as np
 from rapp import constants as ct
 from rapp.esp import ESP
 from rapp.adc import ADC
-from rapp.mocks import ADCMock, ESPMock
+from rapp.mocks import SerialMock
 from rapp.signal.analysis import plot_two_signals
 from rapp.utils import progressbar
 
@@ -85,32 +85,33 @@ def generate_angles(cycles, step, init_position=0.0):
 
 def main(
     cycles=1, step=10, samples=10, delay_position=1, velocity=2, no_ch0=False, no_ch1=False,
-    chunk_size=2000, prefix='test', test_esp=False, test_adc=False, plot=False
+    chunk_size=2000, prefix='test', test_esp=False, test_adc=False, plot=False, overwrite=False,
+    work_dir=None
 ):
-    output_dir = os.path.join(ct.WORK_DIR, ct.OUTPUT_FOLDER_DATA)
+    output_dir = os.path.join(work_dir or ct.WORK_DIR, ct.OUTPUT_FOLDER_DATA)
     os.makedirs(output_dir, exist_ok=True)
 
     if test_esp:
         logger.warning("Using ESP mock object.")
-        analyzer = ESPMock()
+        rotator = ESP(SerialMock())
     else:
         logger.info("Connecting to ESP...")
-        analyzer = ESP(ANALYZER_DEVICE, b=ANALYZER_BAUDRATE, axis=ANALYZER_AXIS)
+        rotator = ESP.build(ANALYZER_DEVICE, b=ANALYZER_BAUDRATE, axis=ANALYZER_AXIS)
 
     if test_adc:
         logger.warning("Using ADC mock object.")
-        adc = ADCMock()
+        adc = ADC(SerialMock(), wait=0)
     else:
         logger.info("Connecting to ADC...")
         adc = ADC.build(resolve_adc_device(), b=ADC_BAUDRATE, timeout=ADC_TIMEOUT, wait=ADC_WAIT)
 
     logger.info("Setting analyzer velocity to {} deg/s.".format(velocity))
-    analyzer.setvel(vel=velocity)
-    analyzer.setvel(vel=velocity, axis=2)
+    rotator.set_velocity(vel=velocity)
+    rotator.set_velocity(vel=velocity, axis=2)
 
     logger.info("Setting analyzer home velocity to {} deg/s.".format(velocity))
-    analyzer.sethomevel(vel=velocity)
-    analyzer.sethomevel(vel=velocity, axis=2)
+    rotator.set_home_velocity(vel=velocity)
+    rotator.set_home_velocity(vel=velocity, axis=2)
 
     logger.info("Samples to measure in each angle: {}.".format(samples))
     logger.info("Maximum chunk size: {}.".format(chunk_size))
@@ -122,16 +123,19 @@ def main(
         chunks_sizes = [samples]
 
     reps = 3
-    analyzer.motor_on(axis=2)
+    rotator.motor_on(axis=2)
     for rep in range(2, reps + 1):
         for hwp_angle in [0, -4.5]:
-            analyzer.setpos(hwp_angle, axis=2)
+            rotator.set_position(hwp_angle, axis=2)
             logger.info("Waiting 5 seconds after changing half wave plate position...")
-            time.sleep(5)
+            time.sleep(delay_position)
             prefix_ = "{}-hwp{}-rep{}".format(prefix, hwp_angle, rep)
             filename = FILE_NAME.format(prefix=prefix_, cycles=cycles, step=step, samples=samples)
             filepath = os.path.join(output_dir, filename)
-            overwrite = ask_for_overwrite(filepath)
+
+            if not overwrite:
+                overwrite = ask_for_overwrite(filepath)
+
             file = open_file(filepath, overwrite)
 
             today = date.today()
@@ -139,7 +143,7 @@ def main(
             file_header = "{}{}\n".format(file_meta, FILE_COLUMNS)
             file.write(file_header)
 
-            init_position = analyzer.getpos()
+            init_position = rotator.get_position()
             logger.info("Analyzer current position: {}".format(init_position))
 
             if cycles == 0:
@@ -152,8 +156,8 @@ def main(
             logger.info("Will measure {} angles: {}.".format(len(angles), angles))
 
             for angle in progressbar(angles, prefix="Angles:", enable=len(angles) > 1):
-                logger.debug("Changing analyzer position...")
-                analyzer.setpos(angle)
+                logger.debug("Changing rotator position...")
+                rotator.set_position(angle)
 
                 logger.debug("Waiting {}s after changing position...".format(delay_position))
                 time.sleep(delay_position)
@@ -179,7 +183,7 @@ def main(
 
     file.close()
     adc.close()
-    analyzer.close()
+    rotator.close()
 
     logger.info("Done!")
 

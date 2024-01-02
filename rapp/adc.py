@@ -37,9 +37,7 @@ class ADC:
     """Encapsulates the communication with the polarimeter acquisition device (AD).
 
     Args:
-        dev: the device of the serial in which the AD is connected.
-        baudrate: bits per second.
-        timeout: read timeout (seconds).
+        connection: a serial connection to the AD.
         gain: the gain to use. One of [GAIN_TWOTHIRDS, GAIN_ONE, ...].
         wait: time to wait after making a connection (seconds).
         pbar: if true, enables progressbar.
@@ -48,11 +46,14 @@ class ADC:
     COMMAND_TEMPLATE = "{ch0};{ch1};{samples}s"
     AVAILABLE_CHANNELS = ['CH0', 'CH1']
 
+    DEFAULT_DEV = '/dev/ttyACM0'
+    DEFAULT_BAUD = 19200
+
     def __init__(self, connection=None, gain=GAIN_ONE, wait=2, progressbar=True):
         self._connection = connection
 
         if self._connection is None:
-            self._connection = serial.Serial()
+            self._connection = self.serial_connection(ADC.DEFAULT_DEV, baudrate=ADC.DEFAULT_BAUD)
 
         logger.info("Waiting {} seconds after opening the connection...".format(wait))
         # Arduino resets when a new serial connection is made.
@@ -66,8 +67,26 @@ class ADC:
 
     @classmethod
     def build(cls, dev='/dev/ttyACM0', b=57600, timeout=0.1, **kwargs):
-        connection = serial.Serial(dev, baudrate=b, timeout=timeout)
+        """Builds an ADC object.
+
+        Args:
+            dev: the device of the serial port in which the AD is connected.
+            baudrate: bits per second.
+            timeout: read timeout (seconds).
+            kwargs: optinal arguments for ADC constructor
+
+        Returns:
+            ADC: an instantiated AD object.
+        """
+        connection = cls.serial_connection(dev, baudrate=b, timeout=timeout)
         return cls(connection, **kwargs)
+
+    @staticmethod
+    def serial_connection(*args, **kwargs):
+        try:
+            return serial.Serial(*args, **kwargs)
+        except serial.serialutil.SerialException as e:
+            raise ADCError("Error while making connection to serial port: {}".format(e))
 
     def acquire(self, n_samples, ch0=True, ch1=True, in_bytes=True):
         """Acquires data from the AD.
