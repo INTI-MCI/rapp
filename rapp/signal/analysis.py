@@ -61,17 +61,18 @@ FILE_PARAMS = {
     "darkcurrent-range4V-samples100000.txt": {
         "sps": 835,
         "sep": r"\s+",
-        "band_stop_freq": [
-            (50 * x, 0.5) for x in range(1, 6)] + [
-            (131.55, 0.5)] + [
-            (1 * x, 0.1) for x in range(1, 7)] + [
-            (1 * x, 0.1) for x in range(8, 14)] + [
-            (1 * x, 0.1) for x in range(15, 20)] + [
-            (23, 0.1), (24, 0.1)],
-        "high_pass_freq": 2,
+        "band_stop_freq": None,
+        # [
+        #    (50 * x, 0.5) for x in range(1, 6)] + [
+        #    (131.55, 0.5)] + [
+        #   (1 * x, 0.1) for x in range(1, 7)] + [
+        #   (1 * x, 0.1) for x in range(8, 14)] + [
+        #    (1 * x, 0.1) for x in range(15, 20)] + [
+        #    (23, 0.1), (24, 0.1)],
+        "high_pass_freq": None,
         "outliers": None,
-        "bins": 35
-        # "bins": "quantized"
+        # "bins": 35
+        "bins": "quantized"
     },
     "continuous-range4V-584nm-samples10000-sps59.txt": {
         "sps": 59.5,
@@ -86,10 +87,14 @@ FILE_PARAMS = {
         "sep": r"\s+",
         "band_stop_freq": [(50 * x, 10 / x) for x in range(1, 8)],
         "high_pass_freq": 2,
-        "outliers": [-0.0021, 0.0021],
+        "outliers": [-0.001, 0.001],
         "bins": "quantized"
     }
 }
+
+
+def quantized_bins(data, step=0.000125):
+    return np.arange(-0.000125 * 20, 0.000125 * 20, step=0.000125)
 
 
 def linear(f, a, b):
@@ -124,7 +129,7 @@ def parse_input_parameters_from_filepath(filepath):
     )
 
 
-def generate_bins(data, step=0.125e-3):
+def generate_quantized_bins(data, step=0.125e-3):
     centers = np.arange(data.min(), data.max() + step, step)
     edges = centers - step / 2
     edges = np.append(edges, max(edges) + step)
@@ -176,7 +181,7 @@ def plot_histogram_and_pdf(data,  bins='quantized', prefix='', show=False):
 
         channel_bins = bins[i] if isinstance(bins, list) else bins
         if channel_bins == 'quantized':
-            centers, edges = generate_bins(channel_data, step=0.125e-3)
+            centers, edges = generate_quantized_bins(channel_data, step=0.125e-3)
             counts, edges = np.histogram(channel_data, bins=edges, density=True)
         else:
             counts, edges = np.histogram(channel_data, bins=channel_bins, density=True)
@@ -184,16 +189,29 @@ def plot_histogram_and_pdf(data,  bins='quantized', prefix='', show=False):
 
         logger.info("CH{} - Amount of bins: {}".format(i, len(centers)))
 
-        ax.bar(centers, counts, width=np.diff(edges), color='k', alpha=0.2, edgecolor='k')
+        width = np.diff(edges)
+
+        import sys
+        np.set_printoptions(threshold=sys.maxsize)
+        logger.debug("Centers: {}".format(centers))
+        logger.debug("Widths: {}".format(width))
+
+        ax.bar(
+            centers, counts,
+            width=np.diff(edges), color='silver', alpha=0.8, lw=1, edgecolor='k',
+            label='Datos'
+        )
+
         ax.ticklabel_format(style='sci', scilimits=(0, 0), axis='y')
 
-        fit_label = "µ = {:.1E}.\nσ = {}.".format(mu_rounded, sigma_rounded)
+        fit_label = "Gauss PSD\nµ = {:.1E}\nσ = {}".format(mu_rounded, sigma_rounded)
 
         ax.set_xlabel(ct.LABEL_VOLTAGE)
         ax.set_title("Canal {}".format(i))
 
         ax.plot(pdf_x, pdf_y, 'k', lw=2, label=fit_label)
-        ax.legend(loc='upper right', fontsize=13, frameon=False)
+        ax.legend(loc='upper left', fontsize=13, frameon=False)
+        ax.set_xlim(centers[0] - abs(centers[0]) * 0.5)
 
         ax.xaxis.set_major_locator(plt.MaxNLocator(3))
 
@@ -264,7 +282,6 @@ def plot_noise_with_laser_off(output_folder, show=False):
         pink_x = xs[1:end]
 
         popt, pcov = curve_fit(linear, np.log(pink_x), np.log(psd[1:end]))
-        # popt, pcov = curve_fit(pink_noise, pink_x, psd[1:end])
 
         us = np.sqrt(np.diag(pcov))
         alpha = popt[0]
@@ -309,8 +326,8 @@ def plot_noise_with_laser_off(output_folder, show=False):
     f.tight_layout()
     f.savefig("{}-fft.png".format(base_output_fname))
 
-    if show:
-        plt.show()
+    # if show:
+    #    plt.show()
 
     plt.close()
 
@@ -386,6 +403,7 @@ def plot_noise_with_laser_off(output_folder, show=False):
     plt.close()
 
     data = np.array(filtered).T
+    # data = data[['CH0', 'CH1']].to_numpy()
     plot_histogram_and_pdf(data, bins=bins, prefix=base_output_fname, show=show)
 
     if show:
@@ -406,13 +424,13 @@ def plot_noise_with_laser_on(output_folder, show=False):
     sps, sep, bstop, hpass, outliers, bins = FILE_PARAMS[filename].values()
 
     data = read_measurement_file(filepath, sep=sep)
-    data = data[1:]
+    data = data[1:]  # remove big outlier in ch0
     base_output_fname = "{}".format(os.path.join(output_folder, filename[:-4]))
 
     logger.info("Fitting raw data to 2-degree polynomial...")
     f, axs = plt.subplots(1, 2, figsize=(8, 5), subplot_kw=dict(box_aspect=1), sharey=False)
     for i, ax in enumerate(axs):
-        channel_data = data['CH{}'.format(i)]
+        channel_data = data['CH{}'.format(i)][1:]
 
         d = np.diff(np.unique(channel_data)).min()
         logger.info("Discretization step: {}".format(d))
@@ -449,8 +467,8 @@ def plot_noise_with_laser_on(output_folder, show=False):
     f.tight_layout()
     f.savefig("{}-poly-fit".format(base_output_fname))
 
-    if show:
-        plt.show()
+    # if show:
+    #    plt.show()
 
     plt.close()
 
@@ -517,8 +535,8 @@ def plot_noise_with_laser_on(output_folder, show=False):
     f.tight_layout()
     f.savefig("{}-fft".format(base_output_fname))
 
-    if show:
-        plt.show()
+    # if show:
+    #    plt.show()
 
     plt.close()
 
@@ -535,13 +553,13 @@ def plot_noise_with_laser_on(output_folder, show=False):
         if bstop is not None:
             logger.info("Filtering bandstop: {} Hz".format([i[0] for i in bstop]))
             for fr, delta in bstop:
-                b, a = signal.butter(2, [fr - delta, fr + delta], btype='bandstop', fs=sps)
+                b, a = signal.butter(1, [fr - delta, fr + delta], btype='bandstop', fs=sps)
                 channel_data = signal.lfilter(b, a, channel_data)
 
         if hpass is not None:
             logger.info("Filtering highpass: {} Hz".format(hpass))
 
-            b, a = signal.butter(3, hpass, btype='highpass', fs=sps)
+            b, a = signal.butter(1, hpass, btype='highpass', fs=sps)
             channel_data = signal.filtfilt(b, a, channel_data)
 
         if outliers is not None:
@@ -555,32 +573,10 @@ def plot_noise_with_laser_on(output_folder, show=False):
 
         psd = np.abs(np.fft.fft(channel_data)) ** 2
 
-        pink_x = xs[1:end]
-
-        popt, pcov = curve_fit(linear, np.log(pink_x), np.log(psd[1:end]))
-        # popt, pcov = curve_fit(pink_noise, pink_x, psd[1:end])
-
-        us = np.sqrt(np.diag(pcov))
-
-        alpha = popt[0]
-
-        alpha_u = round_to_n(us[0], 1)
-        # Obtain number of decimal places of the u:
-        d = abs(decimal.Decimal(str(alpha_u)).as_tuple().exponent)
-        alpha = round(alpha, d)
-
-        logger.info("A/f^α noise estimation: α = {} ± {}".format(alpha, alpha_u))
-        logger.info("A/f^α noise estimation: scale = {} ± {}".format(popt[1], us[1]))
-
-        label = "Ajuste 1/fᵅ (α = {} ± {})".format(alpha, alpha_u)
-
-        pink_y = pink_noise(xs[1:end], alpha, np.exp(popt[1]))[:end]
-
         xs = np.arange(0, len(psd))
         xs = (xs / len(psd)) * sps
         N = len(xs)
         ax.loglog(xs[:N // 2], psd[:N // 2], color='k')
-        ax.loglog(pink_x, pink_y, color='deeppink', lw=2, label=label)
 
     f.subplots_adjust(hspace=0)
     f.tight_layout()
@@ -603,9 +599,13 @@ def plot_noise_with_laser_on(output_folder, show=False):
 
     plot.save("{}-filtered-signal.png".format(filename[:-4]))
 
+    # if show:
+    #    plt.show()
+
     plt.close()
 
     data = np.array(filtered).T
+    # data = data[['CH0', 'CH1']].to_numpy()
 
     plot_histogram_and_pdf(data, bins=bins, prefix=base_output_fname, show=show)
 
