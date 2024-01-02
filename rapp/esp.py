@@ -4,117 +4,176 @@ import serial
 logger = logging.getLogger(__name__)
 
 
+ERROR_SETUP = "Error while setting up controller, error #{}"
+ERROR_ALLOWED_AXES = "Specified axis {} is not one of the allowed axes: {}"
+
+
+class ESPError(Exception):
+    pass
+
+
 class ESP:
-    def __init__(self, dev="/dev/ttyUSB0", b=19200, axis=1, reset=False, initpos=0.0, useaxis=[]):
-        self.dev = serial.Serial(dev, b)
-        self.inuse = useaxis
-        if (len(self.inuse) == 0):
-            self.inuse = [axis]
+    """Encapsulates the communication with the rotation stage controller.
 
-        self.defaxis = axis
+    Args:
+        connection: a serial connection to the AD.
+        axis: axis to use in every command unless specified otherwise.
+        initpos: initial position to use.
+        useaxis: list of axis that are going to be used.
+    """
 
-        logger.debug("Turning motor ON...")
-        self.motor_on()
+    ALLOWED_AXES = (1, 2, 3)
+    DEFAULT_DEV = '/dev/ttyACM0'
+    DEFAULT_BAUD = 19200
+
+    def __init__(self, connection=None, axis=1, reset=False, initpos=None, useaxes=None):
+        self._connection = connection
+
+        if self._connection is None:
+            self._connection = self.serial_connection(ESP.DEFAULT_DEV, baudrate=ESP.DEFAULT_BAUD)
+
+        self.axes_in_use = useaxes
+
+        if self.axes_in_use is None:
+            self.axes_in_use = [axis]
+
+        self.default_axis = axis
+
+        logger.debug("Turning motor ON for axis {}...".format(axis))
+        self.motor_on(axis=axis)
 
         if reset:
-            for n in self.inuse:
-                self.reset(n)
-                r = self.check_errors()
-                if (r != 0):
-                    print("Error while setting up controller, error # %d" % r)
-                if (initpos != 0):
-                    self.setpos(initpos)
-                    r = self.check_errors()
-                    if (r != 0):
-                        print("Error while setting up controller, error # %d" % r)
+            logger.info("Resetting axes in use: {}".format(self.axes_in_use))
+            for n in self.axes_in_use:
+                self.reset_axis(n)
+                self._check_errors()
+
+        if initpos is not None and initpos != 0:
+            logger.info("Setting initial position: {}".format(initpos))
+            for n in self.axes_in_use:
+                self.set_position(initpos)
+                self._check_errors()
+
+    @classmethod
+    def build(cls, dev=DEFAULT_DEV, b=DEFAULT_BAUD, **kwargs):
+        """Builds an ADC object.
+
+        Args:
+            dev: the device of the serial port in which the ESP controller is connected.
+            baudrate: bits per second.
+            kwargs: optinal arguments for ESP constructor
+
+        Returns:
+            ESP: an instantiated ESP object.
+        """
+        connection = cls.serial_connection(dev, baudrate=b)
+        return cls(connection, **kwargs)
+
+    @staticmethod
+    def serial_connection(*args, **kwargs):
+        try:
+            return serial.Serial(*args, **kwargs)
+        except serial.serialutil.SerialException as e:
+            raise ESPError("Error while making connection to serial port: {}".format(e))
 
     def motor_on(self, axis=None):
-        a = self.defaxis
-        if (axis and axis > 0):
-            a = axis
+        axis = self._resolve_axis(axis)
+        self._connection.write("{0}MO; {0}MO?\r".format(axis).encode())
+        res = float(self._connection.readline())
 
-        self.dev.write("{0}MO; {0}MO?\r".format(a).encode())
-
-        res = float(self.dev.readline())
         return res == 1
 
-    def motor_off(self, axis=False):
-        self.dev.write("{0}MF; {0}MF?\r".format(axis).encode())
+    def motor_off(self, axis=None):
+        axis = self._resolve_axis(axis)
+        self._connection.write("{0}MF; {0}MF?\r".format(axis).encode())
+        res = float(self._connection.readline())
 
-        res = float(self.dev.readline())
         return res == 1
 
-    def hardware_reset(self):
-        self.dev.write("RS\r".encode())
+    def reset_hardware(self):
+        self._connection.write("RS\r".encode())
 
-    # units: 0:encoder count, 1:motor step, 7:deg, 9:rad, 10:mrad, 11:murad, ?:report current setts
-    def set_units(self, axis, unit):
-        self.dev.write("{0}SN{1}\r".format(axis, unit).encode())
+    def reset_axis(self, axis):
+        self._connection.write("{0}OR;{0}WS0\r".format(axis).encode())
 
-    # resolution es la cantidad de decimales en las user units
-    def display_res(self, axis, resolution):
-        self.dev.write("{0}FP{1}\r".format(axis, resolution).encode())
+    def get_position(self, axis=None):
+        axis = self._resolve_axis(axis)
+        self._connection.write("{0}TP\r".format(axis).encode())
 
-    def reset(self, axis):
-        self.dev.write("{0}OR;{0}WS0\r".format(axis).encode())
+        return float(self._connection.readline())
 
-    def setvel(self, vel=2, axis=None):
-        a = self.defaxis
-        if (axis and axis > 0):
-            a = axis
+    def set_position(self, position, ws=0, axis=None, relative=False):
+        axis = self._resolve_axis(axis)
 
-        self.dev.write("{0}VA{1:.4f};{0}TV\r".format(a, vel).encode())
-        return float(self.dev.readline())
-
-    def sethomevel(self, vel=2, axis=None):
-        a = self.defaxis
-        if (axis and axis > 0):
-            a = axis
-
-        self.dev.write("{0}OL{1}\r".format(a, vel).encode())
-        self.dev.write("{0}OH{1}; {0}OH?\r".format(a, vel).encode())
-
-        return float(self.dev.readline())
-
-    def setacc(self, acc=2, axis=None):
-        a = self.defaxis
-        if (axis and axis > 0):
-            a = axis
-
-        self.dev.write("{0}CA{1:.4f};\r".format(a, acc).encode())
-
-    def check_errors(self):
-        self.dev.write("TE?\r".encode())
-        output = float(self.dev.readline())
-        return output
-
-    def getpos(self, axis=None):
-        a = self.defaxis
-        if (axis and axis > 0):
-            a = axis
-        self.dev.write("{0}TP\r".format(a).encode())
-        return float(self.dev.readline())
-
-    def setpos(self, pos, ws=0, axis=None, relative=False):
-        a = self.defaxis
-        if (axis and axis > 0):
-            a = axis
-
-        command = "PA"
+        position_type = "PA"
         if relative:
-            command = "PR"
+            position_type = "PR"
 
-        commands = "{0}{c}{1:.4f};{0}WS{ws};{0}WP{1:.4f};{0}TP\r".format(a, pos, c=command, ws=ws)
+        command_tpl = "{0}{type}{1:.4f};{0}WS{ws};{0}WP{1:.4f};{0}TP\r"
+        cmd = command_tpl.format(axis, position, type=position_type, ws=ws)
 
-        self.dev.write(commands.encode())
-        return float(self.dev.readline())
+        self._connection.write(cmd.encode())
+        return float(self._connection.readline())
 
-    def position(self, pos=None, axis=None):
-        if (isinstance(pos, (float, int))):
-            self.setpos(pos, axis)
-            self.getpos()
-            self.setpos(pos, axis)
-        return self.getpos(axis)
+    def set_velocity(self, vel=2, axis=None):
+        axis = self._resolve_axis(axis)
+        self._connection.write("{0}VA{1:.4f};{0}TV\r".format(axis, vel).encode())
+
+        return float(self._connection.readline())
+
+    def set_home_velocity(self, vel=2, axis=None):
+        axis = self._resolve_axis(axis)
+        self._connection.write("{0}OL{1}\r".format(axis, vel).encode())
+        self._connection.write("{0}OH{1}; {0}OH?\r".format(axis, vel).encode())
+
+        return float(self._connection.readline())
+
+    def set_acceleration(self, acc=2, axis=None):
+        axis = self._resolve_axis(axis)
+        self._connection.write("{0}CA{1:.4f};\r".format(axis, acc).encode())
+
+    def set_units(self, axis, unit=7):
+        """Set axis displacement units.
+
+        Args:
+            axis: axis to change.
+            unit: 0 to 10 where
+                0 = encoder count
+                1 = motor step
+                2 = millimeter
+                3 = micrometer
+                4 = inches
+                5 = milli-inches
+                or ? to read present setting
+                6 = micro-inches
+                7 = degree
+                8 = gradian
+                9 = radian
+                10 = milliradian
+                11 = microradian
+        """
+        self._connection.write("{0}SN{1}\r".format(axis, unit).encode())
+
+    def set_display_resolution(self, axis, resolution):
+        """Sets amount of decimals in user units."""
+        self._connection.write("{0}FP{1}\r".format(axis, resolution).encode())
 
     def close(self):
-        self.dev.close()
+        self._connection.close()
+
+    def _check_errors(self):
+        self._connection.write("TE?\r".encode())
+        output = int(self._connection.readline())
+
+        if (output != 0):
+            raise ESPError(ERROR_SETUP.format(output))
+
+    def _resolve_axis(self, axis=None):
+        a = self.default_axis
+
+        if axis is not None:
+            if axis not in ESP.ALLOWED_AXES:
+                raise ESPError(ERROR_ALLOWED_AXES.format(axis, ESP.ALLOWED_AXES))
+            a = axis
+
+        return a
