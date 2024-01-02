@@ -6,4 +6,7 @@ pyserial<4
 scipy<2
 uncertainties<4
 
+pytest<8
+pytest-cov<5
+
 -e .
