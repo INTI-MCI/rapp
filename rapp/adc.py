@@ -26,6 +26,7 @@ GAINS = {
 }
 
 MESSAGE_CHANNELS = "Both ch0 and ch1 are False. Please set at least one of them as True."
+MESSAGE_SAMPLES = "You must ask for a positive number of samples... Got {}"
 
 
 class ADCError(Exception):
@@ -45,10 +46,13 @@ class ADC:
     """
 
     COMMAND_TEMPLATE = "{ch0};{ch1};{samples}s"
-    CHANNEL_NAME = "C{}"
+    AVAILABLE_CHANNELS = ['CH0', 'CH1']
 
-    def __init__(self, dev, b=57600, timeout=0.1, gain=GAIN_ONE, wait=2, progressbar=True):
-        self._serial = serial.Serial(dev, baudrate=b, timeout=timeout)
+    def __init__(self, connection=None, gain=GAIN_ONE, wait=2, progressbar=True):
+        self._connection = connection
+
+        if self._connection is None:
+            self._connection = serial.Serial()
 
         logger.info("Waiting {} seconds after opening the connection...".format(wait))
         # Arduino resets when a new serial connection is made.
@@ -56,9 +60,14 @@ class ADC:
         # TODO: check if we can avoid that arduino resets.
         time.sleep(wait)
 
-        self._max_V, self._multiplier_mV = GAINS[gain]
+        self.max_V, self._multiplier_mV = GAINS[gain]
 
         self.progressbar = progressbar
+
+    @classmethod
+    def build(cls, dev='/dev/ttyACM0', b=57600, timeout=0.1, **kwargs):
+        connection = serial.Serial(dev, baudrate=b, timeout=timeout)
+        return cls(connection, **kwargs)
 
     def acquire(self, n_samples, ch0=True, ch1=True, in_bytes=True):
         """Acquires data from the AD.
@@ -71,39 +80,45 @@ class ADC:
 
         Returns:
             the values as a list of tuples [(a00, a10), (a01, a11), ..., (a0n, a1n)].
+
+        Raises:
+            ADCError: when ch0 and ch1 parameters are both False.
         """
 
         if not (ch0 or ch1):
             raise ADCError(MESSAGE_CHANNELS)
 
+        if n_samples <= 0:
+            raise ADCError(MESSAGE_SAMPLES.format(n_samples))
+
         adc_command = ADC.COMMAND_TEMPLATE.format(ch0=int(ch0), ch1=int(ch1), samples=n_samples)
         logger.debug("ADC command: {}".format(adc_command))
 
-        self._serial.write(bytes(adc_command, 'utf-8'))
+        self._connection.write(bytes(adc_command, 'utf-8'))
 
-        none_array = np.full(n_samples, None)
+        none = np.full(n_samples, None)
 
         data = {}
-        data['CH0'] = self._read_data(n_samples, in_bytes=True, name='CH0') if ch0 else none_array
-        data['CH1'] = self._read_data(n_samples, in_bytes=True, name='CH1') if ch1 else none_array
+        data['CH0'] = self._read_data(n_samples, in_bytes=in_bytes, name='CH0') if ch0 else none
+        data['CH1'] = self._read_data(n_samples, in_bytes=in_bytes, name='CH1') if ch1 else none
 
         return data
 
     def flush_input(self):
-        self._serial.flushInput()
+        self._connection.flushInput()
 
     def close(self):
-        self._serial.close()
+        self._connection.close()
 
     def _read_data(self, n_samples, in_bytes=True, name=''):
         data = []
         for _ in progressbar(range(n_samples), prefix="{}:".format(name), enable=self.progressbar):
             try:
                 if in_bytes:
-                    value = self._serial.read(2)
+                    value = self._connection.read(2)
                     value = int.from_bytes(value, byteorder='big', signed=True)
                 else:
-                    value = self._serial.readline().decode().strip()
+                    value = self._connection.readline().decode().strip()
                     value = int(value)
 
                 data.append(self._bits_to_volts(value))

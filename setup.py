@@ -1,4 +1,6 @@
 import setuptools
+from rapp.version import __version__
+
 
 author = "Alvarez Liliana del Valle, Etchepareborda Pablo G., Link Tomás J., Vargas Camila L."
 author_email = (
@@ -11,7 +13,7 @@ author_email = (
 
 setuptools.setup(
     name="rapp",
-    version="0.1.0",
+    version=__version__,
     author=author,
     author_email=author_email,
     maintainer="Link, Tomás J.",
