@@ -102,7 +102,7 @@ def main(
         adc = ADCMock()
     else:
         logger.info("Connecting to ADC...")
-        adc = ADC(resolve_adc_device(), b=ADC_BAUDRATE, timeout=ADC_TIMEOUT, wait=ADC_WAIT)
+        adc = ADC.build(resolve_adc_device(), b=ADC_BAUDRATE, timeout=ADC_TIMEOUT, wait=ADC_WAIT)
 
     logger.info("Setting analyzer velocity to {} deg/s.".format(velocity))
     analyzer.setvel(vel=velocity)

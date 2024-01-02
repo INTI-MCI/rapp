@@ -1,0 +1,6 @@
+[run]
+	branch = True
+
+omit =
+	rapp/version.py
+	rapp/constants.py
