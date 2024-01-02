@@ -53,6 +53,9 @@ class ESPMock:
         self.pos = pos
         return pos
 
+    def motor_on(self, axis=None):
+        pass
+
     def getpos(self, axis=None):
         return self.pos
 

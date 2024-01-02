@@ -84,8 +84,8 @@ class ADC:
         none_array = np.full(n_samples, None)
 
         data = {}
-        data['C0'] = self._read_data(n_samples, in_bytes=True, name='CH0') if ch0 else none_array
-        data['C1'] = self._read_data(n_samples, in_bytes=True, name='CH1') if ch1 else none_array
+        data['CH0'] = self._read_data(n_samples, in_bytes=True, name='CH0') if ch0 else none_array
+        data['CH1'] = self._read_data(n_samples, in_bytes=True, name='CH1') if ch1 else none_array
 
         return data
 

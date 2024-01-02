@@ -163,7 +163,8 @@ def main(
                     data = adc.acquire(chunk_size, ch0=not no_ch0, ch1=not no_ch1, in_bytes=True)
 
                     channels_names_tuple = "({})".format(", ".join(data.keys()))
-                    ch0, ch1 = data.values()
+                    ch0, ch1 = data['CH0'], data['CH1']
+
                     for i in range(len(ch0)):
                         logger.debug("{} = ({}, {})".format(channels_names_tuple, ch0[i], ch1[i]))
                         row = FILE_ROW.format(
