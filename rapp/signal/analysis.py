@@ -723,7 +723,10 @@ def averaged_phase_difference(folder, method):
 
         xs, s1, s2, s1err, s2err = average_data(data)
 
-        x_sigma = ct.ANALYZER_MIN_STEP / (2 * np.sqrt(3))
+        # x_sigma = ct.ANALYZER_MIN_STEP / (2 * np.sqrt(3))
+        x_sigma = 0.01
+
+        x_sigma = np.deg2rad(x_sigma) * 2
 
         res = phase_difference(
             np.deg2rad(xs) * 2, s1, s2, x_sigma=x_sigma, s1_sigma=s1err, s2_sigma=s2err,
@@ -760,7 +763,7 @@ def averaged_phase_difference(folder, method):
     return avg_phase_diff
 
 
-def optical_rotation(folder_i, folder_f, method='ODR', factor=None):
+def optical_rotation(folder_i, folder_f, method='ODR', hwp=False):
     initial_poisition = float(re.findall(REGEX_NUMBER_AFTER_WORD.format(word="hwp"), folder_i)[0])
     final_position = float(re.findall(REGEX_NUMBER_AFTER_WORD.format(word="hwp"), folder_f)[0])
 
@@ -779,13 +782,13 @@ def optical_rotation(folder_i, folder_f, method='ODR', factor=None):
     files_f = sorted([os.path.join(folder_f, x) for x in os.listdir(folder_f)])
 
     for i in range(len(files_i)):
-        phase_diff_without_sample = plot_phase_difference(files_i[i], method='ODR')
-        phase_diff_with_sample = plot_phase_difference(files_f[i], method='ODR')
+        phase_diff_without_sample = plot_phase_difference(files_i[i], method=method)
+        phase_diff_with_sample = plot_phase_difference(files_f[i], method=method)
 
         optical_rotation = abs(phase_diff_with_sample - phase_diff_without_sample)
 
-        if factor is not None:
-            optical_rotation = ufloat(optical_rotation.n * factor, optical_rotation.s)
+        if hwp:
+            optical_rotation = ufloat(optical_rotation.n * 0.5, optical_rotation.s)
 
         logger.info("Optical rotation {}: {}°".format(i + 1, optical_rotation))
 
@@ -801,7 +804,7 @@ def optical_rotation(folder_i, folder_f, method='ODR', factor=None):
 
     logger.info("Optical rotation measured (average): {}".format(avg_or))
     logger.debug("Repeatability uncertainty: {}".format(repeatability_u))
-    logger.info("Error:: {}".format(abs(or_angle) - abs(avg_or)))
+    logger.info("Error: {}".format(abs(or_angle) - abs(avg_or)))
     logger.debug("RMSE: {}".format(rmse))
 
     return avg_or, ors
@@ -822,7 +825,7 @@ def plot_phase_difference(filepath, method, show=False):
     s1_sigma = None if np.isnan(s1err).any() else s1err
     s2_sigma = None if np.isnan(s1err).any() else s2err
 
-    x_sigma = ct.ANALYZER_MIN_STEP / (2 * np.sqrt(3))
+    x_sigma = np.deg2rad(0.01) * 2
 
     res = phase_difference(
         np.deg2rad(xs) * 2, s1, s2, x_sigma=x_sigma, s1_sigma=s1_sigma, s2_sigma=s2_sigma,
@@ -846,7 +849,7 @@ def plot_phase_difference(filepath, method, show=False):
     title = "{}\ncycles={}, step={}, samples={}.".format(phi_label, cycles, step, samples)
 
     logger.debug(
-        "Detected phase difference: {}"
+        "Detected phase difference (analyzer angles): {}"
         .format(phi_label)
     )
 
@@ -856,29 +859,38 @@ def plot_phase_difference(filepath, method, show=False):
     create_folder(output_folder)
 
     plot = Plot(ylabel=ct.LABEL_VOLTAGE, xlabel=ct.LABEL_DEGREE, folder=output_folder)
-
-    plot.add_data(
+    markevery = 10
+    d1 = plot.add_data(
         xs, s1, yerr=s1err,
         ms=6, mfc='None', color='k', mew=1,
-        markevery=5, alpha=0.8, label='CH0',
+        markevery=markevery, alpha=0.8, label='CH0',
         style='D'
     )
 
-    plot.add_data(
+    d2 = plot.add_data(
         xs, s2, yerr=s2err,
-        ms=6, mfc='None', color='k', mew=1, markevery=5, alpha=0.8, label='CH1',
+        ms=6, mfc='None', color='k', mew=1, markevery=markevery, alpha=0.8, label='CH1',
     )
 
     if res.fitx is not None:
         fitx = res.fitx / 2
-        plot.add_data(fitx, res.fits1, style='-', color='k', lw=1, label='Ajuste')
+        f1 = plot.add_data(fitx, res.fits1, style='-', color='k', lw=1, label='Ajuste')
         plot.add_data(fitx, res.fits2, style='-', color='k', lw=1)
-        plot.add_data(fitx, signal_diff_s1, style='-', lw=1, label='CH0')
-        plot.add_data(fitx, signal_diff_s2, style='-', lw=1, label='CH1')
+        l1 = plot.add_data(fitx, signal_diff_s1, style='-', lw=1.5, label='CH0')
+        l2 = plot.add_data(fitx, signal_diff_s2, style='-', lw=1.5, label='CH1')
 
-    plt.legend(loc='upper left', frameon=False)
+    first_legend = plot._ax.legend(handles=[d1, d2, f1], loc='upper left', frameon=False)
 
-    plot._ax.set_xlim(min(xs) - (max(xs) - min(xs)) * 0.5)
+    # Add the legend manually to the Axes.
+    plot._ax.add_artist(first_legend)
+
+    # Create another legend for the second line.
+    plot._ax.legend(handles=[l1, l2], loc='upper right', frameon=False)
+
+    # plt.legend(loc='upper left', frameon=False)
+
+    # plot._ax.set_xlim(min(xs) - (max(xs) - min(xs)) * 0.5)
+    plot._ax.set_ylim(min(s1) - 0.2, max(s1) * 1.8)
 
     # plot._ax.xaxis.set_major_locator(plt.MaxNLocator(5))
 
@@ -887,8 +899,8 @@ def plot_phase_difference(filepath, method, show=False):
     plot = Plot(ylabel=ct.LABEL_VOLTAGE, xlabel=ct.LABEL_DEGREE, folder=output_folder)
     if res.fitx is not None:
         fitx = res.fitx / 2
-        plot.add_data(fitx, signal_diff_s1, style='-', lw=1, label='CH0')
-        plot.add_data(fitx, signal_diff_s2, style='-', lw=1, label='CH1')
+        plot.add_data(fitx, signal_diff_s1, style='-', lw=1.5, label='CH0')
+        plot.add_data(fitx, signal_diff_s2, style='-', lw=1.5, label='CH1')
 
     plt.legend(loc='upper left', frameon=False)
     plot.save(filename="{}-difference.png".format(os.path.basename(filepath)[:-4]))
@@ -995,9 +1007,9 @@ def main(name, show):
 
     if name == 'OR':
 
-        _, ors1 = optical_rotation('data/22-12-2023/hwp0/', 'data/22-12-2023/hwp4.5/', factor=0.5)
-        _, ors2 = optical_rotation('data/28-12-2023/hwp0/', 'data/28-12-2023/hwp4.5/', factor=0.5)
-        _, ors3 = optical_rotation('data/28-12-2023/hwp0/', 'data/28-12-2023/hwp29/', factor=0.5)
+        _, ors1 = optical_rotation('data/22-12-2023/hwp0/', 'data/22-12-2023/hwp4.5/', hwp=True)
+        _, ors2 = optical_rotation('data/28-12-2023/hwp0/', 'data/28-12-2023/hwp4.5/', hwp=True)
+        _, ors3 = optical_rotation('data/28-12-2023/hwp0/', 'data/28-12-2023/hwp29/', hwp=True)
         _, ors4 = optical_rotation('data/29-12-2023/hwp0/', 'data/29-12-2023/hwp-9/')
 
         measurement_u = max([o.s for o in ors1 + ors2 + ors3 + ors4])
