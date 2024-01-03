@@ -36,6 +36,7 @@ HELP_HWP_DELAY = 'delay (in seconds) after changing HW plate position (default: 
 
 
 HELP_METHOD = 'phase difference calculation method (default: %(default)s).'
+HELP_HWP = 'whether the measurement was done with a half wave plate'
 
 HELP_SIM_REPS = 'number of repetitions in each simulated iteration (default: %(default)s).'
 
@@ -121,6 +122,7 @@ def add_or_subparser(subparsers):
     p.add_argument('folder1', type=str, help=HELP_FOLDER_WITHOUT_SAMPLE)
     p.add_argument('folder2', type=str, help=HELP_FOLDER_WITH_SAMPLE)
     p.add_argument('--method', type=str, default='ODR', help=HELP_METHOD)
+    p.add_argument('--hwp', action='store_true', help=HELP_HWP)
     p.add_argument('--show', action='store_true', help=HELP_SHOW)
     p.add_argument('-v', '--verbose', action='store_true', help=HELP_VERBOSE)
 
@@ -161,7 +163,12 @@ def main():
 
         if args.command == 'or':
             setup_logger(args.verbose)
-            analysis.optical_rotation(args.folder1, args.folder2, method=args.method)
+            analysis.optical_rotation(
+                args.folder1,
+                args.folder2,
+                method=args.method,
+                hwp=args.hwp
+            )
 
         if args.command == 'analysis':
             setup_logger(args.verbose)
