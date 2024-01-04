@@ -28,7 +28,7 @@ COLUMN_ANGLE = 'ANGLE'
 
 REGEX_NUMBER_AFTER_WORD = r"(?<={word})-?\d+(?:\.\d+)?"
 
-PARAMETER_STRING = "cycles={}, step={}, samples={}."
+PARAMETER_STRING = "cycles={}, step={}°, samples={}."
 
 COVERAGE_FACTOR = 3
 
@@ -929,22 +929,22 @@ def plot_signals_per_angle(output_folder, show=False):
         filepath = os.path.join(ct.INPUT_DIR, filename)
 
         logger.info("Filepath: {}".format(filepath))
-        plot_two_signals(filepath, output_folder, sep=' ', show=show)
+        plot_raw_measurement(filepath, output_folder, sep=' ', show=show)
 
 
-def plot_two_signals(filepath, output_folder, sep='\t', usecols=(0, 1, 2), show=False):
+def plot_raw_measurement(filepath, output_folder, sep='\t', usecols=(0, 1, 2), show=False):
     data = read_measurement_file(filepath, sep=sep)
-    data = data.groupby([COLUMN_ANGLE]).mean().reset_index()
+    # data = data.groupby([COLUMN_ANGLE]).mean().reset_index()
 
-    xs = np.deg2rad(np.array(data[COLUMN_ANGLE]))
+    # xs = np.deg2rad(np.array(data[COLUMN_ANGLE]))
     s1 = np.array(data[COLUMN_CH0])
     s2 = np.array(data[COLUMN_CH1])
 
     plot = Plot(ylabel=ct.LABEL_VOLTAGE, xlabel=ct.LABEL_ANGLE, folder=output_folder)
     plot.set_title(PARAMETER_STRING.format(*parse_input_parameters_from_filepath(filepath)))
-    plot.add_data(xs, s1, style='o-', alpha=1, mew=1, label='CH0')
-    plot.add_data(xs, s2, style='o-', alpha=1, mew=1, label='CH1')
-    plot._ax.xaxis.set_major_locator(plt.MaxNLocator(5))
+    plot.add_data(s1, style='-', alpha=1, mew=1, label='CH0')
+    plot.add_data(s2, style='-', alpha=1, mew=1, label='CH1')
+    # plot._ax.xaxis.set_major_locator(plt.MaxNLocator(5))
     plot.legend()
 
     plot.save(filename="{}.png".format(os.path.basename(filepath)[:-4]))
