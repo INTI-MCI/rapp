@@ -6,11 +6,8 @@ import serial
 
 
 def test_adc_init():
-
-    with pytest.raises(adc.ADCError):
-        adc.ADC(wait=0)
-
-    adc.ADC(mocks.SerialMock(), wait=0)
+    serial_mock = mocks.SerialMock()
+    adc.ADC(serial_mock)
 
 
 def test_build(monkeypatch):
@@ -23,7 +20,7 @@ def test_build(monkeypatch):
 
 def test_acquire():
 
-    ad = adc.ADC(mocks.SerialMock(), wait=0)
+    ad = adc.ADC(mocks.SerialMock())
 
     ad.flush_input()
 

@@ -100,7 +100,7 @@ def main(
 
     if test_adc:
         logger.warning("Using ADC mock object.")
-        adc = ADC(SerialMock(), wait=0)
+        adc = ADC(SerialMock())
     else:
         logger.info("Connecting to ADC...")
         adc = ADC.build(resolve_adc_device(), b=ADC_BAUDRATE, timeout=ADC_TIMEOUT, wait=ADC_WAIT)
