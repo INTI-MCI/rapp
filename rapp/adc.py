@@ -39,46 +39,44 @@ class ADC:
     Args:
         connection: a serial connection to the AD.
         gain: the gain to use. One of [GAIN_TWOTHIRDS, GAIN_ONE, ...].
-        wait: time to wait after making a connection (seconds).
         pbar: if true, enables progressbar.
     """
 
     COMMAND_TEMPLATE = "{ch0};{ch1};{samples}s"
     AVAILABLE_CHANNELS = ['CH0', 'CH1']
 
-    DEFAULT_DEV = '/dev/ttyACM0'
-    DEFAULT_BAUD = 19200
+    PORT = '/dev/ttyACM0'
+    BAUDRATE = 57600
+    TIMEOUT = 0.1
+    WAIT = 2
 
-    def __init__(self, connection=None, gain=GAIN_ONE, wait=2, progressbar=True):
+    def __init__(self, connection, gain=GAIN_ONE, progressbar=True):
         self._connection = connection
-
-        if self._connection is None:
-            self._connection = self.serial_connection(ADC.DEFAULT_DEV, baudrate=ADC.DEFAULT_BAUD)
-
-        logger.info("Waiting {} seconds after opening the connection...".format(wait))
-        # Arduino resets when a new serial connection is made.
-        # We need to wait, otherwise we don't recieve anything.
-        # TODO: check if we can avoid that arduino resets.
-        time.sleep(wait)
-
+        self.progressbar = progressbar
         self.max_V, self._multiplier_mV = GAINS[gain]
 
-        self.progressbar = progressbar
-
     @classmethod
-    def build(cls, dev='/dev/ttyACM0', b=57600, timeout=0.1, **kwargs):
+    def build(cls, port=PORT, b=BAUDRATE, timeout=TIMEOUT, wait=WAIT, **kwargs):
         """Builds an ADC object.
 
         Args:
-            dev: the device of the serial port in which the AD is connected.
+            port: serial port in which the AD is connected.
             baudrate: bits per second.
             timeout: read timeout (seconds).
+            wait: time to wait after making a connection (seconds).
             kwargs: optinal arguments for ADC constructor
 
         Returns:
             ADC: an instantiated AD object.
         """
-        connection = cls.serial_connection(dev, baudrate=b, timeout=timeout)
+        connection = cls.serial_connection(port, baudrate=b, timeout=timeout)
+
+        logger.info("Waiting {} seconds after connecting to ADC...".format(wait))
+        # Arduino resets when a new serial connection is made.
+        # We need to wait, otherwise we don't recieve anything.
+        # TODO: check if we can avoid that arduino resets.
+        time.sleep(wait)
+
         return cls(connection, **kwargs)
 
     @staticmethod
