@@ -37,7 +37,8 @@ def cosine_similarity(s1, s2):
 
 
 def sine_fit(xs, ys, p0=None, x_sigma=None, y_sigma=None, method='curve_fit'):
-    fitx = np.arange(min(xs), max(xs), step=0.01)
+    # fitx = np.arange(min(xs), max(xs), step=0.01)
+    fitx = xs
 
     if method == 'NLS':
         popt, pcov = curve_fit(sine, xs, ys, p0=p0, sigma=y_sigma, absolute_sigma=False)
