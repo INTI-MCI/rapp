@@ -11,19 +11,20 @@ def rotator_mock():
 
 
 def test_esp_init():
-    with pytest.raises(esp.ESPError):
-        esp.ESP()
+    serial_mock = mocks.SerialMock()
+
+    esp.ESP(serial_mock)
 
     esp.ESP(mocks.SerialMock())
-    rotator = esp.ESP(mocks.SerialMock(), useaxes=[1, 2])
+    rotator = esp.ESP(serial_mock, useaxes=[1, 2])
 
     assert rotator.axes_in_use == [1, 2]
 
     with pytest.raises(esp.ESPError):
-        rotator = esp.ESP(mocks.SerialMock(), reset=True, useaxes=[1, 2])
+        rotator = esp.ESP(serial_mock, reset=True, useaxes=[1, 2])
 
     with pytest.raises(esp.ESPError):
-        rotator = esp.ESP(mocks.SerialMock(), initpos=4)
+        rotator = esp.ESP(serial_mock, initpos=4)
 
 
 def test_build(monkeypatch):

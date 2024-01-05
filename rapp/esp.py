@@ -13,24 +13,21 @@ class ESPError(Exception):
 
 
 class ESP:
-    """Encapsulates the communication with the rotation stage controller.
+    """Encapsulates the communication with the rotary motion controller.
 
     Args:
-        connection: a serial connection to the AD.
+        connection: a serial connection to the motion controller.
         axis: axis to use in every command unless specified otherwise.
         initpos: initial position to use.
         useaxis: list of axis that are going to be used.
     """
 
     ALLOWED_AXES = (1, 2, 3)
-    DEFAULT_DEV = '/dev/ttyACM0'
-    DEFAULT_BAUD = 19200
+    PORT = '/dev/ttyACM0'
+    BAUDRATE = 19200
 
-    def __init__(self, connection=None, axis=1, reset=False, initpos=None, useaxes=None):
+    def __init__(self, connection, axis=1, reset=False, initpos=None, useaxes=None):
         self._connection = connection
-
-        if self._connection is None:
-            self._connection = self.serial_connection(ESP.DEFAULT_DEV, baudrate=ESP.DEFAULT_BAUD)
 
         self.axes_in_use = useaxes
 
@@ -55,18 +52,18 @@ class ESP:
                 self._check_errors()
 
     @classmethod
-    def build(cls, dev=DEFAULT_DEV, b=DEFAULT_BAUD, **kwargs):
+    def build(cls, port=PORT, b=BAUDRATE, **kwargs):
         """Builds an ADC object.
 
         Args:
-            dev: the device of the serial port in which the ESP controller is connected.
+            port: serial port in which the ESP controller is connected.
             baudrate: bits per second.
             kwargs: optinal arguments for ESP constructor
 
         Returns:
             ESP: an instantiated ESP object.
         """
-        connection = cls.serial_connection(dev, baudrate=b)
+        connection = cls.serial_connection(port, baudrate=b)
         return cls(connection, **kwargs)
 
     @staticmethod
