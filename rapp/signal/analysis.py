@@ -822,6 +822,9 @@ def plot_phase_difference(filepath, method, show=False):
         method=method
     )
 
+    signal_diff1 = s1 - res.fits1
+    signal_diff2 = s2 - res.fits2
+
     phase_diff = res.value / 2
     phase_diff_u = res.u / 2
 
@@ -863,6 +866,8 @@ def plot_phase_difference(filepath, method, show=False):
         fitx = res.fitx / 2
         plot.add_data(fitx, res.fits1, style='-', color='k', lw=1, label='Ajuste')
         plot.add_data(fitx, res.fits2, style='-', color='k', lw=1)
+        plot.add_data(fitx, signal_diff1, style='-', lw=1, label='Diferencia')
+        plot.add_data(fitx, signal_diff2, style='-', lw=1)
 
     plt.legend(frameon=False)
 
