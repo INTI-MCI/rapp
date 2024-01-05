@@ -145,7 +145,10 @@ def generate_quantized_bins(data, step=0.125e-3):
 def average_data(data):
     data = data.groupby([COLUMN_ANGLE], as_index=False)
 
-    group_size = int(data.size()['size'][0])
+    try:  # python 3.4
+        group_size = int(data.size()[1])
+    except KeyError:
+        group_size = int(data.size()['size'][0])
 
     data = data.agg({
         COLUMN_CH0: ['mean', 'std'],
@@ -408,7 +411,6 @@ def plot_noise_with_laser_off(output_folder, show=False):
     plt.close()
 
     data = np.array(filtered).T
-    # data = data[['CH0', 'CH1']].to_numpy()
     plot_histogram_and_pdf(data, bins=bins, prefix=base_output_fname, show=show)
 
     if show:
@@ -827,6 +829,9 @@ def plot_phase_difference(filepath, method, show=False):
         method=method
     )
 
+    signal_diff_s1 = s1 - res.fits1
+    signal_diff_s2 = s2 - res.fits2
+
     phase_diff = res.value / 2
     phase_diff_u = res.u / 2
 
@@ -868,14 +873,25 @@ def plot_phase_difference(filepath, method, show=False):
         fitx = res.fitx / 2
         plot.add_data(fitx, res.fits1, style='-', color='k', lw=1, label='Ajuste')
         plot.add_data(fitx, res.fits2, style='-', color='k', lw=1)
+        plot.add_data(fitx, signal_diff_s1, style='-', lw=1, label='CH0')
+        plot.add_data(fitx, signal_diff_s2, style='-', lw=1, label='CH1')
 
-    plt.legend(frameon=False)
+    plt.legend(loc='upper left', frameon=False)
 
-    plot._ax.set_xlim(min(xs) - 90)
+    plot._ax.set_xlim(min(xs) - (max(xs) - min(xs)) * 0.5)
 
     # plot._ax.xaxis.set_major_locator(plt.MaxNLocator(5))
 
     plot.save(filename="{}.png".format(os.path.basename(filepath)[:-4]))
+
+    plot = Plot(ylabel=ct.LABEL_VOLTAGE, xlabel=ct.LABEL_DEGREE, folder=output_folder)
+    if res.fitx is not None:
+        fitx = res.fitx / 2
+        plot.add_data(fitx, signal_diff_s1, style='-', lw=1, label='CH0')
+        plot.add_data(fitx, signal_diff_s2, style='-', lw=1, label='CH1')
+
+    plt.legend(loc='upper left', frameon=False)
+    plot.save(filename="{}-difference.png".format(os.path.basename(filepath)[:-4]))
 
     if show:
         plot.show()
