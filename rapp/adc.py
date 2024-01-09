@@ -130,7 +130,7 @@ class ADC:
         data = list(zip(ch0, ch1))
 
         for ch0, ch1 in data:
-            logger.debug("({}, {}) = ({}, {})".format(*self.AVAILABLE_CHANNELS, ch0, ch1))
+            logger.debug("({}, {}) = ({}, {})".format('CH0', 'CH1', ch0, ch1))
 
         return data
 
