@@ -64,6 +64,13 @@ python -m venv .venv
 pip install -r requirements.txt
 ```
 
+4. Run tests:
+
+```bash
+pytest
+```
+
+
 ## Usage examples:
 
 rapp provides a command-line interface with different commands:
