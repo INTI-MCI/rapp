@@ -146,7 +146,7 @@ def average_data(data):
     data = data.groupby([COLUMN_ANGLE], as_index=False)
 
     try:  # python 3.4
-        group_size = int(data.size()[1])
+        group_size = int(np.array(data.size())[0])
     except KeyError:
         group_size = int(data.size()['size'][0])
 
