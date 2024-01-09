@@ -40,6 +40,7 @@ ANALYSIS_NAMES = [
     'OR',
 ]
 
+WIDTH_10HZ = 1
 
 FILE_PARAMS = {
     "darkcurrent-range4V-samples40000-sps59.txt": {
@@ -85,7 +86,11 @@ FILE_PARAMS = {
     "continuous-range4V-632nm-samples100000.txt": {
         "sps": 847,  # This fits OK with line frequencies.
         "sep": r"\s+",
-        "band_stop_freq": [(50 * x, 10 / x) for x in range(1, 8)],
+        "band_stop_freq": [
+            (50, 15)] + [(50 * x, 2) for x in range(2, 8)] + [
+            (110, WIDTH_10HZ), (170, WIDTH_10HZ), (210, WIDTH_10HZ), (230, WIDTH_10HZ),
+            (260, WIDTH_10HZ), (270, WIDTH_10HZ), (310, WIDTH_10HZ), (320, WIDTH_10HZ),
+            (330, WIDTH_10HZ), (360, WIDTH_10HZ), (380, WIDTH_10HZ)],
         "high_pass_freq": 2,
         "outliers": [-0.001, 0.001],
         "bins": "quantized"
@@ -969,7 +974,7 @@ def main(name, show):
     if name in ['all', 'noise']:
         plot_noise_with_laser_on(output_folder, show=show)
 
-    if name in ['all', 'drift']:
+    if name in ['drift']:
         plot_drift(output_folder, show=show)
 
     if name == 'OR':
