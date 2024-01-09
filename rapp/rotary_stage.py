@@ -1,7 +1,8 @@
 import time
+import math
 import logging
-from collections.abc import Iterator
 
+from collections.abc import Iterator
 import numpy as np
 
 logger = logging.getLogger(__name__)
@@ -58,7 +59,8 @@ class RotaryStage(Iterator):
             raise StopIteration
 
     def generate_positions(self):
-        positions = np.arange(0, 360 * self.cycles + self.step, self.step, dtype=float)
+        end = 360 * math.copysign(1, self.step)
+        positions = np.arange(0, end * self.cycles + self.step, self.step, dtype=float)
         if self.init_position is not None:
             positions += self.init_position
 
