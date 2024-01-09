@@ -147,7 +147,7 @@ def average_data(data):
 
     try:  # python 3.4
         group_size = int(np.array(data.size())[0])
-    except KeyError:
+    except TypeError:
         group_size = int(data.size()['size'][0])
 
     data = data.agg({
@@ -825,15 +825,12 @@ def plot_phase_difference(filepath, method, show=False):
     s1_sigma = None if np.isnan(s1err).any() else s1err
     s2_sigma = None if np.isnan(s1err).any() else s2err
 
-    x_sigma = np.deg2rad(0.01) * 2
+    x_sigma = np.deg2rad(0.03) * 2
 
     res = phase_difference(
         np.deg2rad(xs) * 2, s1, s2, x_sigma=x_sigma, s1_sigma=s1_sigma, s2_sigma=s2_sigma,
         method=method
     )
-
-    signal_diff_s1 = s1 - res.fits1
-    signal_diff_s2 = s2 - res.fits2
 
     phase_diff = res.value / 2
     phase_diff_u = res.u / 2
@@ -872,38 +869,38 @@ def plot_phase_difference(filepath, method, show=False):
         ms=6, mfc='None', color='k', mew=1, markevery=markevery, alpha=0.8, label='CH1',
     )
 
-    if res.fitx is not None:
-        fitx = res.fitx / 2
-        f1 = plot.add_data(fitx, res.fits1, style='-', color='k', lw=1, label='Ajuste')
-        plot.add_data(fitx, res.fits2, style='-', color='k', lw=1)
-        l1 = plot.add_data(fitx, signal_diff_s1, style='-', lw=1.5, label='CH0')
-        l2 = plot.add_data(fitx, signal_diff_s2, style='-', lw=1.5, label='CH1')
-
-    first_legend = plot._ax.legend(handles=[d1, d2, f1], loc='upper left', frameon=False)
+    first_legend = plot._ax.legend(handles=[d1, d2], loc='upper left', frameon=False)
 
     # Add the legend manually to the Axes.
     plot._ax.add_artist(first_legend)
 
-    # Create another legend for the second line.
-    plot._ax.legend(handles=[l1, l2], loc='upper right', frameon=False)
+    if res.fitx is not None:
+        fitx = res.fitx / 2
+        f1 = plot.add_data(fitx, res.fits1, style='-', color='k', lw=1, label='Ajuste')
+        plot.add_data(fitx, res.fits2, style='-', color='k', lw=1)
 
-    # plt.legend(loc='upper left', frameon=False)
+        signal_diff_s1 = s1 - res.fits1
+        signal_diff_s2 = s2 - res.fits2
+        l1 = plot.add_data(fitx, signal_diff_s1, style='-', lw=1.5, label='Ajuste - CH0')
+        l2 = plot.add_data(fitx, signal_diff_s2, style='-', lw=1.5, label='Ajuste - CH1')
+
+        plot._ax.legend(handles=[f1, l1, l2], loc='upper right', frameon=False)
 
     # plot._ax.set_xlim(min(xs) - (max(xs) - min(xs)) * 0.5)
-    plot._ax.set_ylim(min(s1) - 0.2, max(s1) * 1.8)
-
-    # plot._ax.xaxis.set_major_locator(plt.MaxNLocator(5))
+    plot._ax.set_ylim(min(s1) - abs(max(s1) - min(s1)) * 0.2, max(s1) * 1.8)
 
     plot.save(filename="{}.png".format(os.path.basename(filepath)[:-4]))
 
-    plot = Plot(ylabel=ct.LABEL_VOLTAGE, xlabel=ct.LABEL_DEGREE, folder=output_folder)
     if res.fitx is not None:
+        plot = Plot(ylabel=ct.LABEL_VOLTAGE, xlabel=ct.LABEL_DEGREE, folder=output_folder)
         fitx = res.fitx / 2
-        plot.add_data(fitx, signal_diff_s1, style='-', lw=1.5, label='CH0')
-        plot.add_data(fitx, signal_diff_s2, style='-', lw=1.5, label='CH1')
-
-    plt.legend(loc='upper left', frameon=False)
-    plot.save(filename="{}-difference.png".format(os.path.basename(filepath)[:-4]))
+        plot.add_data(fitx, signal_diff_s1, style='-', lw=1.5, label='Ajuste - CH0')
+        plot.add_data(fitx, signal_diff_s2, style='-', lw=1.5, label='Ajuste - CH1')
+        plt.legend(loc='upper left', frameon=False)
+        plot.save(filename="{}-difference.png".format(os.path.basename(filepath)[:-4]))
+        plot._ax.set_ylim(
+            np.min([signal_diff_s1, signal_diff_s2]),
+            np.max([signal_diff_s1, signal_diff_s2]) * 1.5)
 
     if show:
         plot.show()
