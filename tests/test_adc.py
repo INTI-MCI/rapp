@@ -19,30 +19,27 @@ def test_build(monkeypatch):
 
 
 def test_acquire():
-
-    ad = adc.ADC(mocks.SerialMock())
-
-    ad.flush_input()
-
     with pytest.raises(adc.ADCError):
-        ad.acquire(1, ch0=False, ch1=False)
+        ad = adc.ADC(mocks.SerialMock(), ch0=False, ch1=False)
+
+    ad = adc.ADC(mocks.SerialMock(), ch0=True, ch1=True)
 
     with pytest.raises(adc.ADCError):
         ad.acquire(0)
 
-    SAMPLES = 50
-    res = ad.acquire(SAMPLES)
+    SAMPLES = 10
+    data = ad.acquire(SAMPLES, flush=False)
+    data = ad.acquire(SAMPLES)
 
-    for ch in ad.AVAILABLE_CHANNELS:
-        assert ch in res
-        assert len(res[ch]) == SAMPLES
+    assert len(data) == SAMPLES
 
-        for v in res[ch]:
-            assert isinstance(v, float)
-            assert 0 <= v <= ad.max_V
+    for channel in zip(*data):
+        for value in channel:
+            print(value)
+            assert isinstance(value, float)
+            assert 0 <= value <= ad.max_V
 
-    res = ad.acquire(1, in_bytes=False)
+    ad = adc.ADC(mocks.SerialMock(), in_bytes=False)
+    ad.acquire(1)
 
     ad.close()
-
-    print(res['CH0'][0])

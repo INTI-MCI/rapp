@@ -1,13 +1,15 @@
 from rapp import polarimeter
 
 
-def test_polarimeter(tmp_path):
+def test_main(tmp_path):
     polarimeter.main(
         cycles=0,
         samples=1,
         delay_position=0,
-        test_esp=True,
-        test_adc=True,
+        hwp_delay=0,
+        mock_esp=True,
+        mock_adc=True,
         overwrite=True,
-        work_dir=tmp_path
+        work_dir=tmp_path,
+        # plot=True
     )

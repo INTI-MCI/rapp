@@ -14,6 +14,18 @@ def create_folder(folder, overwrite=False):
     os.makedirs(folder, exist_ok=True)
 
 
+def get_chunks(lst, n):
+    """Yield successive n-sized chunks from lst."""
+    for i in range(0, len(lst), n):
+        yield lst[i:i + n]
+
+
+def get_chunks_sizes(size, n):
+    """Splits a size in a list of sub-sizes of max size n."""
+    chunks = get_chunks(range(size), n)
+    return [len(x) for x in chunks]
+
+
 def round_to_n(number, n):
     """Rounds to n significant digits."""
     if number == 0:
@@ -34,7 +46,7 @@ def timing(f):
     return wrap
 
 
-def progressbar(it, prefix="", size=100, out=sys.stdout, enable=True):
+def progressbar(it, desc="", size=100, out=sys.stdout, enable=True):
     count = len(it)
     start = time()
 
@@ -63,7 +75,7 @@ def progressbar(it, prefix="", size=100, out=sys.stdout, enable=True):
         rate_str = "{:02} it/s".format(rate)
         pctg = round((j / count) * 100)
 
-        bar = bar_string.format(prefix, u'='*x, ('.'*(size-x)), pctg, time_str, rate_str)
+        bar = bar_string.format(desc, u'='*x, ('.'*(size-x)), pctg, time_str, rate_str)
         print(bar, end='\r', file=out, flush=True)
 
         return current_time
