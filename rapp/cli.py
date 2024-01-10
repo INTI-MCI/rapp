@@ -3,7 +3,7 @@ import argparse
 
 from rapp import polarimeter
 from rapp.signal import analysis
-from rapp.signal import simulator
+from rapp.simulations import simulator
 from rapp.log import setup_logger
 
 HELP_POLARIMETER = "Tool for measuring signals with the polarimeter."

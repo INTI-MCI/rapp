@@ -9,10 +9,11 @@ from scipy import stats
 
 from rapp import constants as ct
 from rapp.utils import create_folder
+from rapp.signal.analysis import average_data
 from rapp.signal.plot import Plot
 from rapp.signal.phase import phase_difference
-from rapp.signal.analysis import average_data
 
+from rapp.simulations import error_vs_method
 
 logger = logging.getLogger(__name__)
 
@@ -173,8 +174,8 @@ def n_simulations(n=1, method='ODR', p0=None, **kwargs):
 
         data = np.array([xs, s1, s2]).T
         data = pd.DataFrame(data=data, columns=["ANGLE", "CH0", "CH1"])
-        xs, s1, s2, s1_sigma, s2_sigma = average_data(data)
 
+        xs, s1, s2, s1_sigma, s2_sigma = average_data(data)
         x_sigma = np.deg2rad(ct.ANALYZER_UNCERTAINTY)
 
         res = phase_difference(
@@ -287,62 +288,6 @@ def plot_simulation_steps(folder, show=False):
         plt.show()
 
     plt.close()
-
-    logger.info("Done.")
-
-
-def plot_error_vs_method(phi, folder, samples=5, reps=10, step=1, max_cycles=10, show=False):
-    print("")
-    logger.info("PHASE DIFFERENCE METHODS VS # OF CYCLES")
-
-    cycles_list = np.arange(1, max_cycles + 1, step=1)
-
-    plot = Plot(
-        ylabel=ct.LABEL_PHI_ERR, xlabel=ct.LABEL_N_CYCLES, ysci=True, xint=True,
-        folder=folder
-    )
-
-    methods = ['COSINE', 'NLS', 'ODR']
-    ms = ['-', 'd', '-']
-    ls = ['solid', 'solid', 'dotted']
-    n_reps = [1, reps, reps]
-    for i, method in enumerate(methods, 0):
-        fc = samples_per_cycle(step=step)
-        reps = n_reps[i]
-        logger.info("Method: {}, fc={}, reps={}".format(method, fc, reps))
-
-        errors = []
-        for cycles in cycles_list:
-            n_res = n_simulations(
-                n=reps, method=method, cycles=cycles, fc=fc, phi=phi,
-                fa=samples, a0_noise=A0_NOISE, a1_noise=A1_NOISE,
-                bits=ADC_BITS, all_positive=True, p0=[1, 0, 0, 0, 0, 0]
-            )
-
-            error_rad = rmse(phi, [e.value for e in n_res])
-            error_degrees = np.rad2deg(error_rad)
-            error_degrees_sci = "{:.2E}".format(error_degrees)
-
-            errors.append(error_degrees)
-
-            time = total_time(cycles) / 60
-            logger.info("cycles={}, time={} m, φerr: {}.".format(cycles, time, error_degrees_sci))
-
-        label = "{}".format(method)
-        plot.add_data(cycles_list, errors, style=ms[i], ls=ls[i], color='k', lw=2, label=label)
-
-    annotation = "samples={}\nstep={}°".format(samples, step)
-    plot._ax.text(0.05, 0.45, annotation, transform=plot._ax.transAxes)
-    plot._ax.set_yscale('log')
-    plot.legend(loc='center right', fontsize=12)
-
-    filename = "sim_error_vs_method-reps-{}-samples-{}-step-{}.png"
-    plot.save(filename=filename.format(reps, samples, step))
-
-    if show:
-        plot.show()
-
-    plot.close()
 
     logger.info("Done.")
 
@@ -677,7 +622,7 @@ def main(sim, reps=1, step=1, samples=1, show=False):
         plot_simulation_steps(output_folder, show=show)
 
     if sim in ['all', 'error_vs_method']:
-        plot_error_vs_method(
+        error_vs_method.run(
             PHI, output_folder, samples, max_cycles=8, reps=reps, step=step, show=show)
 
     if sim in ['all', 'error_vs_step']:
