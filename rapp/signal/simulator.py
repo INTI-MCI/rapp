@@ -11,6 +11,7 @@ from rapp import constants as ct
 from rapp.utils import create_folder
 from rapp.signal.plot import Plot
 from rapp.signal.phase import phase_difference
+from rapp.signal.analysis import average_data
 
 
 logger = logging.getLogger(__name__)
@@ -171,29 +172,10 @@ def n_simulations(n=1, method='ODR', **kwargs):
         xs, s1, s2 = polarimeter_signal(**kwargs)
 
         data = np.array([xs, s1, s2]).T
-        data = pd.DataFrame(data=data, columns=["ANGLE", "A0", "A1"])
-        data = data.groupby(['ANGLE'], as_index=False).agg({
-            'A0': ['mean', 'std'],
-            'A1': ['mean', 'std']
-        })
+        data = pd.DataFrame(data=data, columns=["ANGLE", "CH0", "CH1"])
+        xs, s1, s2, s1_sigma, s2_sigma = average_data(data)
 
-        if len(data.index) == 1:
-            raise ValueError("This is a file with only one angle!.")
-
-        xs = np.array(data['ANGLE'])
-        s1 = np.array(data['A0']['mean'])
-        s2 = np.array(data['A1']['mean'])
-
-        s1_sigma = np.array(data['A0']['std'])
-        s2_sigma = np.array(data['A1']['std'])
-
-        if np.isnan(s1_sigma).any() or (s1_sigma == 0).any():
-            s1_sigma = None
-
-        if np.isnan(s2_sigma).any() or (s2_sigma == 0).any():
-            s2_sigma = None
-
-        x_sigma = ct.ANALYZER_MIN_STEP / (2 * np.sqrt(3))
+        x_sigma = np.deg2rad(ct.ANALYZER_UNCERTAINTY)
 
         res = phase_difference(
             xs * 2, s1, s2,
