@@ -129,8 +129,11 @@ def phase_difference(
         s1 = s1 / s1_norm
         s2 = s2 / s2_norm
 
-        s1_sigma = s1_sigma / s1_norm
-        s2_sigma = s2_sigma / s2_norm
+        if s1_sigma is not None:
+            s1_sigma = s1_sigma / s1_norm
+
+        if s2_sigma is not None:
+            s2_sigma = s2_sigma / s2_norm
 
         s12 = np.hstack([s1, s2])
         s12_sigma = np.hstack([s1_sigma, s2_sigma])

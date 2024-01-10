@@ -159,10 +159,10 @@ def average_data(data):
     s1 = np.array(data[COLUMN_CH0]['mean'])
     s2 = np.array(data[COLUMN_CH1]['mean'])
 
-    s1err = np.array(data[COLUMN_CH0]['std']) / np.sqrt(int(group_size))
-    s2err = np.array(data[COLUMN_CH1]['std']) / np.sqrt(int(group_size))
+    s1u = np.array(data[COLUMN_CH0]['std']) / np.sqrt(int(group_size))
+    s2u = np.array(data[COLUMN_CH1]['std']) / np.sqrt(int(group_size))
 
-    return xs, s1, s2, s1err, s2err
+    return xs, s1, s2, s1u, s2u
 
 
 def plot_histogram_and_pdf(data,  bins='quantized', prefix='', show=False):
@@ -764,6 +764,7 @@ def averaged_phase_difference(folder, method):
 
 
 def optical_rotation(folder_i, folder_f, method='ODR', hwp=False):
+    print("")
     initial_poisition = float(re.findall(REGEX_NUMBER_AFTER_WORD.format(word="hwp"), folder_i)[0])
     final_position = float(re.findall(REGEX_NUMBER_AFTER_WORD.format(word="hwp"), folder_f)[0])
 
@@ -771,7 +772,6 @@ def optical_rotation(folder_i, folder_f, method='ODR', hwp=False):
     logger.debug("Final position: {}°".format(final_position))
 
     or_angle = (final_position - initial_poisition)
-
     logger.info("Expected optical rotation: {}°".format(or_angle))
 
     logger.debug("Folder without optical active sample measurements {}...".format(folder_i))
@@ -781,16 +781,21 @@ def optical_rotation(folder_i, folder_f, method='ODR', hwp=False):
     files_i = sorted([os.path.join(folder_i, x) for x in os.listdir(folder_i)])
     files_f = sorted([os.path.join(folder_f, x) for x in os.listdir(folder_f)])
 
-    for i in range(len(files_i)):
-        phase_diff_without_sample = plot_phase_difference(files_i[i], method=method)
-        phase_diff_with_sample = plot_phase_difference(files_f[i], method=method)
+    for k in range(len(files_i)):
+        data_i = read_measurement_file(files_i[k])
+        data_f = read_measurement_file(files_f[k])
+        *head, res_i = polarimeter_phase_difference(data_i, method=method, fix_range=not hwp)
+        *head, res_f = polarimeter_phase_difference(data_f, method=method, fix_range=not hwp)
 
-        optical_rotation = abs(phase_diff_with_sample - phase_diff_without_sample)
+        res_i = ufloat(res_i.value, res_i.u)
+        res_f = ufloat(res_f.value, res_f.u)
+
+        optical_rotation = res_f - res_i
 
         if hwp:
             optical_rotation = ufloat(optical_rotation.n * 0.5, optical_rotation.s)
 
-        logger.info("Optical rotation {}: {}°".format(i + 1, optical_rotation))
+        logger.info("Optical rotation {}: {}°".format(k + 1, optical_rotation))
 
         ors.append(optical_rotation)
 
@@ -800,57 +805,59 @@ def optical_rotation(folder_i, folder_f, method='ODR', hwp=False):
     values = [o.n for o in ors]
     repeatability_u = np.std(values) / np.sqrt(len(values))
 
-    rmse = np.sqrt(sum([(abs(or_angle) - abs(v)) ** 2 for v in values]) / len(values))
-
     logger.info("Optical rotation measured (average): {}".format(avg_or))
     logger.debug("Repeatability uncertainty: {}".format(repeatability_u))
     logger.info("Error: {}".format(abs(or_angle) - abs(avg_or)))
-    logger.debug("RMSE: {}".format(rmse))
 
     return avg_or, ors
 
 
-def plot_phase_difference(filepath, method, show=False):
-    logger.debug("Calculating phase difference for {}...".format(filepath))
-
-    cycles, step, samples = parse_input_parameters_from_filepath(filepath)
-
-    data = read_measurement_file(filepath)
-
-    if len(data.index) == 1:
-        raise ValueError("This is a file with only one angle!.")
-
+def polarimeter_phase_difference(data, method, fix_range=True):
     xs, s1, s2, s1err, s2err = average_data(data)
 
     s1_sigma = None if np.isnan(s1err).any() else s1err
     s2_sigma = None if np.isnan(s1err).any() else s2err
 
-    x_sigma = np.deg2rad(0.03) * 2
+    x_sigma = np.deg2rad(ct.ANALYZER_UNCERTAINTY)
 
     res = phase_difference(
-        np.deg2rad(xs) * 2, s1, s2, x_sigma=x_sigma, s1_sigma=s1_sigma, s2_sigma=s2_sigma,
-        method=method
+        np.deg2rad(xs) * 2, s1, s2,
+        x_sigma=x_sigma, s1_sigma=s1_sigma, s2_sigma=s2_sigma, method=method
     )
 
-    phase_diff = res.value / 2
-    phase_diff_u = res.u / 2
+    if abs(res.value) > np.rad2deg(np.pi / 2) and fix_range:
+        res.value = res.value % np.rad2deg(np.pi)
 
-    phase_diff_u_rounded = round_to_n(phase_diff_u * COVERAGE_FACTOR, 2)
+    res.value /= 2
+    res.u /= 2
+    if res.fitx is not None:
+        res.fitx /= 2
+
+    return xs, s1, s2, s1err, s2err, res
+
+
+def plot_phase_difference(filepath, method, show=False):
+    logger.info("Calculating phase difference for {}...".format(filepath))
+
+    cycles, step, samples = parse_input_parameters_from_filepath(filepath)
+    data = read_measurement_file(filepath)
+
+    xs, s1, s2, s1err, s2err, res = polarimeter_phase_difference(data, method)
+
+    phase_diff_u_rounded = round_to_n(res.u * COVERAGE_FACTOR, 2)
 
     # Obtain number of decimal places of the u:
     d = abs(decimal.Decimal(str(phase_diff_u_rounded)).as_tuple().exponent)
 
-    phase_diff_rounded = round(phase_diff, d)
+    phase_diff_rounded = round(res.value, d)
 
     phi_label = "φ=({} ± {})°.".format(phase_diff_rounded, phase_diff_u_rounded)
     title = "{}\ncycles={}, step={}, samples={}.".format(phi_label, cycles, step, samples)
 
-    logger.debug(
-        "Detected phase difference (analyzer angles): {}"
-        .format(phi_label)
+    logger.info(title)
+    logger.info(
+        "Detected phase difference (analyzer angles): {}".format(phi_label)
     )
-
-    logger.debug(title)
 
     output_folder = os.path.join(ct.WORK_DIR, ct.OUTPUT_FOLDER_PLOTS)
     create_folder(output_folder)
@@ -875,14 +882,13 @@ def plot_phase_difference(filepath, method, show=False):
     plot._ax.add_artist(first_legend)
 
     if res.fitx is not None:
-        fitx = res.fitx / 2
-        f1 = plot.add_data(fitx, res.fits1, style='-', color='k', lw=1, label='Ajuste')
-        plot.add_data(fitx, res.fits2, style='-', color='k', lw=1)
+        f1 = plot.add_data(res.fitx, res.fits1, style='-', color='k', lw=1, label='Ajuste')
+        plot.add_data(res.fitx, res.fits2, style='-', color='k', lw=1)
 
         signal_diff_s1 = s1 - res.fits1
         signal_diff_s2 = s2 - res.fits2
-        l1 = plot.add_data(fitx, signal_diff_s1, style='-', lw=1.5, label='Ajuste - CH0')
-        l2 = plot.add_data(fitx, signal_diff_s2, style='-', lw=1.5, label='Ajuste - CH1')
+        l1 = plot.add_data(res.fitx, signal_diff_s1, style='-', lw=1.5, label='Ajuste - CH0')
+        l2 = plot.add_data(res.fitx, signal_diff_s2, style='-', lw=1.5, label='Ajuste - CH1')
 
         plot._ax.legend(handles=[f1, l1, l2], loc='upper right', frameon=False)
 
@@ -906,8 +912,6 @@ def plot_phase_difference(filepath, method, show=False):
         plot.show()
 
     plot.close()
-
-    return ufloat(phase_diff, phase_diff_u)
 
 
 def plot_signals_per_n_measurement(output_folder, show=False):
@@ -1009,18 +1013,17 @@ def main(name, show):
         _, ors3 = optical_rotation('data/28-12-2023/hwp0/', 'data/28-12-2023/hwp29/', hwp=True)
         _, ors4 = optical_rotation('data/29-12-2023/hwp0/', 'data/29-12-2023/hwp-9/')
 
+        print("")
         measurement_u = max([o.s for o in ors1 + ors2 + ors3 + ors4])
-
         logger.info("Measurement Uncertainty: {}°".format(measurement_u))
 
         all_45_ors = [o.n for o in ors1 + ors2]
         logger.debug("Values taken into account for repeatability: {}".format(all_45_ors))
 
-        repeatability_u = np.std(all_45_ors) / len(all_45_ors)
+        repeatability_u = np.std(np.abs(all_45_ors)) / len(all_45_ors)
         logger.info("Repeatability Uncertainty: {}°". format(repeatability_u))
 
         combined_u = np.sqrt(measurement_u ** 2 + repeatability_u ** 2)
-
         logger.info("Combined Uncertainty (k=2): {}°". format(combined_u * 2))
 
 
