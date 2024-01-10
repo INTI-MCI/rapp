@@ -77,15 +77,16 @@ rapp provides a command-line interface with different commands:
 
 ```bash
 (.venv) $ rapp
-usage: RAPP [-h] {polarimeter,phase_diff,analysis,sim} ...
+usage: RAPP [-h] {polarimeter,phase_diff,or,analysis,sim} ...
 
 Tools for measuring the rotation angle of the plane of polarization (RAPP).
 
 positional arguments:
-  {polarimeter,phase_diff,analysis,sim}
+  {polarimeter,phase_diff,or,analysis,sim}
                         available commands
     polarimeter         Tool for measuring signals with the polarimeter.
-    phase_diff          Tool for calculating phase difference between two harmonic signals.
+    phase_diff          Tool for calculating phase difference from single polarimeter measurement.
+    or                  Tool for calculating optical rotation from initial phase and final phase measurements.
     analysis            Tool for analyzing signals: noise, drift, etc.
     sim                 Tool for making numerical simulations.
 
@@ -96,45 +97,52 @@ options:
 The polarimeter command:
 ```bash
 (.venv) $ rapp polarimeter -h
-usage: RAPP polarimeter [-h] --cycles CYCLES [--step STEP] --samples SAMPLES [--chunk_size] [--delay_position] [--velocity] [--no-ch0] [--no-ch1] [--prefix] [--test_esp] [--test_adc] [--plot] [-v]
+usage: RAPP polarimeter [-h] --samples SAMPLES [--cycles CYCLES] [--step STEP] [--chunk-size] [--delay-position] [--velocity] [--init-position] [--hwp-cycles] [--hwp-step] [--hwp-delay] [--reps] [--no-ch0] [--no-ch1] [--prefix]
+                        [--mock-esp] [--mock-adc] [--plot] [-v] [-w]
 
 options:
   -h, --help         show this help message and exit
-  --cycles CYCLES    n° of cycles to run.
-  --step STEP        every how many degrees to take a measurement (default: 10).
   --samples SAMPLES  n° of samples per angle.
-  --chunk_size       measure data in chunks of this size. If 0, no chunks (default: 500).
-  --delay_position   delay (in seconds) after changing analyzer position (default: 1).
+  --cycles CYCLES    n° of cycles to run (default: 0).
+  --step STEP        motion step of the rotating analyzer (default: 45).
+  --chunk-size       measure data in chunks of this size. If 0, no chunks (default: 500).
+  --delay-position   delay (in seconds) after changing analyzer position (default: 1).
   --velocity         velocity of the analyzer in deg/s (default: 4).
+  --init-position    initial position of the analyzer in deg (default: None).
+  --hwp-cycles       n° of cycles of the HW plate (default: 0).
+  --hwp-step         motion step of the rotating HW plate (default: 45).
+  --hwp-delay        delay (in seconds) after changing HW plate position (default: 5).
+  --reps             Number of repetitions (default: 1).
   --no-ch0           excludes channel 0 from measurement (default: False).
   --no-ch1           excludes channel 1 from measurement (default: False).
-  --prefix           prefix for the filename in which to write results (default: test).
-  --test_esp         use ESP mock object. (default: False).
-  --test_adc         use ADC mock object. (default: False).
+  --prefix           prefix for the filename in which to write results (default: None).
+  --mock-esp         use ESP mock object. (default: False).
+  --mock-adc         use ADC mock object. (default: False).
   --plot             plot the results when the measurement is finished (default: False).
   -v, --verbose      whether to run with DEBUG log level (default: False).
+  -w, --overwrite    whether to overwrite existing files without asking (default: False).
 
-Example: rapp polarimeter --cycles 1 --step 30 --samples 10 --delay_position 0
+Example: rapp polarimeter --cycles 1 --step 30 --samples 10 --delay-position 0
 ```
 
 The sim command:
-
 ```bash
 The sim command:
 (.venv) [tlink@tlink rapp]$ rapp sim -h
-usage: RAPP sim [-h] [--samples SAMPLES] [--reps REPS] [--show] [-v] name
+usage: RAPP sim [-h] [--samples SAMPLES] [--step STEP] [--reps REPS] [--show] [-v] name
 
 positional arguments:
-  name               name of the simulation. One of ['all', 'signals_out_of_phase', 'sim_steps', 'methods', 'error_vs_cycles', 'error_vs_res', 'error_vs_range', 'noise_vs_range', 'phase_diff'].
+  name               name of the simulation. One of ['all', 'error_vs_method', 'error_vs_step', 'error_vs_range', 'error_vs_samples', 'error_vs_res', 'signals_out_of_phase', 'sim_steps', 'noise_vs_range', 'phase_diff'].
 
 options:
   -h, --help         show this help message and exit
   --samples SAMPLES  n° of samples per angle.
+  --step STEP        n° of samples per angle.
   --reps REPS        number of repetitions in each simulated iteration (default: 1).
   --show             whether to show the plot.
   -v, --verbose      whether to run with DEBUG log level (default: False).
 
-Example: rapp sim error_vs_cycles --show
+Example: rapp sim error_vs_samples --show
 ```
 
 
