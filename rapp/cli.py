@@ -9,7 +9,6 @@ from rapp.log import setup_logger
 HELP_POLARIMETER = "Tool for measuring signals with the polarimeter."
 HELP_SIM = "Tool for making numerical simulations."
 HELP_PHASE_DIFF = 'Tool for calculating phase difference from single polarimeter measurement.'
-HELP_AVG_PHASE_DIFF = 'Tool for calculating phase difference averaging N polarimeter measurements.'
 HELP_OR = 'Tool for calculating optical rotation from initial phase and final phase measurements.'
 HELP_ANALYSYS = "Tool for analyzing signals: noise, drift, etc."
 
@@ -109,14 +108,6 @@ def add_phase_diff_subparser(subparsers):
     p.add_argument('-v', '--verbose', action='store_true', help=HELP_VERBOSE)
 
 
-def add_avg_phase_diff_subparser(subparsers):
-    p = subparsers.add_parser("avg_phase_diff", help=HELP_AVG_PHASE_DIFF, epilog=EPILOG_PHASE_DIFF)
-    p.add_argument('folder', type=str, help=HELP_FOLDER)
-    p.add_argument('--method', type=str, default='ODR', help=HELP_METHOD)
-    p.add_argument('--show', action='store_true', help=HELP_SHOW)
-    p.add_argument('-v', '--verbose', action='store_true', help=HELP_VERBOSE)
-
-
 def add_or_subparser(subparsers):
     p = subparsers.add_parser("or", help=HELP_OR, epilog=EPILOG_PHASE_DIFF)
     p.add_argument('folder1', type=str, help=HELP_FOLDER_WITHOUT_SAMPLE)
@@ -145,7 +136,6 @@ def main():
 
     add_polarimeter_subparser(subparsers)
     add_phase_diff_subparser(subparsers)
-    add_avg_phase_diff_subparser(subparsers)
     add_or_subparser(subparsers)
     add_analysis_subparser(subparsers)
     add_sim_subparser(subparsers)
