@@ -14,18 +14,6 @@ def create_folder(folder, overwrite=False):
     os.makedirs(folder, exist_ok=True)
 
 
-def get_chunks(lst, n):
-    """Yield successive n-sized chunks from lst."""
-    for i in range(0, len(lst), n):
-        yield lst[i:i + n]
-
-
-def get_chunks_sizes(size, n):
-    """Splits a size in a list of sub-sizes of max size n."""
-    chunks = get_chunks(range(size), n)
-    return [len(x) for x in chunks]
-
-
 def round_to_n(number, n):
     """Rounds to n significant digits."""
     if number == 0:

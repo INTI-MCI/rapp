@@ -1,5 +1,6 @@
 import os
 import sys
+import math
 import logging
 
 from datetime import date, datetime
@@ -13,7 +14,7 @@ from rapp.rotary_stage import Analyzer, HalfWavePlate
 
 from rapp.data_file import DataFile
 from rapp.mocks import SerialMock
-from rapp.utils import progressbar, get_chunks_sizes
+from rapp.utils import progressbar
 
 # Always truncate arrays when printing, without scientific notation.
 np.set_printoptions(threshold=0, edgeitems=5, suppress=True)
@@ -109,7 +110,7 @@ class Polarimeter:
             chunk_size: reads data in chunks of this size. If 0, no chunks are used.
         """
         if chunk_size > 0:
-            n_samples = get_chunks_sizes(samples, chunk_size)
+            n_samples = [samples] * math.ceil(samples / chunk_size)
 
         for samples in n_samples:
             yield self._adc.acquire(samples, flush=True)
