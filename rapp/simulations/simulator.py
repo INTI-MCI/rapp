@@ -7,7 +7,6 @@ import pandas as pd
 from rapp import constants as ct
 from rapp.utils import create_folder
 from rapp.signal.analysis import average_data
-from rapp.signal.plot import Plot
 from rapp.signal.phase import phase_difference
 
 from rapp.simulations import (
@@ -17,7 +16,8 @@ from rapp.simulations import (
     error_vs_range,
     error_vs_resolution,
     pvalue_vs_range,
-    signal_simulation
+    signal_simulation,
+    phase_diff
 )
 
 logger = logging.getLogger(__name__)
@@ -199,66 +199,6 @@ def n_simulations(n=1, method='ODR', p0=None, allow_nan=False, **kwargs):
     return results
 
 
-def plot_phase_diff(phi, folder, samples=50, cycles=10, step=0.01, show=False):
-    print("")
-    logger.info("PHASE DIFFERENCE OF TWO SIMULATED SIGNALS")
-
-    fc = samples_per_cycle(step=step)
-
-    logger.info("Simulating signals...")
-    xs, s1, s2 = polarimeter_signal(
-        cycles=cycles, fc=fc, phi=phi, fa=samples,
-        a0_noise=A0_NOISE, a1_noise=A1_NOISE, all_positive=True
-    )
-
-    logger.info("Calculating phase difference...")
-    res = phase_difference(xs * 2, s1, s2, method='ODR')
-
-    error = abs(phi - res.value)
-    error_degrees = np.rad2deg(error)
-
-    logger.info("Detected phase difference: {}".format(np.rad2deg(res.value)))
-    logger.info("cycles={}, fc={}, step={}°, φerr: {}.".format(cycles, fc, step, error_degrees))
-
-    label = (
-        "fc={}. \n"
-        "step={}° deg. \n"
-        "# cycles={}. \n"
-        "|φ1 - φ2| = {}°. \n"
-    ).format(fc, step, cycles, round(np.rad2deg(phi)))
-
-    plot = Plot(ylabel=ct.LABEL_VOLTAGE, xlabel=ct.LABEL_ANGLE, folder=folder)
-
-    markevery = int(fc / 180) if fc >= 180 else 1  # for visualization purposes, show less points.
-
-    plot.add_data(
-        xs, s1,
-        ms=6, color='k', mew=0.5, xrad=True, markevery=markevery, alpha=0.8, label=label
-    )
-
-    plot.add_data(
-        xs, s2,
-        ms=6, color='k', mew=0.5, xrad=True, markevery=markevery, alpha=0.8
-    )
-
-    label = "φerr = {}.".format(round(error_degrees, 5))
-    plot.add_data(res.fitx / 2, res.fits1, style='-', color='k', lw=1.5, xrad=True)
-    plot.add_data(res.fitx / 2, res.fits2, style='-', color='k', lw=1.5, xrad=True, label=label)
-
-    plot._ax.set_xlim(0, 1)
-
-    plot.legend(loc='upper right')
-
-    plot.save(filename="sim_phase_diff_fit-samples-{}-step-{}.png".format(samples, step))
-
-    if show:
-        plot.show()
-
-    plot.close()
-
-    logger.info("Done.")
-
-
 def main(sim, method='ODR', reps=1, step=1, samples=50, show=False):
     print("")
     logger.info("STARTING SIMULATIONS...")
@@ -295,7 +235,7 @@ def main(sim, method='ODR', reps=1, step=1, samples=50, show=False):
         signal_simulation.run(output_folder, show=show)
 
     if sim in ['all', 'phase_diff']:
-        plot_phase_diff(PHI, output_folder, samples, cycles=2, step=step, show=show)
+        phase_diff.run(PHI, output_folder, method, samples, step, show=show)
 
 
 if __name__ == '__main__':
