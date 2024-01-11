@@ -81,7 +81,7 @@ def sine_fit(xs, ys, p0=None, x_sigma=None, y_sigma=None, method='curve_fit'):
 
     if method == 'ODR':
         data = RealData(xs, ys, sx=x_sigma, sy=y_sigma)
-        odr = ODR(data, Model(two_sines_model),  beta0=p0 or [1, 0, 0, 0, 0, 0])
+        odr = ODR(data, Model(two_sines_model),  beta0=[1, 0, 0, 0, 0, 0])
         odr.set_job(fit_type=2)
         output = odr.run()
 
@@ -107,7 +107,8 @@ def hilbert_transform(s1, s2):
 
 
 def phase_difference(
-    xs, s1, s2, x_sigma=None, s1_sigma=None, s2_sigma=None, method='NLS', degrees=True
+    xs, s1, s2, x_sigma=None, s1_sigma=None, s2_sigma=None, method='NLS', degrees=True,
+    p0=None
 ) -> PhaseDifferenceResult:
     """Computes phase difference between two harmonic signals (xs, s1) and (xs, s2)."""
 
@@ -141,7 +142,7 @@ def phase_difference(
         x12 = np.hstack([xs, xs])
 
         popt, us, fitx, fity = sine_fit(
-            x12, s12, x_sigma=x_sigma, y_sigma=s12_sigma, method=method)
+            x12, s12, x_sigma=x_sigma, y_sigma=s12_sigma, method=method, p0=p0)
 
         total = len(fitx)
         half = total // 2
