@@ -155,12 +155,23 @@ def average_data(data):
         COLUMN_CH1: ['mean', 'std']
     })
 
+    ch0_std = data[COLUMN_CH0]['std']
+    ch1_std = data[COLUMN_CH1]['std']
+
+    if np.isnan(ch0_std).any() or np.isnan(ch1_std).any():
+        print(data)
+        raise ValueError("Got NaN values in std of samples. Use more samples per angle.")
+
+    if (ch0_std == 0).any() or (ch1_std == 0).any():
+        print(data)
+        raise ValueError("Got zero values in std of samples. Use more samples per angle.")
+
     xs = np.array(data[COLUMN_ANGLE])
     s1 = np.array(data[COLUMN_CH0]['mean'])
     s2 = np.array(data[COLUMN_CH1]['mean'])
 
-    s1u = np.array(data[COLUMN_CH0]['std']) / np.sqrt(int(group_size))
-    s2u = np.array(data[COLUMN_CH1]['std']) / np.sqrt(int(group_size))
+    s1u = np.array(ch0_std) / np.sqrt(int(group_size))
+    s2u = np.array(ch1_std) / np.sqrt(int(group_size))
 
     return xs, s1, s2, s1u, s2u
 
