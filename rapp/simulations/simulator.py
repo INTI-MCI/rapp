@@ -13,7 +13,7 @@ from rapp.signal.analysis import average_data
 from rapp.signal.plot import Plot
 from rapp.signal.phase import phase_difference
 
-from rapp.simulations import error_vs_method
+from rapp.simulations import error_vs_method, error_vs_step
 
 logger = logging.getLogger(__name__)
 
@@ -292,59 +292,6 @@ def plot_simulation_steps(folder, show=False):
     logger.info("Done.")
 
 
-def plot_error_vs_step(phi, folder, samples=5, cycles=2, reps=1, show=False):
-    print("")
-    logger.info("PHASE DIFFERENCE VS # STEP")
-
-    plot = Plot(
-        ylabel=ct.LABEL_PHI_ERR, xlabel=ct.LABEL_STEP, ysci=True, xint=True,
-        folder=folder
-    )
-
-    errors = []
-    steps = [0.001, 0.01, 0.1, 1, 2, 4]
-    n_reps = [1, 10, 20, 50, 100, 200]
-    for i, step in enumerate(steps, 0):
-        fc = samples_per_cycle(step=step)
-        reps = n_reps[i]
-        logger.info("Method: {}, fc={}, reps={}".format('ODR', fc, reps))
-
-        n_res = n_simulations(
-            n=reps, method='ODR', cycles=cycles, fc=fc, phi=phi,
-            fa=samples, a0_noise=A0_NOISE, a1_noise=A1_NOISE, bits=ADC_BITS, all_positive=True
-        )
-
-        error_rad = rmse(phi, [e.value for e in n_res])
-        error_degrees = np.rad2deg(error_rad)
-        error_degrees_sci = "{:.2E}".format(error_degrees)
-
-        mean_u = sum([r.u for r in n_res]) / len(n_res)
-
-        errors.append(error_degrees)
-
-        time = total_time(cycles) / 60
-        logger.info(
-            "cycles={}, time={} m, φerr: {}, u: {}.".format(
-                cycles, time, error_degrees_sci, mean_u)
-        )
-
-        label = "cycles={}\nsamples={}\nreps={}".format(cycles, samples, reps)
-
-    plot.add_data(steps, errors, style='s-', mfc='k', color='k', lw=1, label=label)
-    plot._ax.set_yscale('log')
-
-    plot.legend(fontsize=12)
-
-    plot.save(filename="sim_error_vs_step-samples-{}-reps{}".format(samples, reps))
-
-    if show:
-        plot.show()
-
-    plot.close()
-
-    logger.info("Done.")
-
-
 def plot_error_vs_samples(phi, folder, step=1, reps=1, cycles=2, show=False):
     print("")
     logger.info("PHASE DIFFERENCE VS SAMPLES")
@@ -600,7 +547,7 @@ def plot_phase_diff(phi, folder, samples=50, cycles=10, step=0.01, show=False):
     logger.info("Done.")
 
 
-def main(sim, reps=1, step=1, samples=1, show=False):
+def main(sim, method='ODR', reps=1, step=1, samples=1, show=False):
     print("")
     logger.info("STARTING SIMULATIONS...")
 
@@ -614,19 +561,18 @@ def main(sim, reps=1, step=1, samples=1, show=False):
     if sim not in SIMULATIONS:
         raise ValueError("Simulation with name {} not implemented".format(sim))
 
+    if sim in ['all', 'error_vs_method']:
+        error_vs_method.run(PHI, output_folder, samples, step, reps, show=show)
+
+    if sim in ['all', 'error_vs_step']:
+        error_vs_step.run(PHI, output_folder, method, samples, reps, show=show)
+
     if sim in ['all', 'signals_out_of_phase']:
         plot_signals_out_of_phase(
             np.pi / 2, output_folder, samples, s1_noise=A0_NOISE, s2_noise=A1_NOISE, show=show)
 
     if sim in ['all', 'sim_steps']:
         plot_simulation_steps(output_folder, show=show)
-
-    if sim in ['all', 'error_vs_method']:
-        error_vs_method.run(
-            PHI, output_folder, samples, max_cycles=8, reps=reps, step=step, show=show)
-
-    if sim in ['all', 'error_vs_step']:
-        plot_error_vs_step(PHI, output_folder, samples, cycles=2, reps=reps, show=show)
 
     if sim in ['all', 'error_vs_samples']:
         plot_error_vs_samples(PHI, output_folder, reps=reps, cycles=2, step=step, show=show)

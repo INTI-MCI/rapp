@@ -15,8 +15,11 @@ METHODS = {  # (marker_style, line_style, reps)
     'ODR': ('-', 'dotted', None)
 }
 
+TPL_LOG = "cycles={}, time={} m, φerr: {}."
+TPL_FILENAME = "sim_error_vs_method-reps-{}-samples-{}-step-{}.png"
 
-def run(phi, folder, samples=5, reps=10, step=1, max_cycles=10, show=False):
+
+def run(phi, folder, samples=5, step=1, reps=10, max_cycles=8, show=False):
     print("")
     logger.info("PHASE DIFFERENCE METHODS VS # OF CYCLES")
 
@@ -53,7 +56,7 @@ def run(phi, folder, samples=5, reps=10, step=1, max_cycles=10, show=False):
             method_errors.append(error_degrees)
 
             time = simulator.total_time(cycles) / 60
-            logger.info("cycles={}, time={} m, φerr: {}.".format(cycles, time, error_degrees_sci))
+            logger.info(TPL_LOG.format(cycles, time, error_degrees_sci))
 
         errors[method] = method_errors
 
@@ -68,8 +71,7 @@ def run(phi, folder, samples=5, reps=10, step=1, max_cycles=10, show=False):
     plot._ax.set_yscale('log')
     plot.legend(fontsize=12)
 
-    filename = "sim_error_vs_method-reps-{}-samples-{}-step-{}.png"
-    plot.save(filename=filename.format(reps, samples, step))
+    plot.save(filename=TPL_FILENAME.format(reps, samples, step))
 
     if show:
         plot.show()
