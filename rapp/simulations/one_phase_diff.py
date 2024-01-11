@@ -3,13 +3,12 @@ import logging
 import decimal
 
 import numpy as np
-import pandas as pd
 
 from rapp import constants as ct
 from rapp.simulations import simulator
 from rapp.signal.plot import Plot
-from rapp.signal.analysis import average_data, phase_difference
 from rapp.utils import round_to_n, create_folder
+from rapp.measurement import Measurement
 
 
 logger = logging.getLogger(__name__)
@@ -20,41 +19,21 @@ TPL_FILENAME = "sim_phase_diff_fit-samples-{}-step-{}.png"
 
 def run(phi, folder, method='ODR', samples=50, step=1, cycles=2, show=False):
     print("")
-    logger.info("PHASE DIFFERENCE OF TWO SIMULATED SIGNALS")
+    logger.info("SIGNAL AND PHASE DIFFERENCE SIMULATION")
 
     fc = simulator.samples_per_cycle(step=step)
 
     logger.info("Simulating signals...")
-    xs, s1, s2 = simulator.polarimeter_signal(
+    measurement = Measurement.simulate(
         cycles=cycles,
         fc=fc,
         phi=phi,
         fa=samples,
-        a0_noise=simulator.A0_NOISE,
-        a1_noise=simulator.A1_NOISE,
-        all_positive=True
     )
 
     logger.info("Calculating phase difference...")
-    data = np.array([xs, s1, s2]).T
-    data = pd.DataFrame(data=data, columns=["ANGLE", "CH0", "CH1"])
-
-    xs, s1, s2, s1_sigma, s2_sigma = average_data(data)
-    x_sigma = np.deg2rad(ct.ANALYZER_UNCERTAINTY)
-
-    if np.isnan(s1_sigma).any() or (s1_sigma == 0).any():
-        s1_sigma = None
-
-    if np.isnan(s2_sigma).any() or (s2_sigma == 0).any():
-        s2_sigma = None
-
-    res = phase_difference(
-        xs * 2, s1, s2,
-        x_sigma=x_sigma,
-        s1_sigma=s1_sigma,
-        s2_sigma=s2_sigma,
+    xs, s1, s2, s1_sigma, s2_sigma, res = measurement.phase_diff(
         method=method,
-        degrees=False,
         p0=[1, 0, 0, 0, 0, 0]
     )
 
@@ -103,6 +82,7 @@ def run(phi, folder, method='ODR', samples=50, step=1, cycles=2, show=False):
 
         signal_diff_s1 = s1 - res.fits1
         signal_diff_s2 = s2 - res.fits2
+
         l1 = plot.add_data(
             res.fitx, signal_diff_s1, style='-', lw=1.5, label='Ajuste - CH0', xrad=True)
         l2 = plot.add_data(

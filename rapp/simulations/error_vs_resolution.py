@@ -8,7 +8,7 @@ from rapp.signal.plot import Plot
 
 logger = logging.getLogger(__name__)
 
-TPL_LOG = "cycles={}, time={} m, φerr: {}."
+TPL_LOG = "cycles={}, φerr: {}."
 TPL_LABEL = "bits={}."
 TPL_FILENAME = "sim_error_vs_resolution-step-{}-samples-{}-reps{}.png"
 TPL_TEXT = "step={}°\nsamples={}\nreps={}"
@@ -35,31 +35,24 @@ def run(phi, folder, method='ODR', samples=5, step=1, reps=1, max_cycles=8, show
         errors = []
         for cycles in cycles_list:
             n_results = simulator.n_simulations(
+                N=reps,
+                phi=phi,
                 A=amplitude,
                 bits=bits,
                 max_v=maxv,
-                n=reps,
-                method=method,
                 cycles=cycles,
                 fc=fc,
-                phi=phi,
                 fa=samples,
-                a0_noise=simulator.A0_NOISE,
-                a1_noise=simulator.A1_NOISE,
-                all_positive=True,
                 allow_nan=True,
+                method=method,
                 p0=[1, 0, 0, 0, 0, 0]
             )
 
             # RMSE
-            error_rad = simulator.rmse(phi, [e.value for e in n_results])
-            error_degrees = np.rad2deg(error_rad)
-            error_degrees_sci = "{:.2E}".format(error_degrees)
+            error = n_results.rmse()
+            errors.append(error)
 
-            errors.append(error_degrees)
-
-            time = simulator.total_time(cycles) / 60
-            logger.info(TPL_LOG.format(cycles, time, error_degrees_sci))
+            logger.info(TPL_LOG.format(cycles, "{:.2E}".format(error)))
 
         results.append(errors)
 
