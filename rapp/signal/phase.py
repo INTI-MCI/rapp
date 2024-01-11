@@ -71,8 +71,13 @@ def sine_fit(xs, ys, p0=None, x_sigma=None, y_sigma=None, method='curve_fit'):
     fitx = np.linspace(min(xs), max(xs), num=2000)
     fitx = xs
 
+    abssigma = True
+    if y_sigma is None:
+        abssigma = False
+        # y_sigma = np.ones(len(ys))
+
     if method == 'NLS':
-        popt, pcov = curve_fit(two_sines, xs, ys, p0=p0, sigma=y_sigma, absolute_sigma=True)
+        popt, pcov = curve_fit(two_sines, xs, ys, p0=p0, sigma=y_sigma, absolute_sigma=abssigma)
 
         us = np.sqrt(np.diag(pcov))
         fity = two_sines(fitx, *popt)
@@ -80,6 +85,7 @@ def sine_fit(xs, ys, p0=None, x_sigma=None, y_sigma=None, method='curve_fit'):
         return popt, us, fitx, fity
 
     if method == 'ODR':
+
         data = RealData(xs, ys, sx=x_sigma, sy=y_sigma)
         odr = ODR(data, Model(two_sines_model),  beta0=[1, 0, 0, 0, 0, 0])
         odr.set_job(fit_type=2)
@@ -107,8 +113,8 @@ def hilbert_transform(s1, s2):
 
 
 def phase_difference(
-    xs, s1, s2, x_sigma=None, s1_sigma=None, s2_sigma=None, method='NLS', degrees=True,
-    p0=None
+    xs, s1, s2,
+    x_sigma=None, s1_sigma=None, s2_sigma=None, method='NLS', degrees=True, p0=None
 ) -> PhaseDifferenceResult:
     """Computes phase difference between two harmonic signals (xs, s1) and (xs, s2)."""
 
@@ -137,7 +143,10 @@ def phase_difference(
             s2_sigma = s2_sigma / s2_norm
 
         s12 = np.hstack([s1, s2])
-        s12_sigma = np.hstack([s1_sigma, s2_sigma])
+
+        s12_sigma = None
+        if s1_sigma is not None and s2_sigma is not None:
+            s12_sigma = np.hstack([s1_sigma, s2_sigma])
 
         x12 = np.hstack([xs, xs])
 
