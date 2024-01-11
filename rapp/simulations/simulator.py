@@ -13,7 +13,7 @@ from rapp.signal.analysis import average_data
 from rapp.signal.plot import Plot
 from rapp.signal.phase import phase_difference
 
-from rapp.simulations import error_vs_method, error_vs_step, error_vs_samples
+from rapp.simulations import error_vs_method, error_vs_step, error_vs_samples, error_vs_range
 
 logger = logging.getLogger(__name__)
 
@@ -302,57 +302,6 @@ def plot_simulation_steps(folder, show=False):
     logger.info("Done.")
 
 
-def plot_error_vs_range(phi, folder, samples=5, step=0.01, cycles=2, reps=1, show=False):
-    print("")
-    logger.info("PHASE DIFFERENCE VS MAX TENSION")
-
-    plot = Plot(
-        ylabel=ct.LABEL_PHI_ERR, xlabel=ct.LABEL_DYNAMIC_RANGE_USE,
-        ysci=True, xint=False,
-        folder=folder
-    )
-
-    xs = np.arange(0.1, 2, step=0.2)
-
-    errors = []
-    for amplitude in xs:
-        fc = samples_per_cycle(step=step)
-        logger.info("A={}".format(amplitude))
-
-        n_results = n_simulations(
-            A=amplitude, n=reps, method='ODR', cycles=cycles, fc=fc, phi=phi,
-            fa=samples, a0_noise=A0_NOISE, a1_noise=A1_NOISE, bits=ADC_BITS, all_positive=True
-        )
-
-        error_rad = rmse(phi, [e.value for e in n_results])
-        error_degrees = np.rad2deg(error_rad)
-        error_degrees_sci = "{:.2E}".format(error_degrees)
-
-        errors.append(error_degrees)
-
-    time = total_time(cycles) / 60
-    logger.info("cycles={}, time={} m, φerr: {}.".format(cycles, time, error_degrees_sci))
-
-    label = "cycles={}\nsamples={}\nstep={}°\nreps={}".format(cycles, samples, step, reps)
-
-    percentages = ((xs * 2) / ADC_MAXV) * 100
-    plot.add_data(percentages, errors, color='k', style='s-', lw=1.5, label=label)
-
-    plot._ax.set_xticks(plot._ax.get_xticks())
-    plot._ax.set_yscale('log')
-    plot.legend(fontsize=12)
-
-    plot.save(
-        filename="sim_error_vs_range-reps-{}-samples-{}-step-{}.png".format(reps, samples, step))
-
-    if show:
-        plot.show()
-
-    plot.close()
-
-    logger.info("Done.")
-
-
 def plot_error_vs_resolution(phi, folder, samples=5, step=1, max_cycles=10, reps=1, show=False):
     print("")
     logger.info("PHASE DIFFERENCE VS RESOLUTION")
@@ -537,6 +486,9 @@ def main(sim, method='ODR', reps=1, step=1, samples=1, show=False):
     if sim in ['all', 'error_vs_samples']:
         error_vs_samples.run(PHI, output_folder, method, step, reps, show=show)
 
+    if sim in ['all', 'error_vs_range']:
+        error_vs_range.run(PHI, output_folder, method, samples, step, reps, show=show)
+
     if sim in ['all', 'signals_out_of_phase']:
         plot_signals_out_of_phase(
             np.pi / 2, output_folder, samples, s1_noise=A0_NOISE, s2_noise=A1_NOISE, show=show)
@@ -547,9 +499,6 @@ def main(sim, method='ODR', reps=1, step=1, samples=1, show=False):
     if sim in ['all', 'error_vs_res']:
         plot_error_vs_resolution(
             PHI, output_folder, samples, max_cycles=8, step=step, reps=reps, show=show)
-
-    if sim in ['all', 'error_vs_range']:
-        plot_error_vs_range(PHI, output_folder, samples, step=step, cycles=2, reps=reps, show=show)
 
     if sim in ['all', 'noise_vs_range']:
         plot_noise_vs_range(PHI, output_folder, reps=reps, show=show)
