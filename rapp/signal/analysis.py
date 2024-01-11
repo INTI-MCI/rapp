@@ -142,7 +142,7 @@ def generate_quantized_bins(data, step=0.125e-3):
     return centers, edges
 
 
-def average_data(data, allow_nan=False):
+def average_data(data):
     data = data.groupby([COLUMN_ANGLE], as_index=False)
 
     try:  # python 3.4
@@ -157,14 +157,6 @@ def average_data(data, allow_nan=False):
 
     ch0_std = data[COLUMN_CH0]['std']
     ch1_std = data[COLUMN_CH1]['std']
-
-    if (np.isnan(ch0_std).any() or np.isnan(ch1_std).any()) and not allow_nan:
-        print(data)
-        raise ValueError("Got NaN values in std of samples. Use more samples per angle.")
-
-    if ((ch0_std == 0).any() or (ch1_std == 0).any()) and not allow_nan:
-        print(data)
-        raise ValueError("Got zero values in std of samples. Use more samples per angle.")
 
     xs = np.array(data[COLUMN_ANGLE])
     s1 = np.array(data[COLUMN_CH0]['mean'])
@@ -718,62 +710,6 @@ def plot_drift(output_folder, show=False):
     # plt.show()
 
 
-def averaged_phase_difference(folder, method):
-    logger.info("Calculating phase difference for {}...".format(folder))
-
-    files = [os.path.join(folder, x) for x in os.listdir(folder)]
-
-    values = []
-    for filepath in files:
-        cycles, step, samples = parse_input_parameters_from_filepath(filepath)
-
-        data = read_measurement_file(filepath)
-
-        if len(data.index) == 1:
-            raise ValueError("This is a file with only one angle!.")
-
-        xs, s1, s2, s1err, s2err = average_data(data)
-
-        # x_sigma = ct.ANALYZER_MIN_STEP / (2 * np.sqrt(3))
-        x_sigma = 0.01
-
-        x_sigma = np.deg2rad(x_sigma) * 2
-
-        res = phase_difference(
-            np.deg2rad(xs) * 2, s1, s2, x_sigma=x_sigma, s1_sigma=s1err, s2_sigma=s2err,
-            method=method
-        )
-
-        phase_diff = res.value / 2
-        phase_diff_u = res.u / 2
-
-        phase_diff_u_rounded = round_to_n(phase_diff_u * COVERAGE_FACTOR, 2)
-
-        # Obtain number of decimal places of the u:
-        d = abs(decimal.Decimal(str(phase_diff_u_rounded)).as_tuple().exponent)
-
-        phase_diff_rounded = round(phase_diff, d)
-
-        phi_label = "φ=({} ± {})°.".format(phase_diff_rounded, phase_diff_u_rounded)
-        title = "{}\ncycles={}, step={}, samples={}.".format(phi_label, cycles, step, samples)
-
-        logger.info(
-            "Detected phase difference: {}"
-            .format(phi_label)
-        )
-
-        logger.info(title)
-
-        values.append(ufloat(phase_diff, phase_diff_u))
-
-    N = len(values)
-    avg_phase_diff = sum(values) / N
-
-    logger.info("Averaged phase difference over {} measurements: {}".format(N, avg_phase_diff))
-
-    return avg_phase_diff
-
-
 def optical_rotation(folder_i, folder_f, method='ODR', hwp=False):
     print("")
     initial_poisition = float(re.findall(REGEX_NUMBER_AFTER_WORD.format(word="hwp"), folder_i)[0])
@@ -824,10 +760,7 @@ def optical_rotation(folder_i, folder_f, method='ODR', hwp=False):
 
 
 def polarimeter_phase_difference(data, method, fix_range=True):
-    xs, s1, s2, s1err, s2err = average_data(data)
-
-    s1_sigma = None if np.isnan(s1err).any() else s1err
-    s2_sigma = None if np.isnan(s1err).any() else s2err
+    xs, s1, s2, s1_sigma, s2_sigma = average_data(data)
 
     x_sigma = np.deg2rad(ct.ANALYZER_UNCERTAINTY)
 
@@ -844,7 +777,7 @@ def polarimeter_phase_difference(data, method, fix_range=True):
     if res.fitx is not None:
         res.fitx /= 2
 
-    return xs, s1, s2, s1err, s2err, res
+    return xs, s1, s2, s1_sigma, s2_sigma, res
 
 
 def plot_phase_difference(filepath, method, show=False):

@@ -24,25 +24,19 @@ def run(phi, folder, method, samples=5, step=0.01, reps=1, cycles=2, show=False)
         fc = simulator.samples_per_cycle(step=step)
 
         n_results = simulator.n_simulations(
+            phi=phi,
+            N=reps,
             A=amplitude,
-            n=reps,
             method='ODR',
             cycles=cycles,
             fc=fc,
-            phi=phi,
             fa=samples,
-            a0_noise=simulator.A0_NOISE,
-            a1_noise=simulator.A1_NOISE,
-            bits=simulator.ADC_BITS,
-            all_positive=True
         )
 
-        error_rad = simulator.rmse(phi, [e.value for e in n_results])
-        error_degrees = np.rad2deg(error_rad)
-        error_degrees_sci = "{:.2E}".format(error_degrees)
+        error = n_results.rmse()
+        errors.append(error)
 
-        logger.info(TPL_LOG.format(amplitude, error_degrees_sci))
-        errors.append(error_degrees)
+        logger.info(TPL_LOG.format(amplitude, "{:.2E}".format(error)))
 
     label = TPL_LABEL.format(cycles, samples, step, reps)
 
