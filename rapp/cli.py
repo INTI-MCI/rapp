@@ -3,7 +3,7 @@ import argparse
 
 from rapp import polarimeter
 from rapp.signal import analysis
-from rapp.signal import simulator
+from rapp.simulations import simulator
 from rapp.log import setup_logger
 
 HELP_POLARIMETER = "Tool for measuring signals with the polarimeter."
@@ -93,7 +93,8 @@ def add_polarimeter_subparser(subparsers):
 def add_sim_subparser(subparsers):
     p = subparsers.add_parser("sim", help=HELP_SIM, epilog=EPILOG_SIM)
     p.add_argument('name', type=str, help=HELP_SIM_NAME)
-    p.add_argument('--samples', type=int, default=1, help=HELP_SAMPLES)
+    p.add_argument('--method', type=str, default='ODR', help=HELP_METHOD)
+    p.add_argument('--samples', type=int, default=50, help=HELP_SAMPLES)
     p.add_argument('--step', type=float, default=1, help=HELP_SAMPLES)
     p.add_argument('--reps', type=int, default=1, help=HELP_SIM_REPS)
     p.add_argument('--show', action='store_true', help=HELP_SHOW)
@@ -167,7 +168,13 @@ def main():
         if args.command == 'sim':
             setup_logger(args.verbose)
             simulator.main(
-                args.name, reps=args.reps, step=args.step, samples=args.samples, show=args.show)
+                args.name,
+                method=args.method,
+                reps=args.reps,
+                step=args.step,
+                samples=args.samples,
+                show=args.show
+            )
 
         if args.command == 'polarimeter':
             setup_logger(args.verbose)
