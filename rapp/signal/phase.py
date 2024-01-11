@@ -67,17 +67,12 @@ def cosine_similarity(s1, s2):
     return np.arccos(np.dot(s1, s2) / (np.linalg.norm(s1) * np.linalg.norm(s2)))
 
 
-def sine_fit(xs, ys, p0=None, x_sigma=None, y_sigma=None, method='curve_fit'):
-    fitx = np.linspace(min(xs), max(xs), num=2000)
+def sine_fit(xs, ys, p0=None, x_sigma=None, y_sigma=None, abs_sigma=True, method='curve_fit'):
+    # fitx = np.linspace(min(xs), max(xs), num=2000)
     fitx = xs
 
-    abssigma = True
-    if y_sigma is None:
-        abssigma = False
-        # y_sigma = np.ones(len(ys))
-
     if method == 'NLS':
-        popt, pcov = curve_fit(two_sines, xs, ys, p0=p0, sigma=y_sigma, absolute_sigma=abssigma)
+        popt, pcov = curve_fit(two_sines, xs, ys, p0=p0, sigma=y_sigma, absolute_sigma=abs_sigma)
 
         us = np.sqrt(np.diag(pcov))
         fity = two_sines(fitx, *popt)
@@ -112,14 +107,27 @@ def hilbert_transform(s1, s2):
     return np.angle(c)
 
 
+def has_nan_or_zeros(array):
+    return (np.isnan(array).any() or (array == 0).any())
+
+
 def phase_difference(
     xs, s1, s2,
-    x_sigma=None, s1_sigma=None, s2_sigma=None, method='NLS', degrees=True, p0=None
+    x_sigma=None, s1_sigma=None, s2_sigma=None, method='NLS', degrees=True, p0=None,
+    allow_nan=False, abs_sigma=True
 ) -> PhaseDifferenceResult:
     """Computes phase difference between two harmonic signals (xs, s1) and (xs, s2)."""
 
     if method not in PHASE_DIFFERENCE_METHODS:
         raise ValueError("Phase difference method: {} not implemented.".format(method))
+
+    if has_nan_or_zeros(s1_sigma) or has_nan_or_zeros(s2_sigma):
+        if not allow_nan:
+            raise ValueError("Got NaN or zero values in y_sigma(s). Use more samples per angle.")
+
+        s1_sigma = np.ones(shape=len(s1_sigma))
+        s2_sigma = np.ones(shape=len(s2_sigma))
+        abs_sigma = False
 
     if method == 'COSINE':
         phase_diff = cosine_similarity(s1, s2)
@@ -151,7 +159,9 @@ def phase_difference(
         x12 = np.hstack([xs, xs])
 
         popt, us, fitx, fity = sine_fit(
-            x12, s12, x_sigma=x_sigma, y_sigma=s12_sigma, method=method, p0=p0)
+            x12, s12,
+            x_sigma=x_sigma, y_sigma=s12_sigma, method=method, p0=p0, abs_sigma=abs_sigma
+        )
 
         total = len(fitx)
         half = total // 2

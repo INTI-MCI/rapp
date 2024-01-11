@@ -17,7 +17,7 @@ TPL_FILENAME = "sim_pvalue_vs_range-reps-{}.png"
 
 def run(phi, folder, reps=1, show=False):
     print("")
-    logger.info("PHASE DIFFERENCE VS MAX TENSION")
+    logger.info("PVALUE (GAUSSIAN-TEST) VS DYNAMIC RANGE")
 
     xs = np.arange(0.001, 0.5, step=0.05)
 
