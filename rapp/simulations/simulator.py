@@ -4,8 +4,6 @@ import logging
 import numpy as np
 import pandas as pd
 
-import matplotlib.pyplot as plt
-
 from rapp import constants as ct
 from rapp.utils import create_folder
 from rapp.signal.analysis import average_data
@@ -18,7 +16,8 @@ from rapp.simulations import (
     error_vs_samples,
     error_vs_range,
     error_vs_resolution,
-    pvalue_vs_range
+    pvalue_vs_range,
+    signal_simulation
 )
 
 logger = logging.getLogger(__name__)
@@ -33,10 +32,6 @@ ADC_BITS = 16     # Use signed values with this level of quantization.
 ARDUINO_MAXV = 5
 ARDUINO_BITS = 10
 
-# Noise measured from dark current
-# A0_NOISE = (-0.0004, 0.0003)
-# A1_NOISE = (-0.003, 0.0001)
-
 # Noise measured with laser ON
 A0_NOISE = [2.6352759502752957e-06, 0.0003747564924374617]
 A1_NOISE = [3.817173720425239e-06, 0.0002145422291402638]
@@ -48,9 +43,8 @@ SIMULATIONS = [
     'error_vs_samples',
     'error_vs_range',
     'error_vs_res',
-    'signals_out_of_phase',
     'sim_steps',
-    'noise_vs_range',
+    'pvalue_vs_range',
     'phase_diff',
 ]
 
@@ -205,109 +199,6 @@ def n_simulations(n=1, method='ODR', p0=None, allow_nan=False, **kwargs):
     return results
 
 
-def plot_signals_out_of_phase(phi, folder, samples=1, s1_noise=None, s2_noise=None, show=False):
-    print("")
-    logger.info("TWO HARMONIC SIGNALS...")
-
-    label_template = "(φ1 - φ2)={}°.\n(µ, σ1)={}\n(µ, σ1)={}"
-    label = label_template.format(round(phi, 2), s1_noise, s2_noise).expandtabs(11)
-
-    plot = Plot(ylabel=ct.LABEL_VOLTAGE, xlabel=ct.LABEL_ANGLE, folder=folder)
-
-    plot.set_title(label)
-
-    xs, s1, s2 = polarimeter_signal(
-        A=1.7, cycles=1, phi=phi, fc=30, fa=samples, a0_noise=(0, 0.01), a1_noise=(0, 0.01),
-        bits=16, max_v=ADC_MAXV, all_positive=True
-    )
-
-    plot.add_data(xs, s1, style='o-', color='k', xrad=True)
-    plot.add_data(xs, s2, style='o-', xrad=True)
-    plot._ax.set_ylim(0, ADC_MAXV)
-
-    plot.save(filename='sim_out_of_phase-samples-{}'.format(samples))
-
-    if show:
-        plot.show()
-
-    plot.close()
-
-    logger.info("Done.")
-
-
-def plot_simulation_steps(folder, show=False):
-    print("")
-    logger.info("SIMULATION PROCESS...")
-
-    cycles = 0.15
-    fc = samples_per_cycle(step=0.5)
-    noise = (0, 0.04)
-    mu, sigma = noise
-    bits = 6
-    A = 1.7
-
-    f, axs = plt.subplots(4, 1, figsize=(4, 10), sharey=True)
-
-    # Pure signal
-    xs, ys = harmonic(A=A, cycles=cycles, fc=fc, all_positive=True)
-    xs = np.rad2deg(xs)
-    axs[0].plot(xs, ys, 'o-', color='k', ms=2, mfc='None')
-    axs[0].set_ylabel(ct.LABEL_VOLTAGE)
-    axs[0].set_xlabel(ct.LABEL_DEGREE)
-
-    # Noisy signal
-    xs, ys = harmonic(A=A, cycles=cycles, fc=fc, noise=noise, all_positive=True)
-    xs = np.rad2deg(xs)
-    axs[1].plot(xs, ys, 'o-', color='k', ms=2, mfc='None', label="σ={}".format(sigma))
-    axs[1].set_ylabel(ct.LABEL_VOLTAGE)
-    axs[1].set_xlabel(ct.LABEL_DEGREE)
-    axs[1].legend(loc='lower right', prop={'family': 'monaco', 'size': 12})
-
-    # Quantized signal
-    xs, ys = harmonic(A=A, cycles=cycles, fc=fc, noise=noise, bits=bits, all_positive=True)
-    xs = np.rad2deg(xs)
-
-    label = "σ={}\nbits={}".format(sigma, bits)
-    axs[2].plot(xs, ys, 'o-', color='k', ms=2, mfc='None', label=label)
-    axs[2].set_ylabel(ct.LABEL_VOLTAGE)
-    axs[2].set_xlabel(ct.LABEL_DEGREE)
-    axs[2].legend(loc='lower right', prop={'family': 'monaco', 'size': 12})
-
-    # Quantized signal + 50 samples
-    fa = 50
-    label = "σ={}\nbits={}\nmuestras={}".format(sigma, bits, fa)
-
-    xs, ys = harmonic(A=A, cycles=cycles, fc=fc, fa=fa, noise=noise, bits=bits, all_positive=True)
-    data = np.array([xs, ys]).T
-    data = pd.DataFrame(data=data, columns=["ANGLE", "CH0"])
-    data = data.groupby(['ANGLE'], as_index=False).agg({'CH0': ['mean', 'std']})
-    xs = np.array(data['ANGLE'])
-    ys = np.array(data['CH0']['mean'])
-
-    xs = np.rad2deg(xs)
-
-    axs[3].plot(xs, ys, 'o-', color='k', ms=2, mfc='None', label=label)
-    axs[3].set_ylabel(ct.LABEL_VOLTAGE)
-    axs[3].set_xlabel(ct.LABEL_DEGREE)
-    axs[3].legend(loc='lower right', prop={'family': 'monaco', 'size': 12})
-
-    # Hide x labels and tick labels for top plots and y ticks for right plots.
-    for ax in axs.flat:
-        ax.label_outer()
-
-    plt.subplots_adjust(wspace=0, hspace=0)
-    plt.tight_layout()
-
-    f.savefig(os.path.join(folder, 'sim_steps.png'))
-
-    if show:
-        plt.show()
-
-    plt.close()
-
-    logger.info("Done.")
-
-
 def plot_phase_diff(phi, folder, samples=50, cycles=10, step=0.01, show=False):
     print("")
     logger.info("PHASE DIFFERENCE OF TWO SIMULATED SIGNALS")
@@ -397,15 +288,11 @@ def main(sim, method='ODR', reps=1, step=1, samples=50, show=False):
     if sim in ['all', 'error_vs_res']:
         error_vs_resolution.run(PHI, output_folder, method, samples, step, reps, show=show)
 
-    if sim in ['all', 'noise_vs_range']:
+    if sim in ['all', 'pvalue_vs_range']:
         pvalue_vs_range.run(PHI, output_folder, reps=reps, show=show)
 
-    if sim in ['all', 'signals_out_of_phase']:
-        plot_signals_out_of_phase(
-            np.pi / 2, output_folder, samples, s1_noise=A0_NOISE, s2_noise=A1_NOISE, show=show)
-
     if sim in ['all', 'sim_steps']:
-        plot_simulation_steps(output_folder, show=show)
+        signal_simulation.run(output_folder, show=show)
 
     if sim in ['all', 'phase_diff']:
         plot_phase_diff(PHI, output_folder, samples, cycles=2, step=step, show=show)
