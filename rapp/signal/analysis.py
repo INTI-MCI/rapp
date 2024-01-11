@@ -142,7 +142,7 @@ def generate_quantized_bins(data, step=0.125e-3):
     return centers, edges
 
 
-def average_data(data):
+def average_data(data, allow_nan=False):
     data = data.groupby([COLUMN_ANGLE], as_index=False)
 
     try:  # python 3.4
@@ -158,11 +158,11 @@ def average_data(data):
     ch0_std = data[COLUMN_CH0]['std']
     ch1_std = data[COLUMN_CH1]['std']
 
-    if np.isnan(ch0_std).any() or np.isnan(ch1_std).any():
+    if (np.isnan(ch0_std).any() or np.isnan(ch1_std).any()) and not allow_nan:
         print(data)
         raise ValueError("Got NaN values in std of samples. Use more samples per angle.")
 
-    if (ch0_std == 0).any() or (ch1_std == 0).any():
+    if ((ch0_std == 0).any() or (ch1_std == 0).any()) and not allow_nan:
         print(data)
         raise ValueError("Got zero values in std of samples. Use more samples per angle.")
 

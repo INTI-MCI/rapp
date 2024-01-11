@@ -16,6 +16,7 @@ METHODS = {  # (marker_style, line_style, reps)
 }
 
 TPL_LOG = "cycles={}, time={} m, φerr: {}."
+TPL_LABEL = "samples={}\nstep={}°"
 TPL_FILENAME = "sim_error_vs_method-reps-{}-samples-{}-step-{}.png"
 
 
@@ -66,7 +67,7 @@ def run(phi, folder, samples=5, step=1, reps=10, max_cycles=8, show=False):
     for method, (ms, ls, _) in METHODS.items():
         plot.add_data(cycles_list, errors[method], style=ms, ls=ls, color='k', lw=2, label=method)
 
-    annotation = "samples={}\nstep={}°".format(samples, step)
+    annotation = TPL_LABEL.format(samples, step)
     plot._ax.annotate(annotation, (1, 0.0025))
     plot._ax.set_yscale('log')
     plot.legend(fontsize=12)
