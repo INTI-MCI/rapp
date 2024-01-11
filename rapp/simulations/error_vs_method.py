@@ -68,7 +68,8 @@ def run(phi, folder, samples=5, step=1, reps=10, max_cycles=8, show=False):
         plot.add_data(cycles_list, errors[method], style=ms, ls=ls, color='k', lw=2, label=method)
 
     annotation = TPL_LABEL.format(samples, step)
-    plot._ax.annotate(annotation, (1, 0.0025))
+    plot._ax.text(0.05, 0.5, annotation, transform=plot._ax.transAxes)
+
     plot._ax.set_yscale('log')
     plot.legend(fontsize=12)
 
