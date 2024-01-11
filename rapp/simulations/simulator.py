@@ -178,12 +178,6 @@ def n_simulations(n=1, method='ODR', p0=None, allow_nan=False, **kwargs):
         xs, s1, s2, s1_sigma, s2_sigma = average_data(data, allow_nan=allow_nan)
         x_sigma = np.deg2rad(ct.ANALYZER_UNCERTAINTY)
 
-        if np.isnan(s1_sigma).any() or (s1_sigma == 0).any():
-            s1_sigma = None
-
-        if np.isnan(s2_sigma).any() or (s2_sigma == 0).any():
-            s2_sigma = None
-
         res = phase_difference(
             xs * 2, s1, s2,
             x_sigma=x_sigma,
