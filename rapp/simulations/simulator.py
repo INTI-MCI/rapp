@@ -5,7 +5,6 @@ import numpy as np
 import pandas as pd
 
 import matplotlib.pyplot as plt
-from scipy import stats
 
 from rapp import constants as ct
 from rapp.utils import create_folder
@@ -18,7 +17,8 @@ from rapp.simulations import (
     error_vs_step,
     error_vs_samples,
     error_vs_range,
-    error_vs_resolution
+    error_vs_resolution,
+    pvalue_vs_range
 )
 
 logger = logging.getLogger(__name__)
@@ -308,54 +308,6 @@ def plot_simulation_steps(folder, show=False):
     logger.info("Done.")
 
 
-def plot_noise_vs_range(phi, folder, reps=1, show=False):
-    print("")
-    logger.info("PHASE DIFFERENCE VS MAX TENSION")
-
-    title = "reps={}".format(reps)
-
-    plot = Plot(
-        ylabel="p-valor", xlabel=ct.LABEL_DYNAMIC_RANGE_USE,
-        title=title, ysci=True, xint=False,
-        folder=folder
-    )
-
-    xs = np.arange(0.001, 0.5, step=0.005)
-
-    pvalues = []
-    for A in xs:
-        ps = []
-        for rep in range(reps):
-            noise = A * np.random.normal(loc=0, scale=0.00032, size=40000)
-            noise = noise + max(noise)
-            # plot.add_data(noise, style="-")
-            # plot._ax.set_ylim(-0.001, 0.001)
-            # plt.show()
-            # plot.add_data(np.abs(np.fft.fft(noise))[1:], style='-')
-            # plt.show()
-
-            noise = quantize(noise, max_v=ADC_MAXV, bits=ADC_BITS)
-
-            pvalue = stats.normaltest(noise).pvalue
-
-            logger.info("A={}, pvalue: {}".format(A, pvalue))
-            ps.append(pvalue)
-
-        pvalues.append(np.mean(ps))
-
-    # logger.info("cycles={}, time={} m, φerr: {}.".format(cycles, time, error_degrees_sci))
-    plot.add_data(xs, pvalues, color='k', style='.-', lw=2)
-    plot._ax.axhline(y=0.05, ls='--', lw=2)
-    plot.save(filename="sim_noise_vs_range-reps-{}.png".format(reps))
-
-    if show:
-        plot.show()
-
-    plot.close()
-
-    logger.info("Done.")
-
-
 def plot_phase_diff(phi, folder, samples=50, cycles=10, step=0.01, show=False):
     print("")
     logger.info("PHASE DIFFERENCE OF TWO SIMULATED SIGNALS")
@@ -445,15 +397,15 @@ def main(sim, method='ODR', reps=1, step=1, samples=50, show=False):
     if sim in ['all', 'error_vs_res']:
         error_vs_resolution.run(PHI, output_folder, method, samples, step, reps, show=show)
 
+    if sim in ['all', 'noise_vs_range']:
+        pvalue_vs_range.run(PHI, output_folder, reps=reps, show=show)
+
     if sim in ['all', 'signals_out_of_phase']:
         plot_signals_out_of_phase(
             np.pi / 2, output_folder, samples, s1_noise=A0_NOISE, s2_noise=A1_NOISE, show=show)
 
     if sim in ['all', 'sim_steps']:
         plot_simulation_steps(output_folder, show=show)
-
-    if sim in ['all', 'noise_vs_range']:
-        plot_noise_vs_range(PHI, output_folder, reps=reps, show=show)
 
     if sim in ['all', 'phase_diff']:
         plot_phase_diff(PHI, output_folder, samples, cycles=2, step=step, show=show)
