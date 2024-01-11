@@ -22,42 +22,34 @@ TPL_FILENAME = "sim_error_vs_method-reps-{}-samples-{}-step-{}.png"
 
 def run(phi, folder, samples=5, step=1, reps=10, max_cycles=8, show=False):
     print("")
-    logger.info("PHASE DIFFERENCE METHODS VS # OF CYCLES")
+    logger.info("PHASE DIFFERENCE VS # OF CYCLES")
 
     cycles_list = np.arange(1, max_cycles + 1, step=1)
+    fc = simulator.samples_per_cycle(step=step)
 
     errors = {}
     for method, (*head, mreps) in METHODS.items():
         if mreps is None:
             mreps = reps
 
-        fc = simulator.samples_per_cycle(step=step)
-
         logger.info("Method: {}, reps={}".format(method, mreps))
 
         method_errors = []
         for cycles in cycles_list:
             n_res = simulator.n_simulations(
-                n=mreps,
-                method=method,
+                phi=phi,
+                N=mreps,
                 cycles=cycles,
                 fc=fc,
-                phi=phi,
                 fa=samples,
-                a0_noise=simulator.A0_NOISE,
-                a1_noise=simulator.A1_NOISE,
-                bits=simulator.ADC_BITS,
-                all_positive=True,
+                method=method,
                 p0=[1, 0, 0, 0, 0, 0]
             )
 
-            error_rad = simulator.rmse(phi, [e.value for e in n_res])
-            error_degrees = np.rad2deg(error_rad)
-            error_degrees_sci = "{:.2E}".format(error_degrees)
+            error = n_res.rmse()
+            method_errors.append(error)
 
-            method_errors.append(error_degrees)
-
-            logger.info(TPL_LOG.format(cycles, error_degrees_sci))
+            logger.info(TPL_LOG.format(cycles, "{:.2E}".format(error)))
 
         errors[method] = method_errors
 

@@ -2,22 +2,20 @@ import os
 import logging
 
 import numpy as np
-import pandas as pd
 
 from rapp import constants as ct
+from rapp.measurement import Measurement
 from rapp.utils import create_folder
-from rapp.signal.analysis import average_data
-from rapp.signal.phase import phase_difference
 
 from rapp.simulations import (
-    error_vs_method,
-    error_vs_step,
-    error_vs_samples,
+    error_vs_cycles,
     error_vs_range,
     error_vs_resolution,
+    error_vs_samples,
+    error_vs_step,
+    one_phase_diff,
     pvalue_vs_range,
-    signal_simulation,
-    phase_diff
+    simulation_steps,
 )
 
 logger = logging.getLogger(__name__)
@@ -32,28 +30,20 @@ ADC_BITS = 16     # Use signed values with this level of quantization.
 ARDUINO_MAXV = 5
 ARDUINO_BITS = 10
 
-# Noise measured with laser ON
-A0_NOISE = [2.6352759502752957e-06, 0.0003747564924374617]
-A1_NOISE = [3.817173720425239e-06, 0.0002145422291402638]
-
 SIMULATIONS = [
     'all',
-    'error_vs_method',
-    'error_vs_step',
-    'error_vs_samples',
+    'error_vs_cycles',
     'error_vs_range',
     'error_vs_res',
-    'sim_steps',
+    'error_vs_samples',
+    'error_vs_step',
+    'one_phase_diff',
     'pvalue_vs_range',
-    'phase_diff',
+    'sim_steps',
 ]
 
 
 np.random.seed(1)  # To make random simulations repeatable.
-
-
-def rmse(true_value, values):
-    return np.sqrt(sum([(abs(true_value) - abs(v)) ** 2 for v in values]) / len(values))
 
 
 def harmonic(
@@ -63,7 +53,7 @@ def harmonic(
     fa: int = 1,
     phi: float = 0,
     noise: tuple = None,
-    bits: int = None,
+    bits: int = ADC_BITS,
     max_v: float = ADC_MAXV,
     all_positive: bool = False
 ) -> tuple:
@@ -132,68 +122,47 @@ def quantize(
     return q_signal * q_factor
 
 
-def polarimeter_signal(phi=0, a0_noise=None, a1_noise=None, **kwargs):
-    """Simulates a pair of signals measured by the polarimeter.
-
-    Args:
-        phi: phase difference between signals (radians).
-        a0_noise: (mu, sigma) of additive white Gaussian noise of channel 0.
-        a1_noise: (mu, sigma) of additive white Gaussian noise of channel 1.
-        **kwargs: any other keyword argument to be passed 'harmonic' function.
-
-    Returns:
-        the X-coordinates and S1, S2 Y-coordinates as (X, S1, S2) 3-tuple.
-    """
-    xs, s1 = harmonic(noise=a0_noise, **kwargs)
-    _, s2 = harmonic(phi=-phi, noise=a1_noise, **kwargs)
-
-    # We divide angles by 2 because one cycle of the analyzer contains two cycles of the signal.
-    return xs / 2, s1, s2
-
-
 def samples_per_cycle(step=0.01):
     # Half cycle (180) of the analyzer is one full cycle of the signal.
     return int(180 / step)
 
 
-def total_time(n_cycles):
-    return n_cycles * (180 / ANALYZER_VELOCITY)
+class SimulationResult:
+    def __init__(self, phi, results):
+        self._phi = phi
+        self._results = results
+        self._values = np.array([e.value for e in self._results])
+        self._us = np.array([r.u for r in self._results])
+
+    def rmse(self):
+        true_values = np.full(shape=len(self._values), fill_value=self._phi)
+        rmse = np.sqrt(np.mean(np.square(abs(true_values) - abs(self._values))))
+        return np.rad2deg(rmse)
+
+    def mean_u(self):
+        return np.mean(self._us)
 
 
-def n_simulations(n=1, method='ODR', p0=None, allow_nan=False, **kwargs):
-    """Performs n simulations and returned a list of n phase difference results.
+def n_simulations(N=1, phi=PHI, method='ODR', p0=None, allow_nan=False, **kwargs):
+    """Performs N signal and phase difference simulations.
 
     Args:
-        n: number of simulations.
-        method: phase difference calculation method.
+        N: number of simulations.
         *kwargs: arguments for polarimeter_signal function.
+
+    Returns:
+        SimulationResult: object with N phase difference results.
     """
     results = []
-    for i in range(n):
-        xs, s1, s2 = polarimeter_signal(**kwargs)
-
-        data = np.array([xs, s1, s2]).T
-        data = pd.DataFrame(data=data, columns=["ANGLE", "CH0", "CH1"])
-
-        xs, s1, s2, s1_sigma, s2_sigma = average_data(data, allow_nan=allow_nan)
-        x_sigma = np.deg2rad(ct.ANALYZER_UNCERTAINTY)
-
-        res = phase_difference(
-            xs * 2, s1, s2,
-            x_sigma=x_sigma,
-            s1_sigma=s1_sigma,
-            s2_sigma=s2_sigma,
-            method=method,
-            degrees=False,
-            p0=p0
-        )
-
+    for i in range(N):
+        measurement = Measurement.simulate(phi, **kwargs)
+        *head, res = measurement.phase_diff(method=method, p0=p0, allow_nan=allow_nan)
         results.append(res)
 
-    return results
+    return SimulationResult(phi, results)
 
 
-def main(sim, method='ODR', reps=1, step=1, samples=50, show=False):
+def main(sim, phi=PHI, method='ODR', reps=1, step=1, samples=50, show=False):
     print("")
     logger.info("STARTING SIMULATIONS...")
 
@@ -207,29 +176,29 @@ def main(sim, method='ODR', reps=1, step=1, samples=50, show=False):
     if sim not in SIMULATIONS:
         raise ValueError("Simulation with name {} not implemented".format(sim))
 
-    if sim in ['all', 'error_vs_method']:
-        error_vs_method.run(PHI, output_folder, samples, step, reps, show=show)
-
-    if sim in ['all', 'error_vs_step']:
-        error_vs_step.run(PHI, output_folder, method, samples, reps, show=show)
-
-    if sim in ['all', 'error_vs_samples']:
-        error_vs_samples.run(PHI, output_folder, method, step, reps, show=show)
+    if sim in ['all', 'error_vs_cycles']:
+        error_vs_cycles.run(phi, output_folder, samples, step, reps, show=show)
 
     if sim in ['all', 'error_vs_range']:
-        error_vs_range.run(PHI, output_folder, method, samples, step, reps, show=show)
+        error_vs_range.run(phi, output_folder, method, samples, step, reps, show=show)
 
     if sim in ['all', 'error_vs_res']:
-        error_vs_resolution.run(PHI, output_folder, method, samples, step, reps, show=show)
+        error_vs_resolution.run(phi, output_folder, method, samples, step, reps, show=show)
+
+    if sim in ['all', 'error_vs_samples']:
+        error_vs_samples.run(phi, output_folder, method, step, reps, show=show)
+
+    if sim in ['all', 'error_vs_step']:
+        error_vs_step.run(phi, output_folder, method, samples, reps, show=show)
 
     if sim in ['all', 'pvalue_vs_range']:
-        pvalue_vs_range.run(PHI, output_folder, reps=reps, show=show)
+        pvalue_vs_range.run(phi, output_folder, reps=reps, show=show)
 
     if sim in ['all', 'sim_steps']:
-        signal_simulation.run(output_folder, show=show)
+        simulation_steps.run(output_folder, show=show)
 
-    if sim in ['all', 'phase_diff']:
-        phase_diff.run(PHI, output_folder, method, samples, step, show=show)
+    if sim in ['all', 'one_phase_diff']:
+        one_phase_diff.run(phi, output_folder, method, samples, step, show=show)
 
 
 if __name__ == '__main__':
