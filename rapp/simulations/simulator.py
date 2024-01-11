@@ -13,7 +13,13 @@ from rapp.signal.analysis import average_data
 from rapp.signal.plot import Plot
 from rapp.signal.phase import phase_difference
 
-from rapp.simulations import error_vs_method, error_vs_step, error_vs_samples, error_vs_range
+from rapp.simulations import (
+    error_vs_method,
+    error_vs_step,
+    error_vs_samples,
+    error_vs_range,
+    error_vs_resolution
+)
 
 logger = logging.getLogger(__name__)
 
@@ -39,8 +45,8 @@ SIMULATIONS = [
     'all',
     'error_vs_method',
     'error_vs_step',
-    'error_vs_range',
     'error_vs_samples',
+    'error_vs_range',
     'error_vs_res',
     'signals_out_of_phase',
     'sim_steps',
@@ -179,10 +185,10 @@ def n_simulations(n=1, method='ODR', p0=None, allow_nan=False, **kwargs):
         x_sigma = np.deg2rad(ct.ANALYZER_UNCERTAINTY)
 
         if np.isnan(s1_sigma).any() or (s1_sigma == 0).any():
-            s1_sigma = 1
+            s1_sigma = None
 
         if np.isnan(s2_sigma).any() or (s2_sigma == 0).any():
-            s2_sigma = 1
+            s2_sigma = None
 
         res = phase_difference(
             xs * 2, s1, s2,
@@ -302,59 +308,6 @@ def plot_simulation_steps(folder, show=False):
     logger.info("Done.")
 
 
-def plot_error_vs_resolution(phi, folder, samples=5, step=1, max_cycles=10, reps=1, show=False):
-    print("")
-    logger.info("PHASE DIFFERENCE VS RESOLUTION")
-
-    cycles_list = np.arange(1, max_cycles + 1, step=1)
-
-    title = "step={}°, samples={}, reps={}".format(step, samples, reps)
-
-    plot = Plot(
-        ylabel=ct.LABEL_PHI_ERR, xlabel=ct.LABEL_N_CYCLES, title=title, ysci=True, xint=True,
-        folder=folder
-    )
-
-    resolutions_bits = [(ARDUINO_BITS, ARDUINO_MAXV), (ADC_BITS, ADC_MAXV)]
-    for bits, maxv in resolutions_bits:
-        fc = samples_per_cycle(step=step)
-        logger.info("fc={}".format(fc))
-
-        amplitude = 0.9 * maxv
-
-        errors = []
-        for cycles in cycles_list:
-            n_results = n_simulations(
-                A=amplitude, bits=bits, max_v=maxv, n=reps, method='ODR', cycles=cycles,
-                fc=fc, phi=phi, fa=samples, a0_noise=A0_NOISE, a1_noise=A1_NOISE, all_positive=True
-            )
-
-            # RMSE
-            error_rad = rmse(phi, [e.value for e in n_results])
-            error_degrees = np.rad2deg(error_rad)
-            error_degrees_sci = "{:.2E}".format(error_degrees)
-
-            errors.append(error_degrees)
-
-            time = total_time(cycles) / 60
-            logger.info("cycles={}, time={} m, φerr: {}.".format(cycles, time, error_degrees_sci))
-
-        label = "{} bits".format(bits)
-        plot.add_data(cycles_list, errors, style='.-', lw=2, label=label)
-
-    plot.legend(fontsize=12)
-
-    filename = "sim_error_vs_resolution-step-{}-samples-{}-reps{}.png".format(step, samples, reps)
-    plot.save(filename=filename)
-
-    if show:
-        plot.show()
-
-    plot.close()
-
-    logger.info("Done.")
-
-
 def plot_noise_vs_range(phi, folder, reps=1, show=False):
     print("")
     logger.info("PHASE DIFFERENCE VS MAX TENSION")
@@ -463,7 +416,7 @@ def plot_phase_diff(phi, folder, samples=50, cycles=10, step=0.01, show=False):
     logger.info("Done.")
 
 
-def main(sim, method='ODR', reps=1, step=1, samples=1, show=False):
+def main(sim, method='ODR', reps=1, step=1, samples=50, show=False):
     print("")
     logger.info("STARTING SIMULATIONS...")
 
@@ -489,16 +442,15 @@ def main(sim, method='ODR', reps=1, step=1, samples=1, show=False):
     if sim in ['all', 'error_vs_range']:
         error_vs_range.run(PHI, output_folder, method, samples, step, reps, show=show)
 
+    if sim in ['all', 'error_vs_res']:
+        error_vs_resolution.run(PHI, output_folder, method, samples, step, reps, show=show)
+
     if sim in ['all', 'signals_out_of_phase']:
         plot_signals_out_of_phase(
             np.pi / 2, output_folder, samples, s1_noise=A0_NOISE, s2_noise=A1_NOISE, show=show)
 
     if sim in ['all', 'sim_steps']:
         plot_simulation_steps(output_folder, show=show)
-
-    if sim in ['all', 'error_vs_res']:
-        plot_error_vs_resolution(
-            PHI, output_folder, samples, max_cycles=8, step=step, reps=reps, show=show)
 
     if sim in ['all', 'noise_vs_range']:
         plot_noise_vs_range(PHI, output_folder, reps=reps, show=show)

@@ -19,10 +19,10 @@ def run(phi, folder, method='ODR', step=1, reps=1, cycles=2, show=False):
     logger.info("Method: {}, cycles={}, reps={}".format(method, cycles, reps))
 
     n_samples = np.arange(10, 200, step=20)
+    fc = simulator.samples_per_cycle(step=step)
 
     errors = []
     for samples in n_samples:
-        fc = simulator.samples_per_cycle(step=step)
 
         n_results = simulator.n_simulations(
             A=1.7,
