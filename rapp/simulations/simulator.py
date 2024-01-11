@@ -13,7 +13,7 @@ from rapp.signal.analysis import average_data
 from rapp.signal.plot import Plot
 from rapp.signal.phase import phase_difference
 
-from rapp.simulations import error_vs_method, error_vs_step
+from rapp.simulations import error_vs_method, error_vs_step, error_vs_samples
 
 logger = logging.getLogger(__name__)
 
@@ -160,7 +160,7 @@ def total_time(n_cycles):
     return n_cycles * (180 / ANALYZER_VELOCITY)
 
 
-def n_simulations(n=1, method='ODR', p0=None, **kwargs):
+def n_simulations(n=1, method='ODR', p0=None, allow_nan=False, **kwargs):
     """Performs n simulations and returned a list of n phase difference results.
 
     Args:
@@ -175,12 +175,22 @@ def n_simulations(n=1, method='ODR', p0=None, **kwargs):
         data = np.array([xs, s1, s2]).T
         data = pd.DataFrame(data=data, columns=["ANGLE", "CH0", "CH1"])
 
-        xs, s1, s2, s1_sigma, s2_sigma = average_data(data)
+        xs, s1, s2, s1_sigma, s2_sigma = average_data(data, allow_nan=allow_nan)
         x_sigma = np.deg2rad(ct.ANALYZER_UNCERTAINTY)
+
+        if np.isnan(s1_sigma).any() or (s1_sigma == 0).any():
+            s1_sigma = 1
+
+        if np.isnan(s2_sigma).any() or (s2_sigma == 0).any():
+            s2_sigma = 1
 
         res = phase_difference(
             xs * 2, s1, s2,
-            x_sigma=x_sigma, s1_sigma=s1_sigma, s2_sigma=s2_sigma, method=method, degrees=False,
+            x_sigma=x_sigma,
+            s1_sigma=s1_sigma,
+            s2_sigma=s2_sigma,
+            method=method,
+            degrees=False,
             p0=p0
         )
 
@@ -288,49 +298,6 @@ def plot_simulation_steps(folder, show=False):
         plt.show()
 
     plt.close()
-
-    logger.info("Done.")
-
-
-def plot_error_vs_samples(phi, folder, step=1, reps=1, cycles=2, show=False):
-    print("")
-    logger.info("PHASE DIFFERENCE VS SAMPLES")
-
-    plot = Plot(
-        ylabel=ct.LABEL_PHI_ERR, xlabel=ct.SAMPLES_PER_ANGLE, ysci=True, xint=False,
-        folder=folder
-    )
-
-    ss = np.arange(1, 200, step=20)
-
-    errors = []
-    for samples in ss:
-        fc = samples_per_cycle(step=step)
-
-        n_results = n_simulations(
-            A=1.7, n=reps, method='ODR', cycles=cycles, fc=fc, phi=phi,
-            fa=samples, a0_noise=A0_NOISE, a1_noise=A1_NOISE, bits=ADC_BITS, all_positive=True
-        )
-
-        error_rad = rmse(phi, [e.value for e in n_results])
-        error_degrees = np.rad2deg(error_rad)
-        error_degrees_sci = "{:.2E}".format(error_degrees)
-
-        errors.append(error_degrees)
-        logger.info("samples={}, φerr: {}.".format(samples, error_degrees_sci))
-
-    label = "cycles={}\nstep={}°\nreps={}".format(cycles, step, reps)
-    plot.add_data(ss, errors, color='k', style='s-', lw=1.5, label=label)
-    plot.legend(fontsize=12)
-    plot._ax.set_yscale('log')
-
-    plot.save(
-        filename="sim_error_vs_samples-reps-{}-step-{}.png".format(reps, step))
-
-    if show:
-        plot.show()
-
-    plot.close()
 
     logger.info("Done.")
 
@@ -567,15 +534,15 @@ def main(sim, method='ODR', reps=1, step=1, samples=1, show=False):
     if sim in ['all', 'error_vs_step']:
         error_vs_step.run(PHI, output_folder, method, samples, reps, show=show)
 
+    if sim in ['all', 'error_vs_samples']:
+        error_vs_samples.run(PHI, output_folder, method, step, reps, show=show)
+
     if sim in ['all', 'signals_out_of_phase']:
         plot_signals_out_of_phase(
             np.pi / 2, output_folder, samples, s1_noise=A0_NOISE, s2_noise=A1_NOISE, show=show)
 
     if sim in ['all', 'sim_steps']:
         plot_simulation_steps(output_folder, show=show)
-
-    if sim in ['all', 'error_vs_samples']:
-        plot_error_vs_samples(PHI, output_folder, reps=reps, cycles=2, step=step, show=show)
 
     if sim in ['all', 'error_vs_res']:
         plot_error_vs_resolution(

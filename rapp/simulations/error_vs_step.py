@@ -10,6 +10,7 @@ from rapp.signal.plot import Plot
 logger = logging.getLogger(__name__)
 
 TPL_LOG = "step={}, reps:{}, φerr: {}, mean u: {}."
+TPL_LABEL = "cycles={}\nsamples={}"
 TPL_FILENAME = "sim_error_vs_step-samples-{}-reps{}"
 
 STEPS = [0.001, 0.01, 0.1, 1, 2, 4]
@@ -55,7 +56,7 @@ def run(phi, folder, method='ODR', samples=5, reps=1, cycles=2, show=False):
         folder=folder
     )
 
-    label = "cycles={}\nsamples={}".format(cycles, samples)
+    label = TPL_LABEL.format(cycles, samples)
 
     plot.add_data(STEPS, errors, style='s-', mfc='k', color='k', lw=1, label=label)
     plot._ax.set_yscale('log')
