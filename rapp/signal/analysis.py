@@ -910,9 +910,8 @@ def plot_phase_difference(filepath, method, show=False):
 
     if res.fitx is not None:
         plot = Plot(ylabel=ct.LABEL_VOLTAGE, xlabel=ct.LABEL_DEGREE, folder=output_folder)
-        fitx = res.fitx / 2
-        plot.add_data(fitx, signal_diff_s1, style='-', lw=1.5, label='Ajuste - CH0')
-        plot.add_data(fitx, signal_diff_s2, style='-', lw=1.5, label='Ajuste - CH1')
+        plot.add_data(res.fitx, signal_diff_s1, style='-', lw=1.5, label='Ajuste - CH0')
+        plot.add_data(res.fitx, signal_diff_s2, style='-', lw=1.5, label='Ajuste - CH1')
         plt.legend(loc='upper left', frameon=False)
         plot.save(filename="{}-difference.png".format(os.path.basename(filepath)[:-4]))
         plot._ax.set_ylim(
