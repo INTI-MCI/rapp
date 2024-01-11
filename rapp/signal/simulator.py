@@ -159,7 +159,7 @@ def total_time(n_cycles):
     return n_cycles * (180 / ANALYZER_VELOCITY)
 
 
-def n_simulations(n=1, method='ODR', **kwargs):
+def n_simulations(n=1, method='ODR', p0=None, **kwargs):
     """Performs n simulations and returned a list of n phase difference results.
 
     Args:
@@ -179,7 +179,9 @@ def n_simulations(n=1, method='ODR', **kwargs):
 
         res = phase_difference(
             xs * 2, s1, s2,
-            x_sigma=x_sigma, s1_sigma=s1_sigma, s2_sigma=s2_sigma, method=method, degrees=False)
+            x_sigma=x_sigma, s1_sigma=s1_sigma, s2_sigma=s2_sigma, method=method, degrees=False,
+            p0=p0
+        )
 
         results.append(res)
 
@@ -314,7 +316,7 @@ def plot_error_vs_method(phi, folder, samples=5, reps=10, step=1, max_cycles=10,
             n_res = n_simulations(
                 n=reps, method=method, cycles=cycles, fc=fc, phi=phi,
                 fa=samples, a0_noise=A0_NOISE, a1_noise=A1_NOISE,
-                bits=ADC_BITS, all_positive=True
+                bits=ADC_BITS, all_positive=True, p0=[1, 0, 0, 0, 0, 0]
             )
 
             error_rad = rmse(phi, [e.value for e in n_res])
@@ -330,9 +332,9 @@ def plot_error_vs_method(phi, folder, samples=5, reps=10, step=1, max_cycles=10,
         plot.add_data(cycles_list, errors, style=ms[i], ls=ls[i], color='k', lw=2, label=label)
 
     annotation = "samples={}\nstep={}°".format(samples, step)
-    plot._ax.annotate(annotation, (1, 0.0025))
+    plot._ax.text(0.05, 0.45, annotation, transform=plot._ax.transAxes)
     plot._ax.set_yscale('log')
-    plot.legend(fontsize=12)
+    plot.legend(loc='center right', fontsize=12)
 
     filename = "sim_error_vs_method-reps-{}-samples-{}-step-{}.png"
     plot.save(filename=filename.format(reps, samples, step))
