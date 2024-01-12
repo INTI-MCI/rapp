@@ -34,7 +34,7 @@ def run(phi, folder, samples=5, step=1, reps=10, max_cycles=8, show=False):
 
         logger.info("Method: {}, reps={}".format(method, mreps))
 
-        method_errors = []
+        errors[method] = []
         for cycles in cycles_list:
             n_res = simulator.n_simulations(
                 phi=phi,
@@ -47,11 +47,9 @@ def run(phi, folder, samples=5, step=1, reps=10, max_cycles=8, show=False):
             )
 
             error = n_res.rmse()
-            method_errors.append(error)
+            errors[method].append(error)
 
             logger.info(TPL_LOG.format(cycles, "{:.2E}".format(error)))
-
-        errors[method] = method_errors
 
     plot = Plot(
         ylabel=ct.LABEL_PHI_ERR, xlabel=ct.LABEL_N_CYCLES, ysci=True, xint=True, folder=folder)
