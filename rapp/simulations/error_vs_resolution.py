@@ -3,8 +3,9 @@ import logging
 import numpy as np
 
 from rapp import constants as ct
-from rapp.simulations import simulator
 from rapp.signal.plot import Plot
+from rapp.simulations import simulator
+from rapp.adc import ADC_BITS, ADC_MAXV
 
 logger = logging.getLogger(__name__)
 
@@ -12,6 +13,9 @@ TPL_LOG = "cycles={}, φerr: {}."
 TPL_LABEL = "bits={}."
 TPL_FILENAME = "sim_error_vs_resolution-step-{}-samples-{}-reps{}.png"
 TPL_TEXT = "step={}°\nsamples={}\nreps={}"
+
+ARDUINO_MAXV = 5
+ARDUINO_BITS = 10
 
 
 def run(phi, folder, method='ODR', samples=5, step=1, reps=1, max_cycles=8, show=False):
@@ -21,8 +25,8 @@ def run(phi, folder, method='ODR', samples=5, step=1, reps=1, max_cycles=8, show
     cycles_list = np.arange(1, max_cycles + 1, step=1)
     fc = simulator.samples_per_cycle(step=step)
 
-    BITS = [simulator.ARDUINO_BITS, simulator.ADC_BITS]
-    MAXV = [simulator.ARDUINO_MAXV, simulator.ADC_MAXV]
+    BITS = [ARDUINO_BITS, ADC_BITS]
+    MAXV = [ARDUINO_MAXV, ADC_MAXV]
     MS = ['o', 's']
     LS = ['dotted', 'solid']
 

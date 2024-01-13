@@ -8,6 +8,8 @@ from rapp.utils import progressbar
 
 logger = logging.getLogger(__name__)
 
+ADC_MAXV = 4.096
+ADC_BITS = 16
 
 GAIN_TWOTHIRDS = 23
 GAIN_ONE = 1
