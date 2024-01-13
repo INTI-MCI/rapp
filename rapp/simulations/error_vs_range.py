@@ -19,13 +19,18 @@ def run(phi, folder, method, samples=5, step=0.01, reps=1, cycles=2, show=False)
     print("")
     logger.info("PHASE DIFFERENCE VS MAX TENSION")
 
-    xs = np.arange(0.1, 2, step=0.2)
-
     errors = {}
-    for max_v, _ in list(GAINS.values())[::2]:
+    percentages = {}
+    for max_v, step_mV in GAINS.values():
         logger.info("MAX V={}, step={}".format(max_v, step))
+        v_step = step_mV * 2
+        max_A = max_v / 2
+
+        amplitudes = np.linspace(max_A - v_step * 8, max_A, num=8)
+        logger.info("Amplitudes: {}".format(amplitudes))
+
         errors[max_v] = []
-        for amplitude in xs:
+        for amplitude in amplitudes:
             fc = simulator.samples_per_cycle(step=step)
 
             n_results = simulator.n_simulations(
@@ -36,6 +41,7 @@ def run(phi, folder, method, samples=5, step=0.01, reps=1, cycles=2, show=False)
                 cycles=cycles,
                 fc=fc,
                 fa=samples,
+                allow_nan=True
             )
 
             error = n_results.rmse()
@@ -43,7 +49,7 @@ def run(phi, folder, method, samples=5, step=0.01, reps=1, cycles=2, show=False)
 
             logger.info(TPL_LOG.format(amplitude, "{:.2E}".format(error)))
 
-    percentages = ((xs * 2) / simulator.ADC_MAXV) * 100
+        percentages[max_v] = ((amplitudes * 2) / max_v) * 100
 
     plot = Plot(
         ylabel=ct.LABEL_PHI_ERR,
@@ -53,16 +59,15 @@ def run(phi, folder, method, samples=5, step=0.01, reps=1, cycles=2, show=False)
         folder=folder
     )
 
-    for max_v, errors in errors.items():
-        label = "max_v={} V".format(max_v)
-        plot.add_data(percentages, errors, style='.-', lw=2, label=label)
+    for max_v in errors:
+        label = "{} V".format(max_v)
+        plot.add_data(percentages[max_v], errors[max_v], ms=1, style='s-', lw=2, label=label)
 
-    plot._ax.set_xticks(plot._ax.get_xticks())
     plot._ax.set_yscale('log')
-    plot.legend(fontsize=12)
+    plot.legend(loc='upper right', fontsize=12)
 
     annotation = TPL_LABEL.format(cycles, samples, step, reps)
-    plot._ax.text(0.046, 0.1, annotation, transform=plot._ax.transAxes)
+    plot._ax.text(0.25, 0.7, annotation, transform=plot._ax.transAxes)
 
     plot.save(filename=TPL_FILENAME.format(reps, samples, step))
 

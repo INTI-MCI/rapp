@@ -2,7 +2,7 @@
 
 <p align="center">
   <a>
-    <img alt="Coverage" src="https://codecov.io/gh/INTI-metrologia/rapp/graph/badge.svg?token=GNZOVRVIF4">
+    <img alt="Coverage" src="https://codecov.io/gh/tomaslink/rapp/graph/badge.svg?token=DV6XJFKHYS">
   </a>
 </p>
 
