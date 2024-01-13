@@ -51,8 +51,8 @@ class Plot:
         create_folder(self._folder)
         self._fig.savefig(os.path.join(self._folder, filename))
 
-    def legend(self, fontsize=11, **kwargs):
-        self._ax.legend(fontsize=fontsize, frameon=False, **kwargs)
+    def legend(self, fontsize=11, frameon=False, **kwargs):
+        self._ax.legend(fontsize=fontsize, frameon=frameon, **kwargs)
 
     def show(self):
         """Shows the plot."""

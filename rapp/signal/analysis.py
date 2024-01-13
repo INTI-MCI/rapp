@@ -1,10 +1,8 @@
 import os
 import re
-import decimal
 import logging
 
 import numpy as np
-import pandas as pd
 
 from uncertainties import ufloat
 from matplotlib import pyplot as plt
@@ -13,18 +11,15 @@ from scipy import signal
 from scipy import stats
 from scipy.optimize import curve_fit
 
-from rapp.signal.plot import Plot
-from rapp.signal.phase import phase_difference
-from rapp.utils import create_folder, round_to_n
 from rapp import constants as ct
+from rapp.signal.plot import Plot
+from rapp.measurement import Measurement
+from rapp.utils import create_folder, round_to_n, round_to_n_with_uncertainty
 
 logger = logging.getLogger(__name__)
 
 
 CHANNELS = [0, 1]
-COLUMN_CH0 = 'CH0'
-COLUMN_CH1 = 'CH1'
-COLUMN_ANGLE = 'ANGLE'
 
 REGEX_NUMBER_AFTER_WORD = r"(?<={word})-?\d+(?:\.\d+)?"
 
@@ -110,13 +105,6 @@ def pink_noise(f, alpha, a):
     return a / f ** alpha
 
 
-def read_measurement_file(filepath, sep=r"\s+", usecols=(0, 1, 2)):
-    return pd.read_csv(
-        filepath,
-        sep=sep, skip_blank_lines=True, comment='#', usecols=usecols, encoding=ct.ENCONDIG
-    )
-
-
 def poly_2(x, A, B, C):
     return A * x**2 + B * x + C
 
@@ -127,11 +115,15 @@ def detrend_poly(data, func):
 
 
 def parse_input_parameters_from_filepath(filepath):
-    return (
-        re.findall(REGEX_NUMBER_AFTER_WORD.format(word="cycles"), filepath)[0],
-        re.findall(REGEX_NUMBER_AFTER_WORD.format(word="step"), filepath)[0],
-        re.findall(REGEX_NUMBER_AFTER_WORD.format(word="samples"), filepath)[0]
-    )
+    cycles_find = re.findall(REGEX_NUMBER_AFTER_WORD.format(word="cycles"), filepath)
+    step_find = re.findall(REGEX_NUMBER_AFTER_WORD.format(word="step"), filepath)
+    samples_find = re.findall(REGEX_NUMBER_AFTER_WORD.format(word="samples"), filepath)
+
+    cycles = cycles_find[0] if cycles_find else 0
+    step = step_find[0] if step_find else 0
+    samples = samples_find[0] if samples_find else 0
+
+    return (cycles, step, samples)
 
 
 def generate_quantized_bins(data, step=0.125e-3):
@@ -140,32 +132,6 @@ def generate_quantized_bins(data, step=0.125e-3):
     edges = np.append(edges, max(edges) + step)
 
     return centers, edges
-
-
-def average_data(data):
-    data = data.groupby([COLUMN_ANGLE], as_index=False)
-
-    try:  # python 3.4
-        group_size = int(np.array(data.size())[0])
-    except TypeError:
-        group_size = int(data.size()['size'][0])
-
-    data = data.agg({
-        COLUMN_CH0: ['mean', 'std'],
-        COLUMN_CH1: ['mean', 'std']
-    })
-
-    ch0_std = data[COLUMN_CH0]['std']
-    ch1_std = data[COLUMN_CH1]['std']
-
-    xs = np.array(data[COLUMN_ANGLE])
-    s1 = np.array(data[COLUMN_CH0]['mean'])
-    s2 = np.array(data[COLUMN_CH1]['mean'])
-
-    s1u = np.array(ch0_std) / np.sqrt(int(group_size))
-    s2u = np.array(ch1_std) / np.sqrt(int(group_size))
-
-    return xs, s1, s2, s1u, s2u
 
 
 def plot_histogram_and_pdf(data,  bins='quantized', prefix='', show=False):
@@ -244,13 +210,13 @@ def plot_noise_with_laser_off(output_folder, show=False):
 
     base_output_fname = "{}".format(os.path.join(output_folder, filename[:-4]))
 
-    data = read_measurement_file(filepath, sep=sep)
+    measurement = Measurement.from_file(filepath, sep=sep)
 
     logger.info("Plotting raw data...")
     f, axs = plt.subplots(1, 2, figsize=(8, 5), subplot_kw=dict(box_aspect=1), sharey=True)
 
     for i, ax in enumerate(axs):
-        channel_data = data['CH{}'.format(i)]
+        channel_data = measurement.channel_data('CH{}'.format(i))
         channel_data = channel_data - np.mean(channel_data)  # center signal
         res = stats.normaltest(channel_data)
         logger.info("Gaussian Test. p-value: {}".format(res.pvalue))
@@ -279,7 +245,7 @@ def plot_noise_with_laser_off(output_folder, show=False):
     logger.info("Plotting FFT...")
     f, axs = plt.subplots(1, 2, figsize=(8, 5), subplot_kw=dict(box_aspect=1), sharey=True)
     for i, ax in enumerate(axs):
-        channel_data = data['CH{}'.format(i)]
+        channel_data = measurement.channel_data('CH{}'.format(i))
 
         psd = (2 * np.abs(np.fft.fft(channel_data)) ** 2) / (sps * len(channel_data))
 
@@ -295,15 +261,12 @@ def plot_noise_with_laser_off(output_folder, show=False):
         popt, pcov = curve_fit(linear, np.log(pink_x), np.log(psd[1:end]))
 
         us = np.sqrt(np.diag(pcov))
-        alpha = popt[0]
 
-        alpha_u = round_to_n(us[0], 1)
-        # Obtain number of decimal places of the u:
-        d = abs(decimal.Decimal(str(alpha_u)).as_tuple().exponent)
-        alpha = round(alpha, d)
+        alpha, alpha_u = round_to_n_with_uncertainty(popt[0], us[0], n=1, k=1)
+        logger.info("A/f^α noise estimation: α = {} ± {}".format(alpha, alpha_u))
 
-        logger.info("A/f^α noise estimation: α = {} ± {}".format(alpha, 0))
-        logger.info("A/f^α noise estimation: scale = {} ± {}".format(popt[1], us[1]))
+        scale, scale_u = round_to_n_with_uncertainty(popt[1], us[1], n=1, k=1)
+        logger.info("A/f^α noise estimation: scale = {} ± {}".format(scale, scale_u))
 
         label = "1/fᵅ (α = {:.2f} ± {:.2f})".format(alpha, alpha_u)
 
@@ -345,7 +308,7 @@ def plot_noise_with_laser_off(output_folder, show=False):
     filtered = []
     f, axs = plt.subplots(1, 2, figsize=(8, 5), subplot_kw=dict(box_aspect=1), sharey=True)
     for i, ax in enumerate(axs):
-        channel_data = data['CH{}'.format(i)]
+        channel_data = measurement.channel_data('CH{}'.format(i))
 
         if i == 0:
             ax.set_ylabel(ct.LABEL_VOLTAGE)
@@ -402,7 +365,8 @@ def plot_noise_with_laser_off(output_folder, show=False):
         plot.add_data(filtered_channel, style='-', label='Canal {}'.format(i))
 
     plot._ax.xaxis.set_major_locator(plt.MaxNLocator(3))
-    height = max(abs(data.max()))
+    channel_data = measurement.channel_data()
+    height = max(abs(channel_data.max()))
     plot._ax.set_ylim(-height / 2, height / 2)
     plot.legend(loc='upper right')
 
@@ -433,14 +397,14 @@ def plot_noise_with_laser_on(output_folder, show=False):
 
     sps, sep, bstop, hpass, outliers, bins = FILE_PARAMS[filename].values()
 
-    data = read_measurement_file(filepath, sep=sep)
-    data = data[1:]  # remove big outlier in ch0
+    measurement = Measurement.from_file(filepath, sep=sep)
+    data = measurement[1:]  # remove big outlier in ch0
     base_output_fname = "{}".format(os.path.join(output_folder, filename[:-4]))
 
     logger.info("Fitting raw data to 2-degree polynomial...")
     f, axs = plt.subplots(1, 2, figsize=(8, 5), subplot_kw=dict(box_aspect=1), sharey=False)
     for i, ax in enumerate(axs):
-        channel_data = data['CH{}'.format(i)][1:]
+        channel_data = measurement.channel_data('CH{}'.format(i))[1:]
 
         d = np.diff(np.unique(channel_data)).min()
         logger.info("Discretization step: {}".format(d))
@@ -507,15 +471,11 @@ def plot_noise_with_laser_on(output_folder, show=False):
 
         us = np.sqrt(np.diag(pcov))
 
-        alpha = popt[0]
-
-        alpha_u = round_to_n(us[0], 1)
-        # Obtain number of decimal places of the u:
-        d = abs(decimal.Decimal(str(alpha_u)).as_tuple().exponent)
-        alpha = round(alpha, d)
-
+        alpha, alpha_u = round_to_n_with_uncertainty(popt[0], us[0], n=1, k=1)
         logger.info("A/f^α noise estimation: α = {} ± {}".format(alpha, alpha_u))
-        logger.info("A/f^α noise estimation: scale = {} ± {}".format(popt[1], us[1]))
+
+        scale, scale_u = round_to_n_with_uncertainty(popt[1], us[1], n=1, k=1)
+        logger.info("A/f^α noise estimation: scale = {} ± {}".format(scale, scale_u))
 
         label = "1/fᵅ (α = {:.2f} ± {:.2f})".format(alpha, alpha_u)
 
@@ -729,10 +689,10 @@ def optical_rotation(folder_i, folder_f, method='ODR', hwp=False):
     files_f = sorted([os.path.join(folder_f, x) for x in os.listdir(folder_f)])
 
     for k in range(len(files_i)):
-        data_i = read_measurement_file(files_i[k])
-        data_f = read_measurement_file(files_f[k])
-        *head, res_i = polarimeter_phase_difference(data_i, method=method, fix_range=not hwp)
-        *head, res_f = polarimeter_phase_difference(data_f, method=method, fix_range=not hwp)
+        measurement_i = Measurement.from_file(files_i[k])
+        measurement_f = Measurement.from_file(files_f[k])
+        *head, res_i = measurement_i.phase_diff(method=method, fix_range=not hwp)
+        *head, res_f = measurement_f.phase_diff(method=method, fix_range=not hwp)
 
         res_i = ufloat(res_i.value, res_i.u)
         res_f = ufloat(res_f.value, res_f.u)
@@ -759,55 +719,33 @@ def optical_rotation(folder_i, folder_f, method='ODR', hwp=False):
     return avg_or, ors
 
 
-def polarimeter_phase_difference(data, method, fix_range=True):
-    xs, s1, s2, s1_sigma, s2_sigma = average_data(data)
-
-    x_sigma = np.deg2rad(ct.ANALYZER_UNCERTAINTY)
-
-    res = phase_difference(
-        np.deg2rad(xs) * 2, s1, s2,
-        x_sigma=x_sigma, s1_sigma=s1_sigma, s2_sigma=s2_sigma, method=method
-    )
-
-    if abs(res.value) > np.rad2deg(np.pi / 2) and fix_range:
-        res.value = res.value % np.rad2deg(np.pi)
-
-    res.value /= 2
-    res.u /= 2
-    if res.fitx is not None:
-        res.fitx /= 2
-
-    return xs, s1, s2, s1_sigma, s2_sigma, res
-
-
-def plot_phase_difference(filepath, method, show=False):
+def plot_phase_difference_from_file(filepath, method, show=False):
     logger.info("Calculating phase difference for {}...".format(filepath))
 
     cycles, step, samples = parse_input_parameters_from_filepath(filepath)
-    data = read_measurement_file(filepath)
+    parameters = "Parameters: cycles={}, step={}, samples={}.".format(cycles, step, samples)
+    logger.info(parameters)
 
-    xs, s1, s2, s1err, s2err, res = polarimeter_phase_difference(data, method)
+    measurement = Measurement.from_file(filepath)
+    filename = "{}.png".format(os.path.basename(filepath)[:-4])
 
-    phase_diff_u_rounded = round_to_n(res.u * COVERAGE_FACTOR, 2)
+    plot_phase_difference(measurement, method, filename, show)
 
-    # Obtain number of decimal places of the u:
-    d = abs(decimal.Decimal(str(phase_diff_u_rounded)).as_tuple().exponent)
 
-    phase_diff_rounded = round(res.value, d)
+def plot_phase_difference(measurement, method, filename, show=False):
+    xs, s1, s2, s1err, s2err, res = measurement.phase_diff(method=method)
 
-    phi_label = "φ=({} ± {})°.".format(phase_diff_rounded, phase_diff_u_rounded)
-    title = "{}\ncycles={}, step={}, samples={}.".format(phi_label, cycles, step, samples)
+    phase_diff, phase_diff_u = res.round_to_n(n=2, k=COVERAGE_FACTOR)
 
-    logger.info(title)
-    logger.info(
-        "Detected phase difference (analyzer angles): {}".format(phi_label)
-    )
+    log_phi = "φ=({} ± {})°.".format(phase_diff, phase_diff_u)
+    logger.info("Detected phase difference (analyzer angles): {}".format(log_phi))
 
     output_folder = os.path.join(ct.WORK_DIR, ct.OUTPUT_FOLDER_PLOTS)
     create_folder(output_folder)
 
     plot = Plot(ylabel=ct.LABEL_VOLTAGE, xlabel=ct.LABEL_DEGREE, folder=output_folder)
     markevery = 10
+
     d1 = plot.add_data(
         xs, s1, yerr=s1err,
         ms=6, mfc='None', color='k', mew=1,
@@ -836,17 +774,17 @@ def plot_phase_difference(filepath, method, show=False):
 
         plot._ax.legend(handles=[f1, l1, l2], loc='upper right', frameon=False)
 
-    # plot._ax.set_xlim(min(xs) - (max(xs) - min(xs)) * 0.5)
     plot._ax.set_ylim(min(s1) - abs(max(s1) - min(s1)) * 0.2, max(s1) * 1.8)
 
-    plot.save(filename="{}.png".format(os.path.basename(filepath)[:-4]))
+    plot.save(filename)
 
     if res.fitx is not None:
         plot = Plot(ylabel=ct.LABEL_VOLTAGE, xlabel=ct.LABEL_DEGREE, folder=output_folder)
         plot.add_data(res.fitx, signal_diff_s1, style='-', lw=1.5, label='Ajuste - CH0')
         plot.add_data(res.fitx, signal_diff_s2, style='-', lw=1.5, label='Ajuste - CH1')
         plt.legend(loc='upper left', frameon=False)
-        plot.save(filename="{}-difference.png".format(os.path.basename(filepath)[:-4]))
+        plot.save(filename="{}-difference.png".format(filename[-4]))
+
         plot._ax.set_ylim(
             np.min([signal_diff_s1, signal_diff_s2]),
             np.max([signal_diff_s1, signal_diff_s2]) * 1.5)
@@ -857,72 +795,27 @@ def plot_phase_difference(filepath, method, show=False):
     plot.close()
 
 
-def plot_signals_per_n_measurement(output_folder, show=False):
-    print("")
-    logger.info("PLOTTING SIGNALS VS # OF MEASUREMENT.")
+def plot_raw(filepath, sep='\t', usecols=(0, 1, 2), ch0=True, ch1=True, show=False):
+    output_folder = os.path.join(ct.WORK_DIR, ct.OUTPUT_FOLDER_PLOTS)
+    create_folder(output_folder)
 
-    filenames = [
-        'laser-75-int-alta.txt',
-        'laser-75-encendido-15min.txt',
-        'laser-16-reencendido-1M.txt',
-        'laser-16-75-grados-int-baja.txt'
-    ]
+    measurement = Measurement.from_file(filepath)
 
-    for filename in filenames:
-        filepath = os.path.join(ct.INPUT_DIR, filename)
-        logger.info("Filepath: {}".format(filepath))
-
-        plot = Plot(ylabel=ct.LABEL_VOLTAGE, xlabel=ct.LABEL_N_SAMPLE, folder=output_folder)
-        plot.set_title(filename[:-4])
-
-        cols = (0, 1, 2)
-        data = np.loadtxt(filepath, delimiter=' ', skiprows=1, usecols=cols, encoding=ct.ENCONDIG)
-        data = data[:, 1]
-        xs = np.arange(1, data.size + 1, step=1)
-
-        plot.add_data(xs, data, style='-', color='k')
-        plot.save(filename=filename[:-4])
-
-        if show:
-            plot.show()
-
-        plot.close()
-
-
-def plot_signals_per_angle(output_folder, show=False):
-    print("")
-    logger.info("PLOTTING SIGNALS VS ANALYZER ANGLE...")
-
-    filenames = [
-        # '2-full-cycles.txt',
-        # '2-full-cycles-2.txt',
-        # '1-full-cycles.txt',
-        # 'test-clear-buffer.txt',
-        # 'test-clear-buffer2.txt',
-        'test-cycles2-step1.0-samples50.txt'
-    ]
-
-    for filename in filenames:
-        filepath = os.path.join(ct.INPUT_DIR, filename)
-
-        logger.info("Filepath: {}".format(filepath))
-        plot_raw_measurement(filepath, output_folder, sep=' ', show=show)
-
-
-def plot_raw_measurement(filepath, output_folder, sep='\t', usecols=(0, 1, 2), show=False):
-    data = read_measurement_file(filepath, sep=sep)
-    # data = data.groupby([COLUMN_ANGLE]).mean().reset_index()
-
-    # xs = np.deg2rad(np.array(data[COLUMN_ANGLE]))
-    s1 = np.array(data[COLUMN_CH0])
-    s2 = np.array(data[COLUMN_CH1])
+    s1 = np.array(measurement.ch0())
+    s2 = np.array(measurement.ch1())
 
     plot = Plot(ylabel=ct.LABEL_VOLTAGE, xlabel=ct.LABEL_ANGLE, folder=output_folder)
+
     plot.set_title(PARAMETER_STRING.format(*parse_input_parameters_from_filepath(filepath)))
-    plot.add_data(s1, style='-', alpha=1, mew=1, label='CH0')
-    plot.add_data(s2, style='-', alpha=1, mew=1, label='CH1')
+
+    if ch0:
+        plot.add_data(s1, style='-', color='k', lw=1.5, label='CH0')
+
+    if ch1:
+        plot.add_data(s2, style='--', color='k', lw=1.5, label='CH1')
+
     # plot._ax.xaxis.set_major_locator(plt.MaxNLocator(5))
-    plot.legend()
+    plot.legend(loc='upper right', fontsize=12, frameon=True)
 
     plot.save(filename="{}.png".format(os.path.basename(filepath)[:-4]))
 

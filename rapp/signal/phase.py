@@ -6,6 +6,8 @@ from scipy import signal
 from scipy.optimize import curve_fit
 from scipy.odr import ODR, Model, RealData
 
+from rapp.utils import round_to_n_with_uncertainty
+
 PHASE_DIFFERENCE_METHODS = ['COSINE', 'HILBERT', 'NLS', 'ODR']
 
 
@@ -60,6 +62,23 @@ class PhaseDifferenceResult:
         self.fits1 = fits1
         self.fits2 = fits2
 
+    def __str__(self):
+        return "|φ1 - φ2| = ({} ± {})°".format(self.value, self.u)
+
+    def round_to_n(self, n=2, k=2):
+        return round_to_n_with_uncertainty(self.value, self.u, n=n, k=k)
+
+    def to_degrees(self):
+        self.value = np.rad2deg(self.value)
+
+        if self.u is not None:
+            self.u = np.rad2deg(self.u)
+
+        if self.fitx is not None:
+            self.fitx = np.rad2deg(self.fitx)
+
+        return self
+
 
 def cosine_similarity(s1, s2):
     s1 -= s1.mean()
@@ -113,8 +132,14 @@ def has_nan_or_zeros(array):
 
 def phase_difference(
     xs, s1, s2,
-    x_sigma=None, s1_sigma=None, s2_sigma=None, method='NLS', degrees=True, p0=None,
-    allow_nan=False, abs_sigma=True
+    x_sigma=None,
+    s1_sigma=None,
+    s2_sigma=None,
+    method='NLS',
+    p0=None,
+    allow_nan=False,
+    abs_sigma=True,
+    fix_range=True
 ) -> PhaseDifferenceResult:
     """Computes phase difference between two harmonic signals (xs, s1) and (xs, s2)."""
 
@@ -131,9 +156,6 @@ def phase_difference(
 
     if method == 'COSINE':
         phase_diff = cosine_similarity(s1, s2)
-        if degrees:
-            phase_diff = np.rad2deg(phase_diff)
-
         return PhaseDifferenceResult(phase_diff, uncertainty=0)
 
     if method in ['NLS', 'ODR']:
@@ -178,10 +200,8 @@ def phase_difference(
         phase_diff = popt[3]
         phase_diff_u = us[3]
 
-        if degrees:
-            phase_diff = np.rad2deg(phase_diff)
-            phase_diff_u = np.rad2deg(phase_diff_u)
-            fitx = np.rad2deg(fitx)
+        if abs(phase_diff) > np.pi / 2 and fix_range:
+            phase_diff = phase_diff % np.pi
 
         logger.debug("|φ1 - φ2| = ({} ± {})°".format(phase_diff, phase_diff_u))
 
@@ -192,7 +212,4 @@ def phase_difference(
 
     if method == 'HILBERT':
         phase_diff = hilbert_transform(s1, s2)
-        if degrees:
-            phase_diff = np.rad2deg(phase_diff)
-
         return PhaseDifferenceResult(phase_diff, uncertainty=0)

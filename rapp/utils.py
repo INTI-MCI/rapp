@@ -2,6 +2,8 @@ import os
 import sys
 import math
 import shutil
+import decimal
+
 
 from time import time
 from functools import wraps
@@ -15,11 +17,26 @@ def create_folder(folder, overwrite=False):
 
 
 def round_to_n(number, n):
-    """Rounds to n significant digits."""
+    """Rounds a number to n significant digits."""
     if number == 0:
         return number
 
     return round(number, n - int(math.floor(math.log10(abs(number)))) - 1)
+
+
+def round_to_n_with_uncertainty(v: float, u: float, n: int, k: int = 2):
+    """Rounds a magnitude to N significant figures in the uncertainty.
+
+    Args:
+        v: value.
+        u: uncertainty.
+        n: number of significant digits.
+        k: coverage factor.
+    """
+    u_rounded = round_to_n(u * k, n)
+    d = abs(decimal.Decimal(str(u_rounded)).as_tuple().exponent)
+
+    return round(v, d), u_rounded
 
 
 def timing(f):
