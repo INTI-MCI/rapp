@@ -192,7 +192,7 @@ def main(sim, phi=PHI, method='ODR', reps=1, step=1, samples=50, show=False):
         error_vs_step.run(phi, output_folder, method, samples, reps, show=show)
 
     if sim in ['all', 'pvalue_vs_range']:
-        pvalue_vs_range.run(phi, output_folder, reps=reps, show=show)
+        pvalue_vs_range.run(phi, output_folder, method, samples, step, reps, show=show)
 
     if sim in ['all', 'sim_steps']:
         simulation_steps.run(output_folder, show=show)
