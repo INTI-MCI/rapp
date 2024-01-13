@@ -37,6 +37,7 @@ def run(phi, folder, method, samples=5, step=0.01, reps=1, cycles=2, show=False)
                 phi=phi,
                 N=reps,
                 A=amplitude,
+                max_v=max_v,
                 method='ODR',
                 cycles=cycles,
                 fc=fc,
