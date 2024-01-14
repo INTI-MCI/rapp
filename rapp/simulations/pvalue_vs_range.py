@@ -16,7 +16,7 @@ TPL_LABEL = "reps={}."
 TPL_FILENAME = "sim_pvalue_vs_range-reps-{}.png"
 
 
-def run(phi, folder, reps=1, show=False):
+def run(phi, folder, method=None, samples=None, step=None, reps=1, cycles=None, show=False):
     print("")
     logger.info("PVALUE (GAUSSIAN-TEST) VS DYNAMIC RANGE")
 

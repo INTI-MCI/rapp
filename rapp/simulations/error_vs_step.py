@@ -15,7 +15,7 @@ STEPS = [0.001, 0.01, 0.1, 1, 2, 4]
 NREPS = [1, 10, 20, 50, 100, 200]
 
 
-def run(phi, folder, method='ODR', samples=5, reps=1, cycles=2, show=False):
+def run(phi, folder, method='ODR', samples=5, step=None, reps=1, cycles=2, show=False):
     print("")
     logger.info("PHASE DIFFERENCE VS STEP")
 

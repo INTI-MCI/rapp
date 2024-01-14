@@ -13,7 +13,7 @@ TPL_LABEL = "cycles={}\nstep={}°\nreps={}"
 TPL_FILENAME = "sim_error_vs_samples-reps-{}-step-{}.png"
 
 
-def run(phi, folder, method='ODR', step=1, reps=1, cycles=2, show=False):
+def run(phi, folder, method='ODR', samples=None, step=1, reps=1, cycles=2, show=False):
     print("")
     logger.info("PHASE DIFFERENCE VS SAMPLES")
     logger.info("Method: {}, cycles={}, reps={}".format(method, cycles, reps))

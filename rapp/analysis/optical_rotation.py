@@ -11,10 +11,13 @@ from rapp.measurement import Measurement
 logger = logging.getLogger(__name__)
 
 
-def optical_rotation(folder_i, folder_f, method='ODR', hwp=False):
+def optical_rotation(folder1, folder2, method='ODR', hwp=False):
     print("")
-    initial_poisition = float(re.findall(REGEX_NUMBER_AFTER_WORD.format(word="hwp"), folder_i)[0])
-    final_position = float(re.findall(REGEX_NUMBER_AFTER_WORD.format(word="hwp"), folder_f)[0])
+    logger.debug("Folder without optical active sample measurements {}...".format(folder1))
+    logger.debug("Folder with optical active sample measurements {}...".format(folder2))
+
+    initial_poisition = float(re.findall(REGEX_NUMBER_AFTER_WORD.format(word="hwp"), folder1)[0])
+    final_position = float(re.findall(REGEX_NUMBER_AFTER_WORD.format(word="hwp"), folder2)[0])
 
     logger.debug("Initial position: {}°".format(initial_poisition))
     logger.debug("Final position: {}°".format(final_position))
@@ -22,12 +25,9 @@ def optical_rotation(folder_i, folder_f, method='ODR', hwp=False):
     or_angle = (final_position - initial_poisition)
     logger.info("Expected optical rotation: {}°".format(or_angle))
 
-    logger.debug("Folder without optical active sample measurements {}...".format(folder_i))
-    logger.debug("Folder with optical active sample measurements {}...".format(folder_f))
-
     ors = []
-    files_i = sorted([os.path.join(folder_i, x) for x in os.listdir(folder_i)])
-    files_f = sorted([os.path.join(folder_f, x) for x in os.listdir(folder_f)])
+    files_i = sorted([os.path.join(folder1, x) for x in os.listdir(folder1)])
+    files_f = sorted([os.path.join(folder2, x) for x in os.listdir(folder2)])
 
     for k in range(len(files_i)):
         measurement_i = Measurement.from_file(files_i[k])

@@ -13,7 +13,7 @@ from rapp.signal import signal
 logger = logging.getLogger(__name__)
 
 
-def run(folder, show=False):
+def run(folder, method=None, samples=None, step=None, reps=None, cycles=None, show=False):
     print("")
     logger.info("SIMULATION PROCESS...")
 
