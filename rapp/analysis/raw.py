@@ -11,7 +11,7 @@ from rapp.analysis.parser import parse_input_parameters_from_filepath
 PARAMETER_STRING = "cycles={}, step={}°, samples={}."
 
 
-def plot_raw(filepath, sep='\t', usecols=(0, 1, 2), ch0=True, ch1=True, show=False):
+def plot_raw(filepath, sep='\t', usecols=(0, 1, 2), no_ch0=False, no_ch1=False, show=False):
     output_folder = os.path.join(ct.WORK_DIR, ct.OUTPUT_FOLDER_PLOTS)
     create_folder(output_folder)
 
@@ -24,10 +24,10 @@ def plot_raw(filepath, sep='\t', usecols=(0, 1, 2), ch0=True, ch1=True, show=Fal
 
     plot.set_title(PARAMETER_STRING.format(*parse_input_parameters_from_filepath(filepath)))
 
-    if ch0:
+    if not no_ch0:
         plot.add_data(s1, style='-', color='k', lw=1.5, label='CH0')
 
-    if ch1:
+    if not no_ch1:
         plot.add_data(s2, style='--', color='k', lw=1.5, label='CH1')
 
     # plot._ax.xaxis.set_major_locator(plt.MaxNLocator(5))

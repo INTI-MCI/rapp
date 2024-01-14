@@ -20,11 +20,11 @@ TPL_LABEL = "samples={}\nstep={}°"
 TPL_FILENAME = "sim_error_vs_method-reps-{}-samples-{}-step-{}.png"
 
 
-def run(phi, folder, samples=5, step=1, reps=10, max_cycles=8, show=False):
+def run(phi, folder, method=None, samples=5, step=1, reps=10, cycles=8, show=False):
     print("")
     logger.info("PHASE DIFFERENCE VS # OF CYCLES")
 
-    cycles_list = np.arange(1, max_cycles + 1, step=1)
+    cycles_list = np.arange(1, cycles + 1, step=1)
     fc = simulator.samples_per_cycle(step=step)
 
     errors = {}

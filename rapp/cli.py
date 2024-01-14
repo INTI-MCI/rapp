@@ -101,6 +101,7 @@ def add_sim_subparser(subparsers):
     p.add_argument('--samples', type=int, default=50, help=HELP_SAMPLES)
     p.add_argument('--step', type=float, default=1, help=HELP_SAMPLES)
     p.add_argument('--reps', type=int, default=1, help=HELP_SIM_REPS)
+    p.add_argument('--cycles', type=int, default=0, help=HELP_CYCLES)
     p.add_argument('--show', action='store_true', help=HELP_SHOW)
     p.add_argument('-v', '--verbose', action='store_true', help=HELP_VERBOSE)
 
@@ -123,12 +124,11 @@ def add_plot_raw_subparser(subparsers):
 
 
 def add_or_subparser(subparsers):
-    p = subparsers.add_parser("or", help=HELP_OR, epilog=EPILOG_PHASE_DIFF)
+    p = subparsers.add_parser("OR", help=HELP_OR, epilog=EPILOG_PHASE_DIFF)
     p.add_argument('folder1', type=str, help=HELP_FOLDER_WITHOUT_SAMPLE)
     p.add_argument('folder2', type=str, help=HELP_FOLDER_WITH_SAMPLE)
     p.add_argument('--method', type=str, default='ODR', help=HELP_METHOD)
     p.add_argument('--hwp', action='store_true', help=HELP_HWP)
-    p.add_argument('--show', action='store_true', help=HELP_SHOW)
     p.add_argument('-v', '--verbose', action='store_true', help=HELP_VERBOSE)
 
 
@@ -137,6 +137,34 @@ def add_analysis_subparser(subparsers):
     p.add_argument('name', type=str, help=HELP_SIM_NAME)
     p.add_argument('--show', action='store_true', help=HELP_SHOW)
     p.add_argument('-v', '--verbose', action='store_true', help=HELP_VERBOSE)
+
+
+def get_command(command):
+    if command == 'phase_diff':
+        return phase_diff.plot_phase_difference_from_file
+
+    if command == 'OR':
+        return optical_rotation.optical_rotation
+
+    if command == 'plot_raw':
+        return raw.plot_raw
+
+    if command == 'analysis':
+        return analysis.main
+
+    if command == 'sim':
+        return simulator.main
+
+    if command == 'polarimeter':
+        return polarimeter.main
+
+
+def get_command_args(args):
+    command_args = vars(args)
+    del command_args['command']
+    del command_args['verbose']
+
+    return command_args
 
 
 def main():
@@ -157,70 +185,12 @@ def main():
 
     args = parser.parse_args(args=sys.argv[1:] or ['--help'])
 
+    setup_logger(args.verbose)
+    command = get_command(args.command)
+    command_args = get_command_args(args)
+
     try:
-        if args.command == 'phase_diff':
-            setup_logger(args.verbose)
-            phase_diff.plot_phase_difference_from_file(
-                args.filepath,
-                method=args.method,
-                show=args.show
-            )
-
-        if args.command == 'OR':
-            setup_logger(args.verbose)
-            optical_rotation.optical_rotation(
-                args.folder1,
-                args.folder2,
-                method=args.method,
-                hwp=args.hwp
-            )
-
-        if args.command == 'plot_raw':
-            setup_logger(args.verbose)
-            raw.plot_raw(
-                args.filepath,
-                ch0=not args.no_ch0,
-                ch1=not args.no_ch1,
-                show=args.show
-            )
-
-        if args.command == 'analysis':
-            setup_logger(args.verbose)
-            analysis.main(args.name, show=args.show)
-
-        if args.command == 'sim':
-            setup_logger(args.verbose)
-            simulator.main(
-                args.name,
-                method=args.method,
-                reps=args.reps,
-                step=args.step,
-                samples=args.samples,
-                show=args.show
-            )
-
-        if args.command == 'polarimeter':
-            setup_logger(args.verbose)
-            polarimeter.main(
-                samples=args.samples,
-                chunk_size=args.chunk_size,
-                cycles=args.cycles,
-                step=args.step,
-                init_position=args.init_position,
-                delay_position=args.delay_position,
-                velocity=args.velocity,
-                hwp_cycles=args.hwp_cycles,
-                hwp_step=args.hwp_step,
-                hwp_delay=args.hwp_delay,
-                reps=args.reps,
-                no_ch0=args.no_ch0,
-                no_ch1=args.no_ch1,
-                prefix=args.prefix,
-                mock_esp=args.mock_esp,
-                mock_adc=args.mock_adc,
-                plot=args.plot,
-                overwrite=args.overwrite
-            )
+        command(**command_args)
     except ValueError as e:
         print("ERROR: {}".format(e))
         import traceback

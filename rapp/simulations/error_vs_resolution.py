@@ -18,11 +18,11 @@ ARDUINO_MAXV = 5
 ARDUINO_BITS = 10
 
 
-def run(phi, folder, method='ODR', samples=5, step=1, reps=1, max_cycles=8, show=False):
+def run(phi, folder, method='ODR', samples=5, step=1, reps=1, cycles=8, show=False):
     print("")
     logger.info("PHASE DIFFERENCE VS RESOLUTION")
 
-    cycles_list = np.arange(1, max_cycles + 1, step=1)
+    cycles_list = np.arange(1, cycles + 1, step=1)
     fc = simulator.samples_per_cycle(step=step)
 
     BITS = [ARDUINO_BITS, ADC_BITS]
