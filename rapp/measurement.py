@@ -145,3 +145,7 @@ class Measurement:
         s2u = np.array(ch1_std) / np.sqrt(int(group_size))
 
         return xs, s1, s2, s1u, s2u
+
+    @staticmethod
+    def channel_names():
+        return [COLUMN_CH0, COLUMN_CH0]

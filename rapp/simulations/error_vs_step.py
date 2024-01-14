@@ -2,7 +2,7 @@ import logging
 
 from rapp import constants as ct
 from rapp.simulations import simulator
-from rapp.signal.plot import Plot
+from rapp.analysis.plot import Plot
 
 
 logger = logging.getLogger(__name__)
