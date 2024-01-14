@@ -1,10 +1,8 @@
 import os
-import re
 import logging
 
 import numpy as np
 
-from uncertainties import ufloat
 from matplotlib import pyplot as plt
 
 from scipy import signal
@@ -12,28 +10,11 @@ from scipy import stats
 from scipy.optimize import curve_fit
 
 from rapp import constants as ct
-from rapp.signal.plot import Plot
+from rapp.analysis.plot import Plot
 from rapp.measurement import Measurement
-from rapp.utils import create_folder, round_to_n, round_to_n_with_uncertainty
+from rapp.utils import round_to_n, round_to_n_with_uncertainty
 
 logger = logging.getLogger(__name__)
-
-
-CHANNELS = [0, 1]
-
-REGEX_NUMBER_AFTER_WORD = r"(?<={word})-?\d+(?:\.\d+)?"
-
-PARAMETER_STRING = "cycles={}, step={}°, samples={}."
-
-COVERAGE_FACTOR = 3
-
-ANALYSIS_NAMES = [
-    'all',
-    'darkcurrent',
-    'noise',
-    'drift',
-    'OR',
-]
 
 WIDTH_10HZ = 1
 
@@ -97,6 +78,14 @@ def quantized_bins(data, step=0.000125):
     return np.arange(-0.000125 * 20, 0.000125 * 20, step=0.000125)
 
 
+def generate_quantized_bins(data, step=0.125e-3):
+    centers = np.arange(data.min(), data.max() + step, step)
+    edges = centers - step / 2
+    edges = np.append(edges, max(edges) + step)
+
+    return centers, edges
+
+
 def linear(f, a, b):
     return - a * f + b
 
@@ -112,26 +101,6 @@ def poly_2(x, A, B, C):
 def detrend_poly(data, func):
     popt, pcov = curve_fit(func, np.arange(data.size), data)
     return data - func(np.arange(data.size), *popt)
-
-
-def parse_input_parameters_from_filepath(filepath):
-    cycles_find = re.findall(REGEX_NUMBER_AFTER_WORD.format(word="cycles"), filepath)
-    step_find = re.findall(REGEX_NUMBER_AFTER_WORD.format(word="step"), filepath)
-    samples_find = re.findall(REGEX_NUMBER_AFTER_WORD.format(word="samples"), filepath)
-
-    cycles = cycles_find[0] if cycles_find else 0
-    step = step_find[0] if step_find else 0
-    samples = samples_find[0] if samples_find else 0
-
-    return (cycles, step, samples)
-
-
-def generate_quantized_bins(data, step=0.125e-3):
-    centers = np.arange(data.min(), data.max() + step, step)
-    edges = centers - step / 2
-    edges = np.append(edges, max(edges) + step)
-
-    return centers, edges
 
 
 def plot_histogram_and_pdf(data,  bins='quantized', prefix='', show=False):
@@ -447,8 +416,8 @@ def plot_noise_with_laser_on(output_folder, show=False):
     plt.close()
 
     logger.info("Removing 2-degree polynomial from raw data...")
-    for i in CHANNELS:
-        data['CH{}'.format(i)] = detrend_poly(data['CH{}'.format(i)], poly_2)
+    for ch in Measurement.channel_names():
+        data[ch] = detrend_poly(data[ch], poly_2)
 
     logger.info("Plotting FFT...")
     f, axs = plt.subplots(1, 2, figsize=(8, 5), subplot_kw=dict(box_aspect=1), sharey=False)
@@ -583,285 +552,3 @@ def plot_noise_with_laser_on(output_folder, show=False):
         plt.show()
 
     plt.close()
-
-
-def plot_drift(output_folder, show=False):
-    print("")
-    logger.info("PROCESSING LASER DRIFT...")
-
-    reencendido = np.loadtxt(
-        "data/old/continuous-range4V-584nm-16-reencendido-samples1M.txt",
-        delimiter=' ', skiprows=1, usecols=(1, 2), encoding=ct.ENCONDIG)
-
-    r0 = reencendido[:, 0]
-    r1 = reencendido[:, 1]
-
-    drift0 = r0[300000:]
-    drift1 = r1[300000:]
-
-    plt.figure()
-    plt.plot(drift0)
-
-    if show:
-        plt.show()
-
-    # plt.close()
-
-    plt.figure()
-    plt.plot(drift1)
-
-    if show:
-        plt.show()
-
-    plt.close()
-
-    plt.figure()
-    fft_data0 = np.fft.fft(drift0)
-    fft_data1 = np.fft.fft(drift1)
-    plt.semilogy(np.abs(fft_data0))
-    plt.semilogy(np.abs(fft_data1))
-
-    if show:
-        plt.show()
-
-    plt.close()
-
-    sf = 250000
-    fc = np.array([100, 1000])
-    w = fc / (sf/2)
-    print(w)
-    figure, ax = plt.subplots(len(fc), 2, figsize=(8, 4*len(fc)), sharex=False, sharey=False)
-    figure.suptitle('Deriva filtrada')
-
-    b1, a1 = signal.butter(3, w[0], btype='lowpass')
-    filtered_drift0 = signal.filtfilt(b1, a1, drift0)
-    filtered_drift1 = signal.filtfilt(b1, a1, drift1)
-
-    print(filtered_drift0)
-    print(filtered_drift1)
-
-    ax[0, 0].plot(filtered_drift0)
-    ax[0, 0].set_title('Canal 0, fc = {}'.format(fc[0]))
-    ax[0, 1].plot(filtered_drift1)
-    ax[0, 1].set_title('Canal 1, fc = {}'.format(fc[0]))
-
-    b1, a1 = signal.butter(3, w[1], btype='lowpass')
-    filtered_drift0 = signal.filtfilt(b1, a1, drift0)
-    filtered_drift1 = signal.filtfilt(b1, a1, drift1)
-
-    print(filtered_drift0)
-    print(filtered_drift1)
-
-    ax[1, 0].plot(filtered_drift0)
-    ax[1, 0].set_title('Canal 1, fc = {}'.format(fc[1]))
-    ax[1, 1].plot(filtered_drift1)
-    ax[1, 1].set_title('Canal 1, fc = {}'.format(fc[1]))
-
-    if show:
-        plt.show()
-
-    plt.close()
-
-    # # add a 'best fit' line
-    # plt.figure()
-    # y = norm.pdf(np.linspace(min(filtered_noise0), max(filtered_noise0)), mu0, sigma0)
-    # plt.hist(filtered_noise0, 100, range=(-0.005, 0.005), density=True)
-    # plt.plot(np.linspace(-0.005, 0.005), y, 'r--', linewidth=2)
-    # plt.show()
-
-
-def optical_rotation(folder_i, folder_f, method='ODR', hwp=False):
-    print("")
-    initial_poisition = float(re.findall(REGEX_NUMBER_AFTER_WORD.format(word="hwp"), folder_i)[0])
-    final_position = float(re.findall(REGEX_NUMBER_AFTER_WORD.format(word="hwp"), folder_f)[0])
-
-    logger.debug("Initial position: {}°".format(initial_poisition))
-    logger.debug("Final position: {}°".format(final_position))
-
-    or_angle = (final_position - initial_poisition)
-    logger.info("Expected optical rotation: {}°".format(or_angle))
-
-    logger.debug("Folder without optical active sample measurements {}...".format(folder_i))
-    logger.debug("Folder with optical active sample measurements {}...".format(folder_f))
-
-    ors = []
-    files_i = sorted([os.path.join(folder_i, x) for x in os.listdir(folder_i)])
-    files_f = sorted([os.path.join(folder_f, x) for x in os.listdir(folder_f)])
-
-    for k in range(len(files_i)):
-        measurement_i = Measurement.from_file(files_i[k])
-        measurement_f = Measurement.from_file(files_f[k])
-        *head, res_i = measurement_i.phase_diff(method=method, fix_range=not hwp)
-        *head, res_f = measurement_f.phase_diff(method=method, fix_range=not hwp)
-
-        res_i = ufloat(res_i.value, res_i.u)
-        res_f = ufloat(res_f.value, res_f.u)
-
-        optical_rotation = res_f - res_i
-
-        if hwp:
-            optical_rotation = ufloat(optical_rotation.n * 0.5, optical_rotation.s)
-
-        logger.info("Optical rotation {}: {}°".format(k + 1, optical_rotation))
-
-        ors.append(optical_rotation)
-
-    N = len(ors)
-    avg_or = sum(ors) / N
-
-    values = [o.n for o in ors]
-    repeatability_u = np.std(values) / np.sqrt(len(values))
-
-    logger.info("Optical rotation measured (average): {}".format(avg_or))
-    logger.debug("Repeatability uncertainty: {}".format(repeatability_u))
-    logger.info("Error: {}".format(abs(or_angle) - abs(avg_or)))
-
-    return avg_or, ors
-
-
-def plot_phase_difference_from_file(filepath, method, show=False):
-    logger.info("Calculating phase difference for {}...".format(filepath))
-
-    cycles, step, samples = parse_input_parameters_from_filepath(filepath)
-    parameters = "Parameters: cycles={}, step={}, samples={}.".format(cycles, step, samples)
-    logger.info(parameters)
-
-    measurement = Measurement.from_file(filepath)
-    filename = "{}.png".format(os.path.basename(filepath)[:-4])
-
-    plot_phase_difference(measurement, method, filename, show)
-
-
-def plot_phase_difference(measurement, method, filename, show=False):
-    xs, s1, s2, s1err, s2err, res = measurement.phase_diff(method=method)
-
-    phase_diff, phase_diff_u = res.round_to_n(n=2, k=COVERAGE_FACTOR)
-
-    log_phi = "φ=({} ± {})°.".format(phase_diff, phase_diff_u)
-    logger.info("Detected phase difference (analyzer angles): {}".format(log_phi))
-
-    output_folder = os.path.join(ct.WORK_DIR, ct.OUTPUT_FOLDER_PLOTS)
-    create_folder(output_folder)
-
-    plot = Plot(ylabel=ct.LABEL_VOLTAGE, xlabel=ct.LABEL_DEGREE, folder=output_folder)
-    markevery = 10
-
-    d1 = plot.add_data(
-        xs, s1, yerr=s1err,
-        ms=6, mfc='None', color='k', mew=1,
-        markevery=markevery, alpha=0.8, label='CH0',
-        style='D'
-    )
-
-    d2 = plot.add_data(
-        xs, s2, yerr=s2err,
-        ms=6, mfc='None', color='k', mew=1, markevery=markevery, alpha=0.8, label='CH1',
-    )
-
-    first_legend = plot._ax.legend(handles=[d1, d2], loc='upper left', frameon=False)
-
-    # Add the legend manually to the Axes.
-    plot._ax.add_artist(first_legend)
-
-    if res.fitx is not None:
-        f1 = plot.add_data(res.fitx, res.fits1, style='-', color='k', lw=1, label='Ajuste')
-        plot.add_data(res.fitx, res.fits2, style='-', color='k', lw=1)
-
-        signal_diff_s1 = s1 - res.fits1
-        signal_diff_s2 = s2 - res.fits2
-        l1 = plot.add_data(res.fitx, signal_diff_s1, style='-', lw=1.5, label='Ajuste - CH0')
-        l2 = plot.add_data(res.fitx, signal_diff_s2, style='-', lw=1.5, label='Ajuste - CH1')
-
-        plot._ax.legend(handles=[f1, l1, l2], loc='upper right', frameon=False)
-
-    plot._ax.set_ylim(min(s1) - abs(max(s1) - min(s1)) * 0.2, max(s1) * 1.8)
-
-    plot.save(filename)
-
-    if res.fitx is not None:
-        plot = Plot(ylabel=ct.LABEL_VOLTAGE, xlabel=ct.LABEL_DEGREE, folder=output_folder)
-        plot.add_data(res.fitx, signal_diff_s1, style='-', lw=1.5, label='Ajuste - CH0')
-        plot.add_data(res.fitx, signal_diff_s2, style='-', lw=1.5, label='Ajuste - CH1')
-        plt.legend(loc='upper left', frameon=False)
-        plot.save(filename="{}-difference.png".format(filename[-4]))
-
-        plot._ax.set_ylim(
-            np.min([signal_diff_s1, signal_diff_s2]),
-            np.max([signal_diff_s1, signal_diff_s2]) * 1.5)
-
-    if show:
-        plot.show()
-
-    plot.close()
-
-
-def plot_raw(filepath, sep='\t', usecols=(0, 1, 2), ch0=True, ch1=True, show=False):
-    output_folder = os.path.join(ct.WORK_DIR, ct.OUTPUT_FOLDER_PLOTS)
-    create_folder(output_folder)
-
-    measurement = Measurement.from_file(filepath)
-
-    s1 = np.array(measurement.ch0())
-    s2 = np.array(measurement.ch1())
-
-    plot = Plot(ylabel=ct.LABEL_VOLTAGE, xlabel=ct.LABEL_ANGLE, folder=output_folder)
-
-    plot.set_title(PARAMETER_STRING.format(*parse_input_parameters_from_filepath(filepath)))
-
-    if ch0:
-        plot.add_data(s1, style='-', color='k', lw=1.5, label='CH0')
-
-    if ch1:
-        plot.add_data(s2, style='--', color='k', lw=1.5, label='CH1')
-
-    # plot._ax.xaxis.set_major_locator(plt.MaxNLocator(5))
-    plot.legend(loc='upper right', fontsize=12, frameon=True)
-
-    plot.save(filename="{}.png".format(os.path.basename(filepath)[:-4]))
-
-    if show:
-        plot.show()
-
-    plot.close()
-
-
-def main(name, show):
-    output_folder = os.path.join(ct.WORK_DIR, ct.OUTPUT_FOLDER_PLOTS)
-    create_folder(output_folder)
-
-    # TODO: add another subparser and split these options in different commands with parameters
-    if name not in ANALYSIS_NAMES:
-        raise ValueError("Analysis with name {} not implemented".format(name))
-
-    if name in ['all', 'darkcurrent']:
-        plot_noise_with_laser_off(output_folder, show=show)
-
-    if name in ['all', 'noise']:
-        plot_noise_with_laser_on(output_folder, show=show)
-
-    if name in ['drift']:
-        plot_drift(output_folder, show=show)
-
-    if name == 'OR':
-
-        _, ors1 = optical_rotation('data/22-12-2023/hwp0/', 'data/22-12-2023/hwp4.5/', hwp=True)
-        _, ors2 = optical_rotation('data/28-12-2023/hwp0/', 'data/28-12-2023/hwp4.5/', hwp=True)
-        _, ors3 = optical_rotation('data/28-12-2023/hwp0/', 'data/28-12-2023/hwp29/', hwp=True)
-        _, ors4 = optical_rotation('data/29-12-2023/hwp0/', 'data/29-12-2023/hwp-9/')
-
-        print("")
-        measurement_u = max([o.s for o in ors1 + ors2 + ors3 + ors4])
-        logger.info("Measurement Uncertainty: {}°".format(measurement_u))
-
-        all_45_ors = [o.n for o in ors1 + ors2]
-        logger.debug("Values taken into account for repeatability: {}".format(all_45_ors))
-
-        repeatability_u = np.std(np.abs(all_45_ors)) / len(all_45_ors)
-        logger.info("Repeatability Uncertainty: {}°". format(repeatability_u))
-
-        combined_u = np.sqrt(measurement_u ** 2 + repeatability_u ** 2)
-        logger.info("Combined Uncertainty (k=2): {}°". format(combined_u * 2))
-
-
-if __name__ == '__main__':
-    main()
