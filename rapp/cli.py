@@ -2,7 +2,7 @@ import sys
 import argparse
 
 from rapp import polarimeter
-from rapp.signal import analysis
+from rapp.analysis import analysis, optical_rotation, phase_diff, raw
 from rapp.simulations import simulator
 from rapp.log import setup_logger
 
@@ -160,15 +160,15 @@ def main():
     try:
         if args.command == 'phase_diff':
             setup_logger(args.verbose)
-            analysis.plot_phase_difference_from_file(
+            phase_diff.plot_phase_difference_from_file(
                 args.filepath,
                 method=args.method,
                 show=args.show
             )
 
-        if args.command == 'or':
+        if args.command == 'OR':
             setup_logger(args.verbose)
-            analysis.optical_rotation(
+            optical_rotation.optical_rotation(
                 args.folder1,
                 args.folder2,
                 method=args.method,
@@ -177,7 +177,7 @@ def main():
 
         if args.command == 'plot_raw':
             setup_logger(args.verbose)
-            analysis.plot_raw(
+            raw.plot_raw(
                 args.filepath,
                 ch0=not args.no_ch0,
                 ch1=not args.no_ch1,

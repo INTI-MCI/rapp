@@ -6,7 +6,7 @@ from scipy import stats
 from rapp import constants as ct
 from rapp.signal import signal
 from rapp.simulations import simulator
-from rapp.signal.plot import Plot
+from rapp.analysis.plot import Plot
 
 
 logger = logging.getLogger(__name__)

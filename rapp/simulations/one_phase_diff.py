@@ -2,7 +2,7 @@ import logging
 
 from rapp.simulations import simulator
 from rapp.measurement import Measurement
-from rapp.signal.analysis import plot_phase_difference
+from rapp.analysis.phase_diff import plot_phase_difference
 
 logger = logging.getLogger(__name__)
 
