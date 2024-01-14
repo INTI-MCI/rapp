@@ -13,7 +13,10 @@ from rapp.signal import signal
 logger = logging.getLogger(__name__)
 
 
-def run(folder, method=None, samples=None, step=None, reps=None, cycles=None, show=False):
+def run(
+    phi=None, folder=None, method=None, samples=None, step=None, reps=None, cycles=None,
+    show=False, save=True
+):
     print("")
     logger.info("SIMULATION PROCESS...")
 
@@ -78,7 +81,8 @@ def run(folder, method=None, samples=None, step=None, reps=None, cycles=None, sh
     plt.subplots_adjust(wspace=0, hspace=0)
     plt.tight_layout()
 
-    f.savefig(os.path.join(folder, 'sim_steps.png'))
+    if save:
+        f.savefig(os.path.join(folder, 'sim_steps.png'))
 
     if show:
         plt.show()

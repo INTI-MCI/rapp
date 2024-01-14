@@ -18,7 +18,7 @@ ARDUINO_MAXV = 5
 ARDUINO_BITS = 10
 
 
-def run(phi, folder, method='ODR', samples=5, step=1, reps=1, cycles=8, show=False):
+def run(phi, folder, method='ODR', samples=5, step=1, reps=1, cycles=8, show=False, save=True):
     print("")
     logger.info("PHASE DIFFERENCE VS RESOLUTION")
 
@@ -78,8 +78,9 @@ def run(phi, folder, method='ODR', samples=5, step=1, reps=1, cycles=8, show=Fal
     plot._ax.set_yscale('log')
     plot.legend(fontsize=12)
 
-    filename = TPL_FILENAME.format(step, samples, reps)
-    plot.save(filename=filename)
+    if save:
+        filename = TPL_FILENAME.format(step, samples, reps)
+        plot.save(filename=filename)
 
     if show:
         plot.show()

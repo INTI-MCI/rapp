@@ -15,14 +15,23 @@ STEPS = [0.001, 0.01, 0.1, 1, 2, 4]
 NREPS = [1, 10, 20, 50, 100, 200]
 
 
-def run(phi, folder, method='ODR', samples=5, step=None, reps=1, cycles=2, show=False):
+def run(
+    phi, folder, method='ODR', samples=5, step=1, reps=1, cycles=2, show=False, save=True
+):
     print("")
     logger.info("PHASE DIFFERENCE VS STEP")
 
     logger.info("Method: {}, cycles={}".format(method, cycles))
 
+    steps = step
+    if not isinstance(steps, list):
+        steps = STEPS
+
+    if not isinstance(reps, list):
+        reps = NREPS
+
     errors = []
-    for step, reps in zip(STEPS, NREPS):
+    for step, reps in zip(steps, reps):
         fc = simulator.samples_per_cycle(step=step)
 
         n_res = simulator.n_simulations(
@@ -32,7 +41,8 @@ def run(phi, folder, method='ODR', samples=5, step=None, reps=1, cycles=2, show=
             cycles=cycles,
             fc=fc,
             fa=samples,
-            p0=[1, 0, 0, 0, 0, 0]
+            p0=[1, 0, 0, 0, 0, 0],
+            allow_nan=True
         )
 
         error = n_res.rmse()
@@ -47,12 +57,13 @@ def run(phi, folder, method='ODR', samples=5, step=None, reps=1, cycles=2, show=
 
     label = TPL_LABEL.format(cycles, samples)
 
-    plot.add_data(STEPS, errors, style='s-', mfc='k', color='k', lw=1, label=label)
+    plot.add_data(steps, errors, style='s-', mfc='k', color='k', lw=1, label=label)
     plot._ax.set_yscale('log')
 
     plot.legend(fontsize=12)
 
-    plot.save(filename=TPL_FILENAME.format(samples, reps))
+    if save:
+        plot.save(filename=TPL_FILENAME.format(samples, reps))
 
     if show:
         plot.show()

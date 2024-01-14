@@ -2,9 +2,11 @@ import logging
 
 import numpy as np
 
-from rapp.adc import ADC_BITS, ADC_MAXV
+from rapp.adc import ADC_BITS, GAIN_ONE, GAINS
 
 logger = logging.getLogger(__name__)
+
+DEFAULT_MAXV, _ = GAINS[GAIN_ONE]
 
 
 def harmonic(
@@ -15,7 +17,7 @@ def harmonic(
     phi: float = 0,
     noise: tuple = None,
     bits: int = ADC_BITS,
-    max_v: float = ADC_MAXV,
+    max_v: float = DEFAULT_MAXV,
     all_positive: bool = False
 ) -> tuple:
     """Generates a one-dimensional discrete harmonic signal.
@@ -58,7 +60,7 @@ def harmonic(
 
 
 def quantize(
-    signal: np.array, max_v: float = ADC_MAXV, bits: int = ADC_BITS, signed=True
+    signal: np.array, max_v: float = DEFAULT_MAXV, bits: int = ADC_BITS, signed=True
 ) -> np.array:
     """Performs quantization of a voltage signal.
 

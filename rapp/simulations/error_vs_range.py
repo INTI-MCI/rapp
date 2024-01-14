@@ -15,7 +15,7 @@ TPL_LABEL = "cycles={}\nsamples={}\nstep={}°\nreps={}"
 TPL_FILENAME = "sim_error_vs_range-reps-{}-samples-{}-step-{}.png"
 
 
-def run(phi, folder, method, samples=5, step=0.01, reps=1, cycles=2, show=False):
+def run(phi, folder, method, samples=5, step=0.01, reps=1, cycles=2, show=False, save=True):
     print("")
     logger.info("PHASE DIFFERENCE VS MAX TENSION")
 
@@ -70,7 +70,8 @@ def run(phi, folder, method, samples=5, step=0.01, reps=1, cycles=2, show=False)
     annotation = TPL_LABEL.format(cycles, samples, step, reps)
     plot._ax.text(0.25, 0.7, annotation, transform=plot._ax.transAxes)
 
-    plot.save(filename=TPL_FILENAME.format(reps, samples, step))
+    if save:
+        plot.save(filename=TPL_FILENAME.format(reps, samples, step))
 
     if show:
         plot.show()
