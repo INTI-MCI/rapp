@@ -4,6 +4,7 @@ import numpy as np
 from scipy import stats
 
 from rapp import constants as ct
+from rapp.signal import signal
 from rapp.simulations import simulator
 from rapp.signal.plot import Plot
 
@@ -27,7 +28,7 @@ def run(phi, folder, reps=1, show=False):
         for rep in range(reps):
             noise = A * np.random.normal(loc=0, scale=0.00032, size=40000)
             noise = noise + max(noise)
-            noise = simulator.quantize(noise, max_v=simulator.ADC_MAXV, bits=simulator.ADC_BITS)
+            noise = signal.quantize(noise, max_v=simulator.ADC_MAXV, bits=simulator.ADC_BITS)
 
             pvalue = stats.normaltest(noise).pvalue
             pvalues.append(pvalue)

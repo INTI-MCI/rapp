@@ -11,6 +11,7 @@ HELP_SIM = "Tool for making numerical simulations."
 HELP_PHASE_DIFF = 'Tool for calculating phase difference from single polarimeter measurement.'
 HELP_OR = 'Tool for calculating optical rotation from initial phase and final phase measurements.'
 HELP_ANALYSYS = "Tool for analyzing signals: noise, drift, etc."
+HELP_PLOT_ROW = "Tool for plotting raw measurements."
 
 HELP_SAMPLES = 'n° of samples per angle.'
 HELP_CYCLES = 'n° of cycles to run (default: %(default)s).'
@@ -35,11 +36,11 @@ HELP_HWP_DELAY = 'delay (in seconds) after changing HW plate position (default: 
 
 
 HELP_METHOD = 'phase difference calculation method (default: %(default)s).'
-HELP_HWP = 'whether the measurement was done with a half wave plate'
+HELP_HWP = 'whether the measurement was done with a half wave plate (default: %(default)s).'
 
 HELP_SIM_REPS = 'number of repetitions in each simulated iteration (default: %(default)s).'
 
-HELP_SHOW = 'whether to show the plot.'
+HELP_SHOW = 'whether to show the plot (default: %(default)s).'
 HELP_FILEPATH = 'file containing the measurements.'
 HELP_FOLDER = 'folder containing the measurements.'
 
@@ -65,6 +66,9 @@ EPILOG_SIM = "Example: {}".format(EXAMPLE_SIM)
 
 EXAMPLE_PHASE_DIFF = "rapp phase_diff data/sine-range4V-632nm-cycles2-step1.0-samples50.txt"
 EPILOG_PHASE_DIFF = "Example: {}".format(EXAMPLE_PHASE_DIFF)
+
+EXAMPLE_PLOT_RAW = "rapp plot_raw data/sine-range4V-632nm-cycles2-step1.0-samples50.txt"
+EPILOG_PLOT_RAW = "Example: {}".format(EXAMPLE_PHASE_DIFF)
 
 
 def add_polarimeter_subparser(subparsers):
@@ -109,6 +113,15 @@ def add_phase_diff_subparser(subparsers):
     p.add_argument('-v', '--verbose', action='store_true', help=HELP_VERBOSE)
 
 
+def add_plot_raw_subparser(subparsers):
+    p = subparsers.add_parser("plot_raw", help=HELP_PLOT_ROW, epilog=EPILOG_PLOT_RAW)
+    p.add_argument('filepath', type=str, help=HELP_FILEPATH)
+    p.add_argument('--no-ch0', action='store_true', help=HELP_NOCH0)
+    p.add_argument('--no-ch1', action='store_true', help=HELP_NOCH1)
+    p.add_argument('--show', action='store_true', help=HELP_SHOW)
+    p.add_argument('-v', '--verbose', action='store_true', help=HELP_VERBOSE)
+
+
 def add_or_subparser(subparsers):
     p = subparsers.add_parser("or", help=HELP_OR, epilog=EPILOG_PHASE_DIFF)
     p.add_argument('folder1', type=str, help=HELP_FOLDER_WITHOUT_SAMPLE)
@@ -137,6 +150,7 @@ def main():
 
     add_polarimeter_subparser(subparsers)
     add_phase_diff_subparser(subparsers)
+    add_plot_raw_subparser(subparsers)
     add_or_subparser(subparsers)
     add_analysis_subparser(subparsers)
     add_sim_subparser(subparsers)
@@ -146,11 +160,11 @@ def main():
     try:
         if args.command == 'phase_diff':
             setup_logger(args.verbose)
-            analysis.plot_phase_difference(args.filepath, method=args.method, show=args.show)
-
-        if args.command == 'avg_phase_diff':
-            setup_logger(args.verbose)
-            analysis.averaged_phase_difference(args.folder, method=args.method)
+            analysis.plot_phase_difference_from_file(
+                args.filepath,
+                method=args.method,
+                show=args.show
+            )
 
         if args.command == 'or':
             setup_logger(args.verbose)
@@ -159,6 +173,15 @@ def main():
                 args.folder2,
                 method=args.method,
                 hwp=args.hwp
+            )
+
+        if args.command == 'plot_raw':
+            setup_logger(args.verbose)
+            analysis.plot_raw(
+                args.filepath,
+                ch0=not args.no_ch0,
+                ch1=not args.no_ch1,
+                show=args.show
             )
 
         if args.command == 'analysis':
