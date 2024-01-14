@@ -5,8 +5,9 @@ from scipy import stats
 
 from rapp import constants as ct
 from rapp.signal import signal
-from rapp.simulations import simulator
 from rapp.analysis.plot import Plot
+
+from rapp import adc
 
 
 logger = logging.getLogger(__name__)
@@ -15,20 +16,25 @@ TPL_LOG = "A={}, pvalue={}."
 TPL_LABEL = "reps={}."
 TPL_FILENAME = "sim_pvalue_vs_range-reps-{}.png"
 
+ADC_MAXV = 4.096
 
-def run(phi, folder, method=None, samples=None, step=None, reps=1, cycles=None, show=False):
+
+def run(
+    phi, folder, method=None, samples=None, step=None, reps=1, cycles=None, show=False, save=True
+):
     print("")
     logger.info("PVALUE (GAUSSIAN-TEST) VS DYNAMIC RANGE")
 
     xs = np.arange(0.001, 0.5, step=0.05)
 
+    max_v, _ = adc.GAINS[adc.GAIN_ONE]
     mean_pvalues = []
     for A in xs:
         pvalues = []
         for rep in range(reps):
             noise = A * np.random.normal(loc=0, scale=0.00032, size=40000)
             noise = noise + max(noise)
-            noise = signal.quantize(noise, max_v=simulator.ADC_MAXV, bits=simulator.ADC_BITS)
+            noise = signal.quantize(noise, max_v=max_v, bits=adc.ADC_BITS)
 
             pvalue = stats.normaltest(noise).pvalue
             pvalues.append(pvalue)
@@ -50,7 +56,8 @@ def run(phi, folder, method=None, samples=None, step=None, reps=1, cycles=None, 
 
     plot._ax.text(0.05, 0.8, label, transform=plot._ax.transAxes)
 
-    plot.save(filename=TPL_FILENAME.format(reps))
+    if save:
+        plot.save(filename=TPL_FILENAME.format(reps))
 
     if show:
         plot.show()

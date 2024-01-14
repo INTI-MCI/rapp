@@ -10,7 +10,7 @@ TPL_LABEL = "step={}° deg.\ncycles={}.\nφ = {}°.\n"
 TPL_FILENAME = "sim_phase_diff_fit-samples-{}-step-{}.png"
 
 
-def run(phi, folder, method='ODR', samples=50, step=1, cycles=2, reps=None, show=False):
+def run(phi, folder, method='ODR', samples=50, step=1, cycles=2, reps=None, show=False, save=True):
     print("")
     logger.info("SIGNAL AND PHASE DIFFERENCE SIMULATION")
 
@@ -26,4 +26,5 @@ def run(phi, folder, method='ODR', samples=50, step=1, cycles=2, reps=None, show
 
     filename = 'sim-one-phase_diff.png'
 
-    plot_phase_difference(measurement, method, filename, show=show)
+    if save:
+        plot_phase_difference(measurement, method, filename, show=show)

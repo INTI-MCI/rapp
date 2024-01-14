@@ -20,7 +20,7 @@ TPL_LABEL = "samples={}\nstep={}°"
 TPL_FILENAME = "sim_error_vs_method-reps-{}-samples-{}-step-{}.png"
 
 
-def run(phi, folder, method=None, samples=5, step=1, reps=10, cycles=8, show=False):
+def run(phi, folder, method=None, samples=5, step=1, reps=10, cycles=8, show=False, save=True):
     print("")
     logger.info("PHASE DIFFERENCE VS # OF CYCLES")
 
@@ -43,7 +43,8 @@ def run(phi, folder, method=None, samples=5, step=1, reps=10, cycles=8, show=Fal
                 fc=fc,
                 fa=samples,
                 method=method,
-                p0=[1, 0, 0, 0, 0, 0]
+                p0=[1, 0, 0, 0, 0, 0],
+                allow_nan=True
             )
 
             error = n_res.rmse()
@@ -63,7 +64,8 @@ def run(phi, folder, method=None, samples=5, step=1, reps=10, cycles=8, show=Fal
     plot._ax.set_yscale('log')
     plot.legend(loc='center right', fontsize=12)
 
-    plot.save(filename=TPL_FILENAME.format(reps, samples, step))
+    if save:
+        plot.save(filename=TPL_FILENAME.format(reps, samples, step))
 
     if show:
         plot.show()

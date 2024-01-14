@@ -90,12 +90,15 @@ def n_simulations(N=1, phi=PHI, method='ODR', p0=None, allow_nan=False, **kwargs
     return SimulationResult(phi, results)
 
 
-def main(name, phi=PHI, method='ODR', reps=1, step=1, samples=50, cycles=2, show=False):
+def main(
+    name, phi=PHI,
+    method='ODR', reps=1, step=1, samples=50, cycles=2, show=False, work_dir=ct.WORK_DIR
+):
     print("")
     logger.info("STARTING SIMULATIONS...")
     logger.info("SIMULATED PHASE DIFFERENCE: {} degrees.".format(np.rad2deg(PHI)))
 
-    output_folder = os.path.join(ct.WORK_DIR, ct.OUTPUT_FOLDER_PLOTS)
+    output_folder = os.path.join(work_dir, ct.OUTPUT_FOLDER_PLOTS)
     create_folder(output_folder)
 
     simulation = build(name)

@@ -13,7 +13,7 @@ TPL_LABEL = "cycles={}\nstep={}°\nreps={}"
 TPL_FILENAME = "sim_error_vs_samples-reps-{}-step-{}.png"
 
 
-def run(phi, folder, method='ODR', samples=None, step=1, reps=1, cycles=2, show=False):
+def run(phi, folder, method='ODR', samples=None, step=1, reps=1, cycles=2, show=False, save=True):
     print("")
     logger.info("PHASE DIFFERENCE VS SAMPLES")
     logger.info("Method: {}, cycles={}, reps={}".format(method, cycles, reps))
@@ -51,7 +51,8 @@ def run(phi, folder, method='ODR', samples=None, step=1, reps=1, cycles=2, show=
     plot.legend(fontsize=12)
     plot._ax.set_yscale('log')
 
-    plot.save(filename=TPL_FILENAME.format(reps, step))
+    if save:
+        plot.save(filename=TPL_FILENAME.format(reps, step))
 
     if show:
         plot.show()
