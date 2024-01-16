@@ -143,11 +143,11 @@ def get_command(command):
     if command == 'phase_diff':
         return phase_diff.plot_phase_difference_from_file
 
+    if command == 'plot_raw':
+        return raw.plot_raw_from_file
+
     if command == 'OR':
         return optical_rotation.optical_rotation
-
-    if command == 'plot_raw':
-        return raw.plot_raw
 
     if command == 'analysis':
         return analysis.main

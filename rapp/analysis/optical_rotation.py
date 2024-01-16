@@ -5,8 +5,7 @@ import logging
 import numpy as np
 from uncertainties import ufloat
 
-from rapp.analysis.parser import REGEX_NUMBER_AFTER_WORD
-from rapp.measurement import Measurement
+from rapp.measurement import Measurement, REGEX_NUMBER_AFTER_WORD
 
 logger = logging.getLogger(__name__)
 
