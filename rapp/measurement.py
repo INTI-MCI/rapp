@@ -1,3 +1,4 @@
+import re
 import logging
 
 import pandas as pd
@@ -21,6 +22,21 @@ COLUMN_DATETIME = 'DATETIME'
 ALL_COLUMNS = [COLUMN_ANGLE, COLUMN_CH0, COLUMN_CH1, COLUMN_DATETIME]
 
 DELIMITER = r"\s+"
+PARAMETER_STRING = "cycles={}, step={}°, samples={}."
+
+REGEX_NUMBER_AFTER_WORD = r"(?<={word})-?\d+(?:\.\d+)?"
+
+
+def parse_input_parameters_from_filepath(filepath):
+    cycles_find = re.findall(REGEX_NUMBER_AFTER_WORD.format(word="cycles"), filepath)
+    step_find = re.findall(REGEX_NUMBER_AFTER_WORD.format(word="step"), filepath)
+    samples_find = re.findall(REGEX_NUMBER_AFTER_WORD.format(word="samples"), filepath)
+
+    cycles = cycles_find[0] if cycles_find else 0
+    step = step_find[0] if step_find else 0
+    samples = samples_find[0] if samples_find else 0
+
+    return dict(cycles=cycles, step=step, samples=samples)
 
 
 class Measurement:
@@ -29,11 +45,56 @@ class Measurement:
     Args:
         data: the data read from a measurement file.
     """
-    def __init__(self, data: pd.DataFrame):
+    def __init__(self, data: pd.DataFrame, cycles=None, step=None, samples=None):
         self._data = data
+
+        self._cycles = cycles
+        self._step = step
+        self._samples = samples
 
     def __getitem__(self, data_slice):
         return self._data[data_slice]
+
+    @classmethod
+    def from_file(cls, filepath, sep=DELIMITER):
+        """Instantiates a Measurement object from a filepath."""
+        data = pd.read_csv(
+            filepath,
+            sep=sep, skip_blank_lines=True, comment='#', usecols=(0, 1, 2), encoding=ct.ENCONDIG
+        )
+
+        if not set(data.columns).issubset(ALL_COLUMNS):
+            raise ValueError(
+                "Bad column format in measurement file. Columns must be: {}".format(ALL_COLUMNS))
+
+        return cls(data, **parse_input_parameters_from_filepath(filepath))
+
+    @classmethod
+    def simulate(cls, phi, a0_noise=A0_NOISE, a1_noise=A1_NOISE, **kwargs):
+        """Simulates a measurement of the polarimeter.
+
+        Args:
+            phi: phase difference between signals (radians).
+            a0_noise: (mu, sigma) of additive white Gaussian noise of channel 0.
+            a1_noise: (mu, sigma) of additive white Gaussian noise of channel 1.
+            **kwargs: any other keyword argument to be passed 'harmonic' function.
+
+        Returns:
+            Measurement: simulated data.
+        """
+        xs, s1 = signal.harmonic(noise=a0_noise, all_positive=True, **kwargs)
+        _, s2 = signal.harmonic(phi=-phi * 2, noise=a1_noise, all_positive=True, **kwargs)
+
+        # We divide xs by 2 because one cycle of the analyzer contains two cycles of the signal.
+        xs = np.rad2deg(xs) / 2
+
+        data = np.array([xs, s1, s2]).T
+        data = pd.DataFrame(data=data, columns=[COLUMN_ANGLE, COLUMN_CH0, COLUMN_CH1])
+
+        return cls(data)
+
+    def parameters_string(self):
+        return PARAMETER_STRING.format(self._cycles, self._step, self._samples)
 
     def ch0(self):
         """Returns CHANNEL 0 data."""
@@ -79,44 +140,6 @@ class Measurement:
             res = res.to_degrees()
 
         return xs, s1, s2, s1_sigma, s2_sigma, res
-
-    @classmethod
-    def from_file(cls, filepath, sep=DELIMITER):
-        """Instantiates a Measurement object from a filepath."""
-        data = pd.read_csv(
-            filepath,
-            sep=sep, skip_blank_lines=True, comment='#', usecols=(0, 1, 2), encoding=ct.ENCONDIG
-        )
-
-        if not set(data.columns).issubset(ALL_COLUMNS):
-            raise ValueError(
-                "Bad column format in measurement file. Columns must be: {}".format(ALL_COLUMNS))
-
-        return cls(data)
-
-    @classmethod
-    def simulate(cls, phi, a0_noise=A0_NOISE, a1_noise=A1_NOISE, **kwargs):
-        """Simulates a measurement of the polarimeter.
-
-        Args:
-            phi: phase difference between signals (radians).
-            a0_noise: (mu, sigma) of additive white Gaussian noise of channel 0.
-            a1_noise: (mu, sigma) of additive white Gaussian noise of channel 1.
-            **kwargs: any other keyword argument to be passed 'harmonic' function.
-
-        Returns:
-            Measurement: simulated data.
-        """
-        xs, s1 = signal.harmonic(noise=a0_noise, all_positive=True, **kwargs)
-        _, s2 = signal.harmonic(phi=-phi * 2, noise=a1_noise, all_positive=True, **kwargs)
-
-        # We divide xs by 2 because one cycle of the analyzer contains two cycles of the signal.
-        xs = np.rad2deg(xs) / 2
-
-        data = np.array([xs, s1, s2]).T
-        data = pd.DataFrame(data=data, columns=[COLUMN_ANGLE, COLUMN_CH0, COLUMN_CH1])
-
-        return cls(data)
 
     def average_data(self):
         """Performs the average of the number of samples per angle.
