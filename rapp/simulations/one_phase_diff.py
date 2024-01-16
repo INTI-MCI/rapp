@@ -1,7 +1,7 @@
 import logging
 
-from rapp.simulations import simulator
 from rapp.measurement import Measurement
+from rapp.simulations import simulation
 from rapp.analysis.phase_diff import plot_phase_difference
 
 logger = logging.getLogger(__name__)
@@ -14,7 +14,7 @@ def run(phi, folder, method='ODR', samples=50, step=1, cycles=2, reps=None, show
     print("")
     logger.info("SIGNAL AND PHASE DIFFERENCE SIMULATION")
 
-    fc = simulator.samples_per_cycle(step=step)
+    fc = simulation.samples_per_cycle(step=step)
 
     logger.info("Simulating signals...")
     measurement = Measurement.simulate(

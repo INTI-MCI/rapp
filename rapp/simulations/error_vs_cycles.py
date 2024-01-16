@@ -3,7 +3,7 @@ import logging
 import numpy as np
 
 from rapp import constants as ct
-from rapp.simulations import simulator
+from rapp.simulations import simulation
 from rapp.analysis.plot import Plot
 
 logger = logging.getLogger(__name__)
@@ -25,7 +25,7 @@ def run(phi, folder, method=None, samples=5, step=1, reps=10, cycles=8, show=Fal
     logger.info("PHASE DIFFERENCE VS # OF CYCLES")
 
     cycles_list = np.arange(1, cycles + 1, step=1)
-    fc = simulator.samples_per_cycle(step=step)
+    fc = simulation.samples_per_cycle(step=step)
 
     errors = {}
     for method, (*head, mreps) in METHODS.items():
@@ -36,7 +36,7 @@ def run(phi, folder, method=None, samples=5, step=1, reps=10, cycles=8, show=Fal
 
         errors[method] = []
         for cycles in cycles_list:
-            n_res = simulator.n_simulations(
+            n_res = simulation.n_simulations(
                 phi=phi,
                 N=mreps,
                 cycles=cycles,

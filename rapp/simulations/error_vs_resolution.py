@@ -3,9 +3,9 @@ import logging
 import numpy as np
 
 from rapp import constants as ct
-from rapp.analysis.plot import Plot
-from rapp.simulations import simulator
 from rapp.adc import ADC_BITS, ADC_MAXV
+from rapp.simulations import simulation
+from rapp.analysis.plot import Plot
 
 logger = logging.getLogger(__name__)
 
@@ -23,7 +23,7 @@ def run(phi, folder, method='ODR', samples=5, step=1, reps=1, cycles=8, show=Fal
     logger.info("PHASE DIFFERENCE VS RESOLUTION")
 
     cycles_list = np.arange(1, cycles + 1, step=1)
-    fc = simulator.samples_per_cycle(step=step)
+    fc = simulation.samples_per_cycle(step=step)
 
     BITS = [ARDUINO_BITS, ADC_BITS]
     MAXV = [ARDUINO_MAXV, ADC_MAXV]
@@ -38,7 +38,7 @@ def run(phi, folder, method='ODR', samples=5, step=1, reps=1, cycles=8, show=Fal
 
         errors = []
         for cycles in cycles_list:
-            n_results = simulator.n_simulations(
+            n_results = simulation.n_simulations(
                 N=reps,
                 phi=phi,
                 A=amplitude,
