@@ -7,7 +7,6 @@ from matplotlib import pyplot as plt
 
 from rapp import constants as ct
 from rapp.analysis.plot import Plot
-from rapp.analysis.parser import parse_input_parameters_from_filepath
 from rapp.measurement import Measurement
 from rapp.utils import create_folder
 
@@ -19,13 +18,10 @@ COVERAGE_FACTOR = 3
 def plot_phase_difference_from_file(filepath, method, show=False):
     logger.info("Calculating phase difference for {}...".format(filepath))
 
-    cycles, step, samples = parse_input_parameters_from_filepath(filepath)
-    parameters = "Parameters: cycles={}, step={}, samples={}.".format(cycles, step, samples)
-    logger.info(parameters)
-
     measurement = Measurement.from_file(filepath)
-    filename = "{}.png".format(os.path.basename(filepath)[:-4])
+    logger.info("Parameters: {}.".format(measurement.parameters_string()))
 
+    filename = "{}.png".format(os.path.basename(filepath)[:-4])
     plot_phase_difference(measurement, method, filename, show)
 
 
