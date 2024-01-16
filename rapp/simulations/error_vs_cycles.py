@@ -73,3 +73,5 @@ def run(phi, folder, method=None, samples=5, step=1, reps=10, cycles=8, show=Fal
     plot.close()
 
     logger.info("Done.")
+
+    return cycles_list, errors
