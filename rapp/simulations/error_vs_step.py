@@ -1,7 +1,7 @@
 import logging
 
 from rapp import constants as ct
-from rapp.simulations import simulator
+from rapp.simulations import simulation
 from rapp.analysis.plot import Plot
 
 
@@ -32,9 +32,9 @@ def run(
 
     errors = []
     for step, reps in zip(steps, reps):
-        fc = simulator.samples_per_cycle(step=step)
+        fc = simulation.samples_per_cycle(step=step)
 
-        n_res = simulator.n_simulations(
+        n_res = simulation.n_simulations(
             N=reps,
             phi=phi,
             method=method,

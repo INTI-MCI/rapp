@@ -3,9 +3,9 @@ import logging
 import numpy as np
 
 from rapp import constants as ct
-from rapp.simulations import simulator
-from rapp.analysis.plot import Plot
 from rapp.adc import GAINS
+from rapp.simulations import simulation
+from rapp.analysis.plot import Plot
 
 
 logger = logging.getLogger(__name__)
@@ -31,9 +31,9 @@ def run(phi, folder, method, samples=5, step=0.01, reps=1, cycles=2, show=False,
 
         errors[max_v] = []
         for amplitude in amplitudes:
-            fc = simulator.samples_per_cycle(step=step)
+            fc = simulation.samples_per_cycle(step=step)
 
-            n_results = simulator.n_simulations(
+            n_results = simulation.n_simulations(
                 phi=phi,
                 N=reps,
                 A=amplitude,
