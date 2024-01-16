@@ -86,7 +86,7 @@ class Polarimeter:
 
                 self._setup_data_file(samples, rep, hwp_position)
                 self._adc.progressbar = False  # We disable lower level progress bar.
-                progressbar_desc = 'Rotating {} Analyzer cycles: '.format(self._analyzer.cycles)
+                progressbar_desc = '{} cycle(s): '.format(self._analyzer.cycles)
 
                 for position in progressbar(self._analyzer, desc=progressbar_desc):
                     for data_chunk in self.read_samples(samples, chunk_size):
