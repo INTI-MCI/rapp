@@ -51,11 +51,9 @@ def timing(f):
     return wrap
 
 
-def progressbar(it, desc="", size=100, out=sys.stdout, enable=True):
+def progressbar(it, desc="", size=100, step=1, out=sys.stdout, enable=True):
     count = len(it)
     start = time()
-
-    step = max([int(count * 0.001), 1])
 
     bar_string = "{}[{}{}] {}% | remaining time: {} | rate: {}"
 
@@ -89,7 +87,7 @@ def progressbar(it, desc="", size=100, out=sys.stdout, enable=True):
         yield item
 
         if enable:
-            if (i % step == 0 or i == count - 1):
+            if i % step == 0 or i == count - 1:
                 last_time = show(i + 1)
     if enable:
-        print("", flush=True, file=out)
+        print("", file=out, flush=True)
