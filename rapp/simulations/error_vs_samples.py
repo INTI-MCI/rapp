@@ -3,7 +3,7 @@ import logging
 import numpy as np
 
 from rapp import constants as ct
-from rapp.simulations import simulator
+from rapp.simulations import simulation
 from rapp.analysis.plot import Plot
 
 logger = logging.getLogger(__name__)
@@ -19,12 +19,12 @@ def run(phi, folder, method='ODR', samples=None, step=1, reps=1, cycles=2, show=
     logger.info("Method: {}, cycles={}, reps={}".format(method, cycles, reps))
 
     n_samples = np.arange(10, 200, step=20)
-    fc = simulator.samples_per_cycle(step=step)
+    fc = simulation.samples_per_cycle(step=step)
 
     errors = []
     for samples in n_samples:
 
-        n_results = simulator.n_simulations(
+        n_results = simulation.n_simulations(
             N=reps,
             phi=phi,
             A=1.7,

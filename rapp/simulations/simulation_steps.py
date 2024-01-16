@@ -6,7 +6,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 from rapp import constants as ct
-from rapp.simulations import simulator
+from rapp.simulations import simulation
 from rapp.signal import signal
 
 
@@ -21,7 +21,7 @@ def run(
     logger.info("SIMULATION PROCESS...")
 
     cycles = 0.15
-    fc = simulator.samples_per_cycle(step=0.5)
+    fc = simulation.samples_per_cycle(step=0.5)
     noise = (0, 0.04)
     mu, sigma = noise
     bits = 6

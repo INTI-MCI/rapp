@@ -4,8 +4,7 @@
 omit =
 	rapp/version.py
 	rapp/constants.py
-
-	rapp/analysis
+	rapp/analysis/*
 
 [tool:pytest]
 addopts = --cov=rapp --cov-report=term-missing

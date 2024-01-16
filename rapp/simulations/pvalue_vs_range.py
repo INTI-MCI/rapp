@@ -3,11 +3,10 @@ import logging
 import numpy as np
 from scipy import stats
 
+from rapp import adc
 from rapp import constants as ct
 from rapp.signal import signal
 from rapp.analysis.plot import Plot
-
-from rapp import adc
 
 
 logger = logging.getLogger(__name__)
