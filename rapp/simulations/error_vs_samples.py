@@ -32,7 +32,8 @@ def run(phi, folder, method='ODR', samples=None, step=1, reps=1, cycles=2, show=
             cycles=cycles,
             fc=fc,
             fa=samples,
-            allow_nan=True
+            allow_nan=True,
+            p0=[1.7, 0, 0, phi, 0, 0]
         )
 
         error = n_results.rmse()
@@ -60,3 +61,5 @@ def run(phi, folder, method='ODR', samples=None, step=1, reps=1, cycles=2, show=
     plot.close()
 
     logger.info("Done.")
+
+    return n_samples, errors

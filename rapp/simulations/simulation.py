@@ -4,7 +4,7 @@ from rapp.measurement import Measurement
 from rapp.utils import round_to_n
 
 
-DEFAULT_PHI = np.pi / 8  # Phase difference.
+DEFAULT_PHI = np.pi / 4  # Phase difference.
 
 
 def samples_per_cycle(step=0.01):
@@ -41,6 +41,16 @@ def n_simulations(N=1, phi=DEFAULT_PHI, method='ODR', p0=None, allow_nan=False, 
     for i in range(N):
         m = Measurement.simulate(phi, **kwargs)
         *head, res = m.phase_diff(method=method, p0=p0, allow_nan=allow_nan, degrees=False)
+        # plot(res)
         results.append(res)
 
     return SimulationResult(phi, results)
+
+
+def plot(res):
+    """Just for debug."""
+    import matplotlib.pyplot as plt
+    plt.plot(res.fitx, res.fits1)
+    plt.plot(res.fitx, res.fits2)
+    plt.show()
+    plt.close()
