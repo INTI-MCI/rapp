@@ -41,7 +41,7 @@ def run(
             cycles=cycles,
             fc=fc,
             fa=samples,
-            p0=[1, 0, 0, 0, 0, 0],
+            p0=[1, 0, 0, phi, 0, 0],
             allow_nan=True
         )
 
@@ -71,3 +71,5 @@ def run(
     plot.close()
 
     logger.info("Done.")
+
+    return steps, errors

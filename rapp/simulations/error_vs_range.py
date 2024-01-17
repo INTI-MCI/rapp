@@ -14,9 +14,12 @@ TPL_LOG = "A={}, φerr: {}."
 TPL_LABEL = "cycles={}\nsamples={}\nstep={}°\nreps={}"
 TPL_FILENAME = "sim_error_vs_range-reps-{}-samples-{}-step-{}.png"
 
+np.random.seed(1)
+
 
 def run(
-    phi, folder, method, samples=5, step=0.01, reps=1, cycles=2, gains=None, show=False, save=True
+    phi, folder,
+    method='ODR', samples=5, step=0.01, reps=1, cycles=2, gains=None, show=False, save=True
 ):
     print("")
     logger.info("PHASE DIFFERENCE VS MAX TENSION")
@@ -32,7 +35,6 @@ def run(
         max_A = max_v / 2
 
         amplitudes = np.linspace(max_A - v_step * 8, max_A, num=8)
-        logger.info("Amplitudes: {}".format(amplitudes))
 
         errors[max_v] = []
         for amplitude in amplitudes:
@@ -47,7 +49,8 @@ def run(
                 cycles=cycles,
                 fc=fc,
                 fa=samples,
-                allow_nan=True
+                allow_nan=True,
+                p0=[amplitude, 0, 0, phi, 0, 0]
             )
 
             error = n_results.rmse()
