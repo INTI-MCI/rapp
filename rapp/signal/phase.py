@@ -101,7 +101,7 @@ def sine_fit(xs, ys, p0=None, x_sigma=None, y_sigma=None, abs_sigma=True, method
     if method == 'ODR':
 
         data = RealData(xs, ys, sx=x_sigma, sy=y_sigma)
-        odr = ODR(data, Model(two_sines_model),  beta0=[1, 0, 0, 0, 0, 0])
+        odr = ODR(data, Model(two_sines_model),  beta0=p0 or [1, 0, 0, 0, 0, 0])
         odr.set_job(fit_type=2)
         output = odr.run()
 

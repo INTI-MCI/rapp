@@ -43,7 +43,7 @@ def run(phi, folder, method=None, samples=5, step=1, reps=10, cycles=8, show=Fal
                 fc=fc,
                 fa=samples,
                 method=method,
-                p0=[1, 0, 0, 0, 0, 0],
+                p0=[1, 0, 0, phi, 0, 0],
                 allow_nan=True
             )
 
@@ -73,3 +73,5 @@ def run(phi, folder, method=None, samples=5, step=1, reps=10, cycles=8, show=Fal
     plot.close()
 
     logger.info("Done.")
+
+    return cycles_list, errors

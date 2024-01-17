@@ -30,13 +30,13 @@ def run(phi, folder, method='ODR', samples=5, step=1, reps=1, cycles=8, show=Fal
     MS = ['o', 's']
     LS = ['dotted', 'solid']
 
-    results = []
+    errors_per_bits = {}
     for bits, maxv in zip(BITS, MAXV):
         logger.info("Bits: {}".format(bits))
 
         amplitude = 0.9 * maxv
 
-        errors = []
+        errors_per_bits[bits] = []
         for cycles in cycles_list:
             n_results = simulation.n_simulations(
                 N=reps,
@@ -49,16 +49,14 @@ def run(phi, folder, method='ODR', samples=5, step=1, reps=1, cycles=8, show=Fal
                 fa=samples,
                 allow_nan=True,
                 method=method,
-                p0=[1, 0, 0, 0, 0, 0]
+                p0=[amplitude, 0, 0, phi, 0, 0]
             )
 
             # RMSE
             error = n_results.rmse()
-            errors.append(error)
+            errors_per_bits[bits].append(error)
 
             logger.info(TPL_LOG.format(cycles, "{:.2E}".format(error)))
-
-        results.append(errors)
 
     plot = Plot(
         ylabel=ct.LABEL_PHI_ERR,
@@ -68,10 +66,12 @@ def run(phi, folder, method='ODR', samples=5, step=1, reps=1, cycles=8, show=Fal
         folder=folder
     )
 
-    for bits, errors, ms, ls in zip(BITS, results, MS, LS):
+    for bits, ms, ls in zip(BITS, MS, LS):
         label = TPL_LABEL.format(bits)
         plot.add_data(
-            cycles_list, errors, ms, ls=ls, lw=2, mfc='None', mew=2, color='k', label=label)
+            cycles_list, errors_per_bits[bits], ms,
+            ls=ls, lw=2, mfc='None', mew=2, color='k', label=label
+        )
 
     annotation = TPL_TEXT.format(step, samples, reps)
     plot._ax.text(0.61, 0.5, annotation, transform=plot._ax.transAxes)
@@ -88,3 +88,5 @@ def run(phi, folder, method='ODR', samples=5, step=1, reps=1, cycles=8, show=Fal
     plot.close()
 
     logger.info("Done.")
+
+    return cycles_list, errors_per_bits
