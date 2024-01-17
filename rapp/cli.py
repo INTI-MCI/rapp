@@ -5,6 +5,8 @@ from rapp import polarimeter
 from rapp.analysis import analysis, optical_rotation, phase_diff, raw
 from rapp.simulations import simulator
 from rapp.log import setup_logger
+from rapp import constants as ct
+
 
 HELP_POLARIMETER = "Tool for measuring signals with the polarimeter."
 HELP_SIM = "Tool for making numerical simulations."
@@ -29,6 +31,7 @@ HELP_PLOT = 'plot the results when the measurement is finished (default: %(defau
 HELP_VERBOSE = 'whether to run with DEBUG log level (default: %(default)s).'
 HELP_OVERWRITE = 'whether to overwrite existing files without asking (default: %(default)s).'
 HELP_REPS = 'Number of repetitions (default: %(default)s).'
+HELP_WORKDIR = 'folder to use as working directory (default: %(default)s)'
 
 HELP_HWP_CYCLES = 'n° of cycles of the HW plate (default: %(default)s).'
 HELP_HWP_STEP = 'motion step of the rotating HW plate (default: %(default)s).'
@@ -73,7 +76,7 @@ EPILOG_PLOT_RAW = "Example: {}".format(EXAMPLE_PHASE_DIFF)
 
 def add_polarimeter_subparser(subparsers):
     p = subparsers.add_parser("polarimeter", help=HELP_POLARIMETER, epilog=EPILOG_POLARIMETER)
-    p.add_argument('--samples', type=int, required=True, help=HELP_SAMPLES)
+    p.add_argument('--samples', type=int, default=1, help=HELP_SAMPLES)
     p.add_argument('--cycles', type=int, default=0, help=HELP_CYCLES)
     p.add_argument('--step', type=float, default=45, help=HELP_STEP)
     p.add_argument('--chunk-size', type=int, default=500, metavar='', help=HELP_CHUNK_SIZE)
@@ -90,6 +93,7 @@ def add_polarimeter_subparser(subparsers):
     p.add_argument('--mock-esp', action='store_true', help=HELP_TEST_ESP)
     p.add_argument('--mock-adc', action='store_true', help=HELP_TEST_ADC)
     p.add_argument('--plot', action='store_true', help=HELP_PLOT)
+    p.add_argument('--work-dir', type=str, metavar='', default=ct.WORK_DIR, help=HELP_WORKDIR)
     p.add_argument('-v', '--verbose', action='store_true', help=HELP_VERBOSE)
     p.add_argument('-w', '--overwrite', action='store_true', help=HELP_OVERWRITE)
 
@@ -167,7 +171,7 @@ def get_command_args(args):
     return command_args
 
 
-def main():
+def run(args):
     parser = argparse.ArgumentParser(
         prog='RAPP',
         description='Tools for measuring the rotation angle of the plane of polarization (RAPP).',
@@ -183,7 +187,7 @@ def main():
     add_analysis_subparser(subparsers)
     add_sim_subparser(subparsers)
 
-    args = parser.parse_args(args=sys.argv[1:] or ['--help'])
+    args = parser.parse_args(args=args or ['--help'])
 
     setup_logger(args.verbose)
     command = get_command(args.command)
@@ -195,6 +199,10 @@ def main():
         print("ERROR: {}".format(e))
         import traceback
         traceback.print_exc()
+
+
+def main():
+    run(sys.argv[1:])
 
 
 if __name__ == '__main__':

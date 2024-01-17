@@ -143,6 +143,7 @@ class Polarimeter:
         )
 
     def _add_data_to_file(self, data, position=None):
+        logger.info("Writing data to file...")
         time = datetime.now().isoformat()  # TODO: get real measurement time from ADC?
         for row in data:
             self._data_file.add_row([position] + list(row) + [time])
