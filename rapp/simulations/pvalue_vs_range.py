@@ -64,3 +64,5 @@ def run(
     plot.close()
 
     logger.info("Done.")
+
+    return xs, mean_pvalues

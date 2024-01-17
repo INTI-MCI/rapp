@@ -14,20 +14,27 @@ TPL_LOG = "A={}, φerr: {}."
 TPL_LABEL = "cycles={}\nsamples={}\nstep={}°\nreps={}"
 TPL_FILENAME = "sim_error_vs_range-reps-{}-samples-{}-step-{}.png"
 
+np.random.seed(1)
 
-def run(phi, folder, method, samples=5, step=0.01, reps=1, cycles=2, show=False, save=True):
+
+def run(
+    phi, folder,
+    method='ODR', samples=5, step=0.01, reps=1, cycles=2, gains=None, show=False, save=True
+):
     print("")
     logger.info("PHASE DIFFERENCE VS MAX TENSION")
 
+    if gains is None:
+        gains = GAINS
+
     errors = {}
     percentages = {}
-    for max_v, step_mV in GAINS.values():
+    for max_v, step_mV in gains.values():
         logger.info("MAX V={}, step={}".format(max_v, step))
         v_step = step_mV * 2
         max_A = max_v / 2
 
         amplitudes = np.linspace(max_A - v_step * 8, max_A, num=8)
-        logger.info("Amplitudes: {}".format(amplitudes))
 
         errors[max_v] = []
         for amplitude in amplitudes:
@@ -42,7 +49,8 @@ def run(phi, folder, method, samples=5, step=0.01, reps=1, cycles=2, show=False,
                 cycles=cycles,
                 fc=fc,
                 fa=samples,
-                allow_nan=True
+                allow_nan=True,
+                p0=[amplitude, 0, 0, phi, 0, 0]
             )
 
             error = n_results.rmse()
@@ -79,3 +87,5 @@ def run(phi, folder, method, samples=5, step=0.01, reps=1, cycles=2, show=False,
     plot.close()
 
     logger.info("Done.")
+
+    return percentages, errors
