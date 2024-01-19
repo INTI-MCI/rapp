@@ -24,3 +24,6 @@ ENCONDIG = 'iso-8859-1'
 
 ANALYZER_MIN_STEP = 0.001
 ANALYZER_UNCERTAINTY = 0.06
+
+HELP_VERBOSE = 'whether to run with DEBUG log level (default: %(default)s).'
+HELP_SHOW = 'whether to show the plot (default: %(default)s).'
