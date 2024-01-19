@@ -5,7 +5,7 @@ import logging
 from rapp import constants as ct
 from rapp.utils import create_folder
 
-from rapp.analysis import noise, drift, optical_rotation as opt
+from rapp.analysis import noise, drift, optical_rotation
 
 logger = logging.getLogger(__name__)
 
@@ -19,7 +19,7 @@ ANALYSIS_NAMES = [
 ]
 
 
-def main(name, show):
+def main(name, show=False):
     output_folder = os.path.join(ct.WORK_DIR, ct.OUTPUT_FOLDER_PLOTS)
     create_folder(output_folder)
 
@@ -37,7 +37,7 @@ def main(name, show):
         drift.plot_drift(output_folder, show=show)
 
     if name == 'OR':
-        opt.main()
+        optical_rotation.main()
 
 
 if __name__ == '__main__':
