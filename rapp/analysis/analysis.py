@@ -23,7 +23,6 @@ def main(name, show=False):
     output_folder = os.path.join(ct.WORK_DIR, ct.OUTPUT_FOLDER_PLOTS)
     create_folder(output_folder)
 
-    # TODO: add another subparser and split these options in different commands with parameters
     if name not in ANALYSIS_NAMES:
         raise ValueError("Analysis with name {} not implemented".format(name))
 
