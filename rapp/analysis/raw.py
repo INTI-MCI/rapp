@@ -19,8 +19,7 @@ def plot_raw_from_file(filepath, work_dir=ct.WORK_DIR, **kwargs):
 
 
 def plot_raw(
-    measurement, output_folder, output_filename,
-    sep='\t', usecols=(0, 1, 2), no_ch0=False, no_ch1=False, show=False
+    measurement, output_folder, output_filename, no_ch0=False, no_ch1=False, show=False
 ):
 
     s1 = np.array(measurement.ch0())
