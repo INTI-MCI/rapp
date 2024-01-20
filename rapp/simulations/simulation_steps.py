@@ -14,14 +14,13 @@ logger = logging.getLogger(__name__)
 
 
 def run(
-    phi=None, folder=None, method=None, samples=None, step=None, reps=None, cycles=None,
+    phi=None, folder=None, method=None, samples=None, step=0.5, reps=None, cycles=0.15,
     show=False, save=True
 ):
     print("")
     logger.info("SIMULATION PROCESS...")
 
-    cycles = 0.15
-    fc = simulation.samples_per_cycle(step=0.5)
+    fc = simulation.samples_per_cycle(step=step)
     noise = (0, 0.04)
     mu, sigma = noise
     bits = 6

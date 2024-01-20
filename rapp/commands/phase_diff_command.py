@@ -20,4 +20,4 @@ def add_to_subparsers(subparsers):
 
 
 def run(**kwargs):
-    phase_diff.plot_phase_difference_from_file(**kwargs)
+    phase_diff.phase_difference_from_file(**kwargs)

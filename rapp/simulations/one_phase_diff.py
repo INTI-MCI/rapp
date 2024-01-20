@@ -2,7 +2,7 @@ import logging
 
 from rapp.measurement import Measurement
 from rapp.simulations import simulation
-from rapp.analysis.phase_diff import plot_phase_difference
+from rapp.analysis.phase_diff import phase_difference
 
 logger = logging.getLogger(__name__)
 
@@ -24,7 +24,8 @@ def run(phi, folder, method='ODR', samples=50, step=1, cycles=2, reps=None, show
         fa=samples,
     )
 
-    filename = 'sim-one-phase_diff.png'
-
+    filename = None
     if save:
-        plot_phase_difference(measurement, method, filename, show=show)
+        filename = 'sim-one-phase_diff.png'
+
+    phase_difference(measurement, method, filename, show=show)
