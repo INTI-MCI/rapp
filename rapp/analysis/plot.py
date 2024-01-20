@@ -30,7 +30,7 @@ class Plot:
 
         self._folder = folder
 
-    def add_data(self, xs, ys=None, style='o', mew=0.5, mfc=None, xrad=False, **kwargs):
+    def add_data(self, xs, ys=None, style='o', ms=5, mew=0.5, mfc='None', xrad=False, **kwargs):
         """Adds data to the plot."""
 
         ax = self._ax
@@ -44,7 +44,7 @@ class Plot:
             ax.xaxis.set_major_formatter(tck.FormatStrFormatter('%g $\\pi$'))
             ax.xaxis.set_major_locator(tck.MultipleLocator(base=1.0))
 
-        return ax.errorbar(xs, ys, fmt=style, mfc=mfc, mew=mew, **kwargs)
+        return ax.errorbar(xs, ys, fmt=style, ms=ms, mfc=mfc, mew=mew, **kwargs)
 
     def save(self, filename):
         """Saves the plot."""
