@@ -114,6 +114,7 @@ class Measurement:
 
     def phase_diff(self, degrees=True, **kwargs):
         """Calculates phase difference between measured signals.
+
         Args:
             degrees: if true, returns results in degrees. Otherwise, radians.
             kwargs: extra arguments for phase.phase_difference function.

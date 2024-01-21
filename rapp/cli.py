@@ -2,74 +2,76 @@ import sys
 import logging
 import argparse
 
-from rapp.log import setup_logger
+from rapp.commands import COMMANDS
 
-from rapp.commands import (
-    polarimeter_command,
-    phase_diff_command,
-    analysis_command,
-    plot_raw_command,
-    optical_rotation_command,
-    simulations_command,
-)
+
+logger = logging.getLogger(__name__)
 
 
 APP_NAME = 'RAPP'
 DESCRIPTION = 'Tools for measuring the rotation angle of the plane of polarization (RAPP).'
+LOG_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 
 
-COMMANDS = {
-    'analysis': analysis_command,
-    'OR': optical_rotation_command,
-    'phase_diff': phase_diff_command,
-    'plot_raw': plot_raw_command,
-    'polarimeter': polarimeter_command,
-    'sim': simulations_command,
-}
+def setup_logger():
+    logging.basicConfig(level=logging.INFO, format=LOG_FORMAT)
+
+    # Hide logging from external libraries
+    external_libs = ['matplotlib', 'PIL']
+    for lib in external_libs:
+        logging.getLogger(lib).setLevel(logging.ERROR)
 
 
 class RAPPError(Exception):
     pass
 
 
-def add_commands(subparsers):
-    for command in COMMANDS.values():
-        command.add_to_subparsers(subparsers)
+class RAPP:
+    def __init__(self, commands):
+        self.parser = argparse.ArgumentParser(prog=APP_NAME, description=DESCRIPTION)
+        self.subparsers = self.parser.add_subparsers(dest='command', help='available commands')
 
+        self.commands = commands
 
-def get_command(command):
-    if command not in COMMANDS:
-        raise RAPPError("Invalid RAPP command: {}".format(command))
+        for command in self.commands.values():
+            command.add_to_subparsers(self.subparsers)
 
-    return COMMANDS[command]
+    def parse_args(self, args):
+        self.args = self.parser.parse_args(args=args or ['--help'])
 
+        if self.args.command not in self.commands:
+            raise RAPPError("Invalid RAPP command: {}".format(self.command))
 
-def get_command_args(args):
-    command_args = vars(args)
-    del command_args['command']
-    del command_args['verbose']
+        self.command = self.commands[self.args.command]
 
-    return command_args
+        if self.args.verbose:
+            logging.getLogger().setLevel(logging.DEBUG)
+
+    def execute(self):
+        return self.command.run(**self._get_command_args())
+
+    def _get_command_args(self):
+        command_args = vars(self.args)
+        del command_args['command']
+        del command_args['verbose']
+
+        return command_args
 
 
 def run(args):
-    parser = argparse.ArgumentParser(prog=APP_NAME, description=DESCRIPTION)
-    subparsers = parser.add_subparsers(dest='command', help='available commands')
-
-    add_commands(subparsers)
-
-    args = parser.parse_args(args=args or ['--help'])
-
-    setup_logger(args.verbose)
-    command = get_command(args.command)
-    command_args = get_command_args(args)
-
-    logger = logging.getLogger(__name__)
+    setup_logger()
 
     try:
-        command.run(**command_args)
+        logger.info("Initializing RAPP")
+        rapp = RAPP(COMMANDS)
+
+        logger.info("Parsing RAPP arguments...")
+        rapp.parse_args(args)
+
+        logger.info("Running RAPP command: {}".format(rapp.args.command))
+        rapp.execute()
     except RAPPError as e:
-        logger.error(e)
+        rapp.logger.error(e)
 
 
 def main():

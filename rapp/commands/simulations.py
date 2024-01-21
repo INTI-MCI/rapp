@@ -14,11 +14,10 @@ HELP_SAMPLES = 'n° of samples per angle.'
 HELP_CYCLES = 'n° of cycles to run (default: %(default)s).'
 HELP_STEP = 'motion step of the rotating analyzer (default: %(default)s).'
 HELP_METHOD = 'phase difference calculation method (default: %(default)s).'
+HELP_REPS = 'number of repetitions in each simulated iteration (default: %(default)s).'
 
 EXAMPLE = "rapp sim error_vs_samples --show"
 EPILOG = "Example: {}".format(EXAMPLE)
-
-HELP_REPS = 'number of repetitions in each simulated iteration (default: %(default)s).'
 
 
 def add_to_subparsers(subparsers):
