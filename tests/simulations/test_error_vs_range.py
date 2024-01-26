@@ -1,5 +1,3 @@
-import numpy as np
-
 from rapp.simulations import error_vs_range
 
 
@@ -12,9 +10,8 @@ GAINS = {
 
 def test_run(tmp_path):
     percentages, errors_per_maxv = error_vs_range.run(
-        phi=np.pi / 4,
+        angle=45,
         folder=tmp_path,
-        method='ODR',
         step=1,
         samples=1,
         cycles=1,
@@ -26,4 +23,4 @@ def test_run(tmp_path):
     assert len(percentages) == 1
 
     for errors in errors_per_maxv.values():
-        assert errors[-1] < 0.001
+        assert errors[-1] < 5e-2

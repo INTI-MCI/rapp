@@ -43,8 +43,10 @@ def phase_difference(measurement, method, filename=None, show=False):
     if method in ['ODR', 'NLS'] and (filename or show):
         plot_phase_difference((xs, s1, s2, s1err, s2err, res), filename, show)
 
+    return (xs, s1, s2, s1err, s2err, res)
 
-def plot_phase_difference(phase_diff_result, filename, show=False):
+
+def plot_phase_difference(phase_diff_result, filename=None, show=False):
     xs, s1, s2, s1err, s2err, res = phase_diff_result
 
     output_folder = os.path.join(ct.WORK_DIR, ct.OUTPUT_FOLDER_PLOTS)
@@ -80,11 +82,11 @@ def plot_phase_difference(phase_diff_result, filename, show=False):
     left_legend = [d1, d2]
     right_legend = []
 
-    error = np.sum((res.fits1 - s1) ** 2)
-    logger.info("ERROR between CH0 data and Model: {}".format(error))
+    relatove_error = np.sqrt(np.sum((res.fits1 - s1) ** 2) / np.sum(s1 ** 2))
+    logger.info("RMSE (relative) between CH0 data and Model: {}".format(relatove_error))
 
-    error = np.sum((res.fits2 - s2) ** 2)
-    logger.info("ERROR between CH1 data and Model: {}".format(error))
+    error = np.sqrt(np.sum((res.fits2 - s2) ** 2) / np.sum(s2 ** 2))
+    logger.info("RMSE (relative) between CH1 data and Model: {}".format(error))
 
     phase_diff, phase_diff_u = res.round_to_n(n=2, k=1)
     label_phi = "φ=({} ± {})°".format(phase_diff, phase_diff_u)
@@ -107,23 +109,26 @@ def plot_phase_difference(phase_diff_result, filename, show=False):
 
     plot._ax.set_ylim(min(s1) - abs(max(s1) - min(s1)) * 0.2, max(s1) * 1.8)
 
-    plot.save(filename)
+    if filename is not None:
+        plot.save(filename)
 
     # Plot difference between data and fitted model.
+
+    phi = res.phi1
 
     def f1(k1):
         return 1 + k1 * signal_diff_s2
 
     def f2(xs, phi):
-        return np.sin(4 * xs + phi)
+        return np.sin(4 * xs + 2 * phi)
 
     def f3(xs, k2, phi):
-        return (k2 + np.sin(2 * xs + np.pi / 4 + phi / 2))
+        return (k2 + np.sin(2 * xs + np.pi / 4 + phi))
 
-    def residual(xs, A, k1, k2, phi, c):
-        return A * f1(k1) * f2(xs, phi) * f3(xs, k2, phi) + c
+    def residual(xs, A, k1, k2, c):
+        return A * f1(k1) * f2(xs, -phi) * f3(xs, k2, -phi) + c
 
-    p0 = [0.03, 0, 0, 0, 0]
+    p0 = [0.03, 0, 0, 0]
 
     xs_rad = np.deg2rad(res.fitx)
     popt, pcov = curve_fit(
@@ -146,7 +151,9 @@ def plot_phase_difference(phase_diff_result, filename, show=False):
     )
 
     plt.legend(loc='upper left', frameon=False)
-    plot.save(filename="{}-difference.png".format(filename[-4]))
+
+    if filename is not None:
+        plot.save(filename="{}-difference.png".format(filename[-4]))
 
     plot._ax.set_ylim(
         np.min([signal_diff_s1, signal_diff_s2]),
@@ -166,8 +173,8 @@ def plot_phase_difference(phase_diff_result, filename, show=False):
     axs[3].plot(res.fitx, signal_diff_s1, 'o', color='k', ms=5, mfc='None', markevery=5, mew=0.5)
     axs[3].plot(residual_fitx_deg, y3, lw=1, color='k')
 
-    error = np.sum((residual_fity - signal_diff_s1) ** 2)
-    logger.info("ERROR between CH0 residual and Model: {}".format(error))
+    error = np.sqrt(np.sum((residual_fity - signal_diff_s1) ** 2) / np.sum(signal_diff_s1 ** 2))
+    logger.info("RMSE (relative) between CH0 residual and Model: {}".format(error))
 
     if show:
         plot.show()

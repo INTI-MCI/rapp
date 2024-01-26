@@ -13,27 +13,27 @@ TPL_LABEL = "cycles={}\nstep={}°\nreps={}"
 TPL_FILENAME = "sim_error_vs_samples-reps-{}-step-{}.png"
 
 
-def run(phi, folder, method='ODR', samples=None, step=1, reps=1, cycles=2, show=False, save=True):
+def run(
+    angle, folder, method='NLS', samples=None, step=1, reps=1, cycles=1, show=False, save=True
+):
     print("")
     logger.info("PHASE DIFFERENCE VS SAMPLES")
     logger.info("Method: {}, cycles={}, reps={}".format(method, cycles, reps))
 
     n_samples = np.arange(10, 200, step=20)
-    fc = simulation.samples_per_cycle(step=step)
 
     errors = []
     for samples in n_samples:
 
         n_results = simulation.n_simulations(
             N=reps,
-            phi=phi,
+            angle=angle,
             A=1.7,
             method=method,
             cycles=cycles,
-            fc=fc,
-            fa=samples,
+            step=step,
+            samples=samples,
             allow_nan=True,
-            p0=[1.7, 0, 0, phi, 0, 0]
         )
 
         error = n_results.rmse()

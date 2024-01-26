@@ -17,7 +17,7 @@ def add_to_subparsers(subparsers):
     p = subparsers.add_parser("OR", help=HELP_OR, epilog=EPILOG)
     p.add_argument('folder1', type=str, help=HELP_FOLDER_WITHOUT_SAMPLE)
     p.add_argument('folder2', type=str, help=HELP_FOLDER_WITH_SAMPLE)
-    p.add_argument('--method', type=str, default='ODR', help=HELP_METHOD)
+    p.add_argument('--method', type=str, default='NLS', help=HELP_METHOD)
     p.add_argument('--hwp', action='store_true', help=HELP_HWP)
     p.add_argument('-v', '--verbose', action='store_true', help=ct.HELP_VERBOSE)
 
