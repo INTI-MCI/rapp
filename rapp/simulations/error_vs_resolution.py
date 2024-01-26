@@ -18,12 +18,13 @@ ARDUINO_MAXV = 5
 ARDUINO_BITS = 10
 
 
-def run(phi, folder, method='ODR', samples=5, step=1, reps=1, cycles=8, show=False, save=True):
+def run(
+    folder, angle=22.5, method='NLS', samples=5, step=1, reps=1, cycles=4, show=False, save=True
+):
     print("")
     logger.info("PHASE DIFFERENCE VS RESOLUTION")
 
-    cycles_list = np.arange(1, cycles + 1, step=1)
-    fc = simulation.samples_per_cycle(step=step)
+    cycles_list = np.arange(0.5, cycles + 0.5, step=0.5)
 
     BITS = [ARDUINO_BITS, ADC_BITS]
     MAXV = [ARDUINO_MAXV, ADC_MAXV]
@@ -34,22 +35,22 @@ def run(phi, folder, method='ODR', samples=5, step=1, reps=1, cycles=8, show=Fal
     for bits, maxv in zip(BITS, MAXV):
         logger.info("Bits: {}".format(bits))
 
-        amplitude = 0.9 * maxv
+        peak2peak = 0.9 * maxv  # 90% of dynamic range.
+        amplitude = peak2peak / 2
 
         errors_per_bits[bits] = []
         for cycles in cycles_list:
             n_results = simulation.n_simulations(
                 N=reps,
-                phi=phi,
+                angle=angle,
                 A=amplitude,
                 bits=bits,
                 max_v=maxv,
                 cycles=cycles,
-                fc=fc,
-                fa=samples,
+                step=step,
+                samples=samples,
                 allow_nan=True,
                 method=method,
-                p0=[amplitude, 0, 0, phi, 0, 0]
             )
 
             # RMSE

@@ -2,22 +2,18 @@ import logging
 
 import numpy as np
 
-from rapp.adc import ADC_BITS, GAIN_ONE, GAINS
-
 logger = logging.getLogger(__name__)
-
-DEFAULT_MAXV, _ = GAINS[GAIN_ONE]
 
 
 def harmonic(
     A: float = 2,
     cycles: int = 1,
     fc: int = 50,
-    fa: int = 1,
+    samples: int = 1,
     phi: float = 0,
     noise: tuple = None,
-    bits: int = ADC_BITS,
-    max_v: float = DEFAULT_MAXV,
+    bits: int = 16,
+    max_v: float = 4,
     all_positive: bool = False
 ) -> tuple:
     """Generates a one-dimensional discrete harmonic signal.
@@ -27,7 +23,7 @@ def harmonic(
         A: amplitude (peak) of the signal.
         cycles: number of cycles.
         fc: samples per cycle.
-        fa: samples per angle.
+        samples: samples per angle.
         phi: phase (radians).
         noise: (mu, sigma) of additive white Gaussian noise.
         bits: number of bits for quantization. If None, doesn't quantize the signal.
@@ -39,7 +35,7 @@ def harmonic(
     """
 
     xs = np.linspace(0, 2 * np.pi * cycles, num=int(cycles * fc))
-    xs = np.repeat(xs, fa)
+    xs = np.repeat(xs, samples)
 
     signal = A * np.sin(xs + phi)
 
@@ -60,7 +56,7 @@ def harmonic(
 
 
 def quantize(
-    signal: np.array, max_v: float = DEFAULT_MAXV, bits: int = ADC_BITS, signed=True
+    signal: np.array, max_v: float = 4, bits: int = 16, signed=True
 ) -> np.array:
     """Performs quantization of a voltage signal.
 

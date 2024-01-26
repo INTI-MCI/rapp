@@ -43,7 +43,7 @@ class Measurement:
     """Represents a polarimeter measurement.
 
     Args:
-        data: the data read from a measurement file.
+        data: the data of the measurement.
     """
     def __init__(self, data: pd.DataFrame, cycles=None, step=None, samples=None):
         self._data = data
@@ -57,7 +57,7 @@ class Measurement:
 
     @classmethod
     def from_file(cls, filepath, sep=DELIMITER):
-        """Instantiates a Measurement object from a filepath."""
+        """Instantiates a Measurement with data read from a file."""
         data = pd.read_csv(
             filepath,
             sep=sep, skip_blank_lines=True, comment='#', usecols=(0, 1, 2), encoding=ct.ENCONDIG
@@ -70,11 +70,12 @@ class Measurement:
         return cls(data, **parse_input_parameters_from_filepath(filepath))
 
     @classmethod
-    def simulate(cls, phi, a0_noise=A0_NOISE, a1_noise=A1_NOISE, **kwargs):
-        """Simulates a measurement of the polarimeter.
+    def simulate(cls, angle, cycles=1, step=1, a0_noise=A0_NOISE, a1_noise=A1_NOISE, **kwargs):
+        """Instantiates a Measurement with simulated data.
 
         Args:
-            phi: phase difference between signals (radians).
+            angle: angle between two signal's plane of polarization (degrees).
+            cycles: number of cycles of the analyzer.
             a0_noise: (mu, sigma) of additive white Gaussian noise of channel 0.
             a1_noise: (mu, sigma) of additive white Gaussian noise of channel 1.
             **kwargs: any other keyword argument to be passed 'harmonic' function.
@@ -82,8 +83,14 @@ class Measurement:
         Returns:
             Measurement: simulated data.
         """
-        xs, s1 = signal.harmonic(noise=a0_noise, all_positive=True, **kwargs)
-        _, s2 = signal.harmonic(phi=-phi * 2, noise=a1_noise, all_positive=True, **kwargs)
+        cycles = cycles * 2
+        phi = np.deg2rad(angle) * 2
+
+        fc = int(180 / step)  # Half cycle (180°) of the analyzer is one full cycle of the signal.
+
+        xs, s1 = signal.harmonic(cycles=cycles, fc=fc, noise=a0_noise, all_positive=True, **kwargs)
+        _, s2 = signal.harmonic(
+            phi=phi, cycles=cycles, fc=fc, noise=a1_noise, all_positive=True, **kwargs)
 
         # We divide xs by 2 because one cycle of the analyzer contains two cycles of the signal.
         xs = np.rad2deg(xs) / 2
@@ -112,11 +119,10 @@ class Measurement:
 
         return self._data[[COLUMN_CH0, COLUMN_CH1]]
 
-    def phase_diff(self, degrees=True, **kwargs):
-        """Calculates phase difference between measured signals.
+    def phase_diff(self, **kwargs):
+        """Calculates phase difference between the measured signals.
 
         Args:
-            degrees: if true, returns results in degrees. Otherwise, radians.
             kwargs: extra arguments for phase.phase_difference function.
         """
         xs, s1, s2, s1_sigma, s2_sigma = self.average_data()
@@ -136,9 +142,8 @@ class Measurement:
         if res.fitx is not None:
             res.fitx /= 2
 
-        if degrees:
-            xs = np.rad2deg(xs)
-            res = res.to_degrees()
+        xs = np.rad2deg(xs)
+        res = res.to_degrees()
 
         return xs, s1, s2, s1_sigma, s2_sigma, res
 
