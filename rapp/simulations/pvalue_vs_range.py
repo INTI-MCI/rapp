@@ -19,7 +19,8 @@ ADC_MAXV = 4.096
 
 
 def run(
-    phi, folder, method=None, samples=None, step=None, reps=1, cycles=None, show=False, save=True
+    angle=None, folder=None, method=None, samples=None, step=None, reps=1, cycles=None,
+    show=False, save=True
 ):
     print("")
     logger.info("PVALUE (GAUSSIAN-TEST) VS DYNAMIC RANGE")
@@ -44,7 +45,8 @@ def run(
     plot = Plot(
         ylabel="p-valor",
         xlabel=ct.LABEL_DYNAMIC_RANGE_USE,
-        ysci=True, xint=False,
+        ysci=True,
+        xint=False,
         folder=folder
     )
 

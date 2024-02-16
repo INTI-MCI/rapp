@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 METHODS = {  # (marker_style, line_style, reps)
     'COSINE': ('-', 'solid', 1),
     'NLS': ('d', 'solid', None),
-    'ODR': ('-', 'dotted', None)
+    # 'ODR': ('-', 'dotted', None)
 }
 
 TPL_LOG = "cycles={}, φerr: {}."
@@ -20,12 +20,13 @@ TPL_LABEL = "samples={}\nstep={}°"
 TPL_FILENAME = "sim_error_vs_method-reps-{}-samples-{}-step-{}.png"
 
 
-def run(phi, folder, method=None, samples=5, step=1, reps=10, cycles=8, show=False, save=True):
+def run(
+    folder, angle=22.5, method=None, samples=5, step=1, reps=1, cycles=4, show=False, save=True
+):
     print("")
     logger.info("PHASE DIFFERENCE VS # OF CYCLES")
 
-    cycles_list = np.arange(1, cycles + 1, step=1)
-    fc = simulation.samples_per_cycle(step=step)
+    cycles_list = np.arange(0.5, cycles + 0.5, step=0.5)
 
     errors = {}
     for method, (*head, mreps) in METHODS.items():
@@ -37,13 +38,12 @@ def run(phi, folder, method=None, samples=5, step=1, reps=10, cycles=8, show=Fal
         errors[method] = []
         for cycles in cycles_list:
             n_res = simulation.n_simulations(
-                phi=phi,
+                angle=angle,
                 N=mreps,
                 cycles=cycles,
-                fc=fc,
-                fa=samples,
+                step=step,
+                samples=samples,
                 method=method,
-                p0=[1, 0, 0, phi, 0, 0],
                 allow_nan=True
             )
 
@@ -56,7 +56,8 @@ def run(phi, folder, method=None, samples=5, step=1, reps=10, cycles=8, show=Fal
         ylabel=ct.LABEL_PHI_ERR, xlabel=ct.LABEL_N_CYCLES, ysci=True, xint=True, folder=folder)
 
     for method, (ms, ls, _) in METHODS.items():
-        plot.add_data(cycles_list, errors[method], style=ms, ls=ls, color='k', lw=2, label=method)
+        plot.add_data(
+            cycles_list * 2, errors[method], style=ms, ls=ls, color='k', lw=2, label=method)
 
     annotation = TPL_LABEL.format(samples, step)
     plot._ax.text(0.05, 0.46, annotation, transform=plot._ax.transAxes)

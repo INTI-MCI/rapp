@@ -8,10 +8,12 @@ np.random.seed(1)
 
 def test_run(tmp_path):
     cycles, errors_per_bits = error_vs_resolution.run(
-        phi=np.pi / 8,
+        angle=45,
         folder=tmp_path,
+        reps=1,
+        step=1,
         samples=50,
-        cycles=2,
+        cycles=1,
         save=False
     )
 
@@ -19,4 +21,4 @@ def test_run(tmp_path):
     assert len(cycles) == 2
 
     for errors in errors_per_bits.values():
-        assert errors[-1] < 0.09
+        assert errors[-1] < 6e-2

@@ -16,7 +16,7 @@ NREPS = [1, 10, 20, 50, 100, 200]
 
 
 def run(
-    phi, folder, method='ODR', samples=5, step=1, reps=1, cycles=2, show=False, save=True
+    angle, folder, method='NLS', samples=5, step=1, reps=1, cycles=2, show=False, save=True
 ):
     print("")
     logger.info("PHASE DIFFERENCE VS STEP")
@@ -32,16 +32,13 @@ def run(
 
     errors = []
     for step, reps in zip(steps, reps):
-        fc = simulation.samples_per_cycle(step=step)
-
         n_res = simulation.n_simulations(
             N=reps,
-            phi=phi,
+            angle=angle,
             method=method,
             cycles=cycles,
-            fc=fc,
-            fa=samples,
-            p0=[1, 0, 0, phi, 0, 0],
+            step=step,
+            samples=samples,
             allow_nan=True
         )
 

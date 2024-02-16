@@ -18,8 +18,8 @@ np.random.seed(1)
 
 
 def run(
-    phi, folder,
-    method='ODR', samples=5, step=0.01, reps=1, cycles=2, gains=None, show=False, save=True
+    folder, angle=22.5,
+    method='NLS', samples=5, step=1, reps=1, cycles=1, gains=None, show=False, save=True
 ):
     print("")
     logger.info("PHASE DIFFERENCE VS MAX TENSION")
@@ -38,19 +38,16 @@ def run(
 
         errors[max_v] = []
         for amplitude in amplitudes:
-            fc = simulation.samples_per_cycle(step=step)
-
             n_results = simulation.n_simulations(
-                phi=phi,
+                angle=angle,
                 N=reps,
                 A=amplitude,
                 max_v=max_v,
-                method='ODR',
+                method=method,
                 cycles=cycles,
-                fc=fc,
-                fa=samples,
+                step=step,
+                samples=samples,
                 allow_nan=True,
-                p0=[amplitude, 0, 0, phi, 0, 0]
             )
 
             error = n_results.rmse()

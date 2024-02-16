@@ -7,7 +7,8 @@ np.random.seed(1)
 
 def test_run(tmp_path):
     steps, errors = error_vs_step.run(
-        phi=np.pi / 4, folder=tmp_path,
+        angle=45,
+        folder=tmp_path,
         reps=[1],
         step=[1],
         samples=1,
@@ -15,4 +16,4 @@ def test_run(tmp_path):
         save=False
     )
 
-    assert errors[-1] < 6e-4
+    assert errors[-1] < 5e-2

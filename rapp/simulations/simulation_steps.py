@@ -6,7 +6,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 
 from rapp import constants as ct
-from rapp.simulations import simulation
 from rapp.signal import signal
 
 
@@ -14,13 +13,13 @@ logger = logging.getLogger(__name__)
 
 
 def run(
-    phi=None, folder=None, method=None, samples=None, step=0.5, reps=None, cycles=0.15,
+    phi=None, folder=None, method=None, samples=None, step=0.5, reps=None, cycles=0.7,
     show=False, save=True
 ):
     print("")
     logger.info("SIMULATION PROCESS...")
 
-    fc = simulation.samples_per_cycle(step=step)
+    fc = fc = int(180 / step)
     noise = (0, 0.04)
     mu, sigma = noise
     bits = 6
@@ -54,11 +53,11 @@ def run(
     axs[2].legend(loc='lower right', prop={'family': 'monaco', 'size': 12})
 
     # Quantized signal + 50 samples
-    fa = 50
-    label = "σ={}\nbits={}\nmuestras={}".format(sigma, bits, fa)
+    samples = 50
+    label = "σ={}\nbits={}\nmuestras={}".format(sigma, bits, samples)
 
     xs, ys = signal.harmonic(
-        A=A, cycles=cycles, fc=fc, fa=fa, noise=noise, bits=bits, all_positive=True)
+        A=A, cycles=cycles, fc=fc, samples=samples, noise=noise, bits=bits, all_positive=True)
 
     data = np.array([xs, ys]).T
     data = pd.DataFrame(data=data, columns=["ANGLE", "CH0"])
