@@ -14,7 +14,7 @@ EPILOG = "Example: {}".format(EXAMPLE)
 def add_to_subparsers(subparsers):
     p = subparsers.add_parser("phase_diff", help=HELP_PHASE_DIFF, epilog=EPILOG)
     p.add_argument('filepath', type=str, help=HELP_FILEPATH)
-    p.add_argument('--method', type=str, default='ODR', help=HELP_METHOD)
+    p.add_argument('--method', type=str, default='NLS', help=HELP_METHOD)
     p.add_argument('--show', action='store_true', help=ct.HELP_SHOW)
     p.add_argument('-v', '--verbose', action='store_true', help=ct.HELP_VERBOSE)
 

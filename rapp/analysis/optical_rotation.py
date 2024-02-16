@@ -10,7 +10,7 @@ from rapp.measurement import Measurement, REGEX_NUMBER_AFTER_WORD
 logger = logging.getLogger(__name__)
 
 
-def optical_rotation(folder1, folder2, method='ODR', hwp=False):
+def optical_rotation(folder1, folder2, method='NLS', hwp=False):
     print("")
     logger.debug("Folder without optical active sample measurements {}...".format(folder1))
     logger.debug("Folder with optical active sample measurements {}...".format(folder2))

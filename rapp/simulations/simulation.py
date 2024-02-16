@@ -4,12 +4,7 @@ from rapp.measurement import Measurement
 from rapp.utils import round_to_n
 
 
-DEFAULT_PHI = np.pi / 4  # Phase difference.
-
-
-def samples_per_cycle(step=0.01):
-    # Half cycle (180) of the analyzer is one full cycle of the signal.
-    return int(180 / step)
+DEFAULT_ANGLE = 22.5  # Phase difference in degrees.
 
 
 class SimulationResult:
@@ -27,11 +22,14 @@ class SimulationResult:
         return round_to_n(np.rad2deg(np.mean(self._us)), 2)
 
 
-def n_simulations(N=1, phi=DEFAULT_PHI, method='ODR', p0=None, allow_nan=False, **kwargs):
+def n_simulations(N=1, angle=DEFAULT_ANGLE, method='ODR', allow_nan=False, **kwargs):
     """Performs N measurement simulations and calculates their phase difference.
 
     Args:
         N: number of simulations.
+        angle: angle between the two signal's planes of polarization.
+        method: method for phase difference calculation.
+
         *kwargs: arguments for Measurement.simulate method.
 
     Returns:
@@ -39,16 +37,17 @@ def n_simulations(N=1, phi=DEFAULT_PHI, method='ODR', p0=None, allow_nan=False, 
     """
     results = []
     for i in range(N):
-        m = Measurement.simulate(phi, **kwargs)
-        *head, res = m.phase_diff(method=method, p0=p0, allow_nan=allow_nan, degrees=False)
-        # plot(res)
+        m = Measurement.simulate(angle, **kwargs)
+        *head, res = m.phase_diff(method=method, allow_nan=allow_nan)
         results.append(res)
 
-    return SimulationResult(phi, results)
+        # plot(res)
+
+    return SimulationResult(angle, results)
 
 
 def plot(res):
-    """Just for debug."""
+    """Just for debug. Refactor and reuse code for this."""
     import matplotlib.pyplot as plt
     plt.plot(res.fitx, res.fits1)
     plt.plot(res.fitx, res.fits2)

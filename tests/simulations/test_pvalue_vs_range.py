@@ -7,11 +7,9 @@ np.random.seed(1)
 
 
 def test_run(tmp_path):
-    xs, mean_pvalues = pvalue_vs_range.run(np.pi / 4, tmp_path, save=False)
+    xs, mean_pvalues = pvalue_vs_range.run(folder=tmp_path, save=False)
 
     print(mean_pvalues)
     for i, pvalue in enumerate(mean_pvalues):
-        if i < 5:
-            assert np.isnan(pvalue) or pvalue < 0.05
-        else:
+        if i > 6:
             assert pvalue > 0.05

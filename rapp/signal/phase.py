@@ -7,6 +7,8 @@ from scipy.optimize import curve_fit
 from scipy.odr import ODR, Model, RealData
 
 from rapp.utils import round_to_n_with_uncertainty
+from rapp.signal.models import two_sines, two_sines_model
+
 
 PHASE_DIFFERENCE_METHODS = ['COSINE', 'HILBERT', 'NLS', 'ODR']
 
@@ -14,53 +16,14 @@ PHASE_DIFFERENCE_METHODS = ['COSINE', 'HILBERT', 'NLS', 'ODR']
 logger = logging.getLogger(__name__)
 
 
-def two_sines(x12, A1, A2, phi1, delta, C1, C2):
-    total = len(x12)
-    half = total // 2
-
-    x1 = x12[0:half]
-    x2 = x12[half:total]
-
-    s1 = sine(x1, A1, phi1, C1)
-    s2 = sine(x2 + phi1, A2, delta, C2)
-
-    return np.hstack([s1, s2])
-
-
-def two_sines_model(P, x):
-    total = len(x)
-    half = total // 2
-
-    x1 = x[0:half]
-    x2 = x[half:total]
-
-    A1, A2, phi1, delta, C1, C2 = P
-
-    P1 = (A1, phi1, C1)
-    P2 = (A2, delta, C2)
-
-    s1 = sine_model(P1, x1)
-    s2 = sine_model(P2, x2 + phi1)
-
-    return np.hstack([s1, s2])
-
-
-def sine(x, a, phi, c):
-    return a * np.sin(x + phi) + c
-
-
-def sine_model(P, x):
-    a, phi, c = P
-    return a * np.sin(x + phi) + c
-
-
 class PhaseDifferenceResult:
-    def __init__(self, value, uncertainty=None, fitx=None, fits1=None, fits2=None):
+    def __init__(self, value, phi1=None, uncertainty=None, fitx=None, fits1=None, fits2=None):
         self.value = value
         self.u = uncertainty
         self.fitx = fitx
         self.fits1 = fits1
         self.fits2 = fits2
+        self.phi1 = phi1
 
     def __str__(self):
         return "|φ1 - φ2| = ({} ± {})°".format(self.value, self.u)
@@ -86,12 +49,14 @@ def cosine_similarity(s1, s2):
     return np.arccos(np.dot(s1, s2) / (np.linalg.norm(s1) * np.linalg.norm(s2)))
 
 
-def sine_fit(xs, ys, p0=None, x_sigma=None, y_sigma=None, abs_sigma=True, method='curve_fit'):
-    # fitx = np.linspace(min(xs), max(xs), num=2000)
+def sine_fit(
+    xs, ys, p0=None, x_sigma=None, y_sigma=None, abs_sigma=True, bounds=None, method='NLS'
+):
     fitx = xs
 
     if method == 'NLS':
-        popt, pcov = curve_fit(two_sines, xs, ys, p0=p0, sigma=y_sigma, absolute_sigma=abs_sigma)
+        popt, pcov = curve_fit(
+            two_sines, xs, ys, p0=p0, sigma=y_sigma, bounds=bounds, absolute_sigma=abs_sigma)
 
         us = np.sqrt(np.diag(pcov))
         fity = two_sines(fitx, *popt)
@@ -101,7 +66,7 @@ def sine_fit(xs, ys, p0=None, x_sigma=None, y_sigma=None, abs_sigma=True, method
     if method == 'ODR':
 
         data = RealData(xs, ys, sx=x_sigma, sy=y_sigma)
-        odr = ODR(data, Model(two_sines_model),  beta0=p0 or [1, 0, 0, 0, 0, 0])
+        odr = ODR(data, Model(two_sines_model),  beta0=p0 or [1, 1, 0, 0, 0, 0])
         odr.set_job(fit_type=2)
         output = odr.run()
 
@@ -173,16 +138,18 @@ def phase_difference(
             s2_sigma = s2_sigma / s2_norm
 
         s12 = np.hstack([s1, s2])
+        x12 = np.hstack([xs, xs])
 
         s12_sigma = None
         if s1_sigma is not None and s2_sigma is not None:
             s12_sigma = np.hstack([s1_sigma, s2_sigma])
 
-        x12 = np.hstack([xs, xs])
+        bounds = ([0, 0, -np.inf, -np.inf, 0, 0], [np.inf] * 6)
 
         popt, us, fitx, fity = sine_fit(
             x12, s12,
-            x_sigma=x_sigma, y_sigma=s12_sigma, method=method, p0=p0, abs_sigma=abs_sigma
+            x_sigma=x_sigma, y_sigma=s12_sigma, method=method, p0=p0, abs_sigma=abs_sigma,
+            bounds=bounds
         )
 
         total = len(fitx)
@@ -200,15 +167,16 @@ def phase_difference(
         phase_diff = popt[3]
         phase_diff_u = us[3]
 
-        if abs(phase_diff) > np.pi / 2 and fix_range:
-            phase_diff = phase_diff % np.pi
+        if abs(phase_diff) > np.pi and fix_range:
+            phase_diff = (phase_diff % np.pi) * -1
 
-        logger.debug("|φ1 - φ2| = ({} ± {})°".format(phase_diff, phase_diff_u))
+        logger.debug(
+            "|φ1 - φ2| = ({} ± {})°".format(np.rad2deg(phase_diff), np.rad2deg(phase_diff_u)))
 
         fity1 = fity1 * s1_norm
         fity2 = fity2 * s2_norm
 
-        return PhaseDifferenceResult(phase_diff, phase_diff_u, fitx, fity1, fity2)
+        return PhaseDifferenceResult(phase_diff, phi1, phase_diff_u, fitx, fity1, fity2)
 
     if method == 'HILBERT':
         phase_diff = hilbert_transform(s1, s2)
