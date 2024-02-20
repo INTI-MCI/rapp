@@ -5,7 +5,7 @@ Adafruit_ADS1115 ads;
 const unsigned short int SERIAL_BAUDRATE = 57600;
 const bool ADS_READING_MODE_CONTINUOUS = true;
 
-// ADS_READING_DELAY: Time we need to wait so ADC goes out of suspension.
+// ADS_READING_DELAY: Time in miliseconds we need to wait so ADC goes out of suspension.
 // Otherwise we get repeated values at the beginning of each channel.
 const byte ADS_READING_DELAY = 5;
 
@@ -39,10 +39,11 @@ void serial_write_short(short data){
     Serial.write(buffer, 2);  
 }
 
-void read_n_samples_from_channel(unsigned long n_samples, byte channel){
+float read_n_samples_from_channel(unsigned long n_samples, byte channel){
     ads.startADCReading(MUX_BY_CHANNEL[channel], ADS_READING_MODE_CONTINUOUS);
     delay(ADS_READING_DELAY);
-
+    float starttime = millis();
+    
     unsigned long i = 0;
     while (i < n_samples) {
         short data = ads.getLastConversionResults();
@@ -52,22 +53,31 @@ void read_n_samples_from_channel(unsigned long n_samples, byte channel){
         i = i + 1;
         delayMicroseconds(ADS_CONTINUOUS_MODE_DELAY_MUS);
     };
+    
+    float endtime = millis();
+    float elapsedtime = (endtime - starttime) / 1000;
+    
+    return elapsedtime;
 }
 
-void read_n_samples(unsigned long n_samples, bool ch0, bool ch1){
+float read_n_samples(unsigned long n_samples, bool ch0, bool ch1){
+    float elapsedtime_ch0 = 0, elapsedtime_ch1 = 0, elapsedtime = 0;
     if (ch0) {
-        read_n_samples_from_channel(n_samples, 0);
+        elapsedtime_ch0 = read_n_samples_from_channel(n_samples, 0);
     }
     if (ch1) {
-        read_n_samples_from_channel(n_samples, 1);
+        elapsedtime_ch1 = read_n_samples_from_channel(n_samples, 1);
     }
+    elapsedtime = elapsedtime_ch0 + elapsedtime_ch1;
+    return elapsedtime;
 }
 
-unsigned long parse_and_read_n_samples() {
+unsigned long parse_and_read_n_samples(float *out_elapsedtime, unsigned short *out_n_channels) {
     bool ch0 = parse_bool();
     bool ch1 = parse_bool();
     unsigned long n_samples = parse_int();
-    read_n_samples(n_samples, ch0, ch1);
+    *out_elapsedtime = read_n_samples(n_samples, ch0, ch1);
+    *out_n_channels = (unsigned short) ch0 + (unsigned short) ch1;
 
     return n_samples;
 }
@@ -85,14 +95,13 @@ bool parse_bool() {
 }
 
 void measure_SPS() {
-    float starttime = millis();
-    unsigned long n_samples = parse_and_read_n_samples();
-    float endtime = millis();
+    float elapsedtime;
+    unsigned short n_channels;
+    unsigned long n_samples = parse_and_read_n_samples(&elapsedtime, &n_channels);
+    
+    short sps = (n_samples * n_channels / elapsedtime);
 
-    float elapsedtime = (endtime - starttime) / 1000;
-    short sps = (n_samples / elapsedtime);
-
-    Serial.print("SAMPLES: ");
+    Serial.print("\nSAMPLES: ");
     Serial.println(n_samples, DEC);
 
     Serial.print("SECONDS: ");
@@ -106,8 +115,9 @@ void loop(void) {
     if (Serial.available() > 0) {  // Wait to recieve a signal.
 
         // measure_SPS();
-
-        parse_and_read_n_samples();
+        float elapsedtime;
+        unsigned short n_channels;
+        parse_and_read_n_samples(&elapsedtime, &n_channels);
 
     }
 }
