@@ -4,7 +4,7 @@ from rapp import polarimeter
 
 HELP_POLARIMETER = "Tool for measuring signals with the polarimeter."
 
-HELP_SAMPLES = 'n° of samples per angle.'
+HELP_SAMPLES = 'n° of samples per angle, default (%(default)s) gives 10 cycles of 50 Hz noise.'
 HELP_CYCLES = 'n° of cycles to run (default: %(default)s).'
 HELP_STEP = 'motion step of the rotating analyzer (default: %(default)s).'
 HELP_DELAY_POSITION = 'delay (in seconds) after changing analyzer position (default: %(default)s).'
@@ -34,7 +34,7 @@ EPILOG = "Example: {}".format(EXAMPLE)
 
 def add_to_subparsers(subparsers):
     p = subparsers.add_parser("polarimeter", help=HELP_POLARIMETER, epilog=EPILOG)
-    p.add_argument('--samples', type=int, default=1, help=HELP_SAMPLES)
+    p.add_argument('--samples', type=int, default=169, help=HELP_SAMPLES)
     p.add_argument('--cycles', type=int, default=0, help=HELP_CYCLES)
     p.add_argument('--step', type=float, default=45, help=HELP_STEP)
     p.add_argument('--chunk-size', type=int, default=500, metavar='', help=HELP_CHUNK_SIZE)
