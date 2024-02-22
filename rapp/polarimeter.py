@@ -21,14 +21,14 @@ np.set_printoptions(threshold=0, edgeitems=5, suppress=True)
 logger = logging.getLogger(__name__)
 
 
-ADC_WIN_DEVICE = 'COM4'
+ADC_WIN_DEVICE = 'COM5'
 ADC_LINUX_DEVICE = '/dev/ttyACM0'
 
 ADC_BAUDRATE = 57600
 ADC_TIMEOUT = 0.1
 ADC_WAIT = 2
 
-MOTION_CONTROLLER_PORT = "COM3"
+MOTION_CONTROLLER_PORT = "COM4"
 MOTION_CONTROLLER_BAUDRATE = 921600
 
 
