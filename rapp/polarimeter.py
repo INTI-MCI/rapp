@@ -10,7 +10,7 @@ import numpy as np
 from rapp import constants as ct
 from rapp.motion_controller import ESP301
 from rapp.adc import ADC
-from rapp.rotary_stage import Analyzer, HalfWavePlate
+from rapp.rotary_stage import RotaryStage
 
 from rapp.data_file import DataFile
 from rapp.mocks import SerialMock
@@ -63,7 +63,7 @@ class Polarimeter:
         hwp: rotating half wave plate.
         data_file: handles whe file writing.
     """
-    def __init__(self, adc: ADC, analyzer: Analyzer, hwp: HalfWavePlate, data_file: DataFile):
+    def __init__(self, adc: ADC, analyzer: RotaryStage, hwp: RotaryStage, data_file: DataFile):
         self._adc = adc
         self._analyzer = analyzer
         self._hwp = hwp
@@ -75,13 +75,16 @@ class Polarimeter:
         Args:
             samples: number of samples per analyzer position.
             chunk_size: measure data in chunks of this size. If 0, no chunks are used.
+            reps: number of repetitions.
         """
 
         logger.info("Samples to measure in each analyzer position: {}.".format(samples))
         logger.info("Maximum chunk size: {}.".format(chunk_size))
 
-        for rep in range(1, reps + 1):
-            for hwp_position in self._hwp:
+        self._hwp.set_home(0)
+
+        for hwp_position in self._hwp:
+            for rep in range(1, reps + 1):
                 logger.info("HWP angle: {}°, repetition {}/{}".format(hwp_position, rep, reps))
 
                 self._setup_data_file(samples, rep, hwp_position)
@@ -97,8 +100,6 @@ class Polarimeter:
 
                 logger.info("Done!")
                 logger.info("Results in file: {}".format(self._data_file.path))
-
-            self._hwp.reset()
 
         return self._data_file.path
 
@@ -152,7 +153,7 @@ class Polarimeter:
 def main(
     samples=10, cycles=0, step=45, delay_position=1, velocity=2, no_ch0=False, no_ch1=False,
     chunk_size=2000, prefix='test', mock_esp=False, mock_adc=False, plot=False, overwrite=False,
-    init_position=None, hwp_cycles=0, hwp_step=45, hwp_delay=5, reps=1, work_dir=ct.WORK_DIR
+    hwp_cycles=0, hwp_step=45, hwp_delay=5, reps=1, work_dir=ct.WORK_DIR
 ):
 
     # Build Motion Controller
@@ -161,7 +162,9 @@ def main(
         motion_controller = ESP301(SerialMock())
     else:
         logger.info("Connecting to ESP Motion Controller...")
-        motion_controller = ESP301.build(MOTION_CONTROLLER_PORT, b=MOTION_CONTROLLER_BAUDRATE)
+        motion_controller = ESP301.build(
+            MOTION_CONTROLLER_PORT, b=MOTION_CONTROLLER_BAUDRATE, useaxes=[1, 2], reset=True
+        )
 
     # Build ADC
     if mock_adc:
@@ -175,12 +178,12 @@ def main(
         )
 
     # Build Analyzer
-    analyzer = Analyzer(
-        motion_controller, cycles, step, init_position, delay_position, velocity, axis=1
+    analyzer = RotaryStage(
+        motion_controller, cycles, step, delay_position, velocity, axis=1
     )
 
     # Build HalfWavePlate
-    hwp = HalfWavePlate(motion_controller, hwp_cycles, hwp_step, delay_position=hwp_delay, axis=2)
+    hwp = RotaryStage(motion_controller, hwp_cycles, hwp_step, delay_position=hwp_delay, axis=2)
 
     # Build DataFile
     output_dir = os.path.join(work_dir, ct.OUTPUT_FOLDER_DATA)
