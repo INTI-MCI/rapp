@@ -36,15 +36,19 @@ class ESP301:
 
         self.default_axis = axis
 
+        for n in self.axes_in_use:
+            logger.info("Setting motor ON for axis: {}".format(n))
+            self.motor_on(axis=n)
+
         if reset:
-            logger.info("Resetting axes in use: {}".format(self.axes_in_use))
             for n in self.axes_in_use:
+                logger.info("Searching HOME for axis: {}".format(n))
                 self.reset_axis(n)
                 self._check_errors()
 
         if initpos is not None and initpos != 0:
-            logger.info("Setting initial position: {}".format(initpos))
             for n in self.axes_in_use:
+                logger.info("Setting initial position: {} for axis {}".format(initpos, n))
                 self.set_position(initpos)
                 self._check_errors()
 
@@ -108,6 +112,14 @@ class ESP301:
 
         self._serial.write(cmd.encode())
         return float(self._serial.readline())
+
+    def set_home(self, position, axis=None):
+        axis = self._resolve_axis(axis)
+
+        command_tpl = "{0}DH{1:.4f}\r"
+        cmd = command_tpl.format(axis, position)
+
+        self._serial.write(cmd.encode())
 
     def set_velocity(self, velocity, axis=None):
         axis = self._resolve_axis(axis)
