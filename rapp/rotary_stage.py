@@ -21,13 +21,12 @@ class RotaryStage(Iterator):
         axis: axis in the motion controller.
     """
     def __init__(
-        self, motion_controller, cycles=1, step=45, init_position=None,
+        self, motion_controller, cycles=1, step=45,
         delay_position=1, velocity=4, axis=1
     ):
         self._motion_controller = motion_controller
         self.cycles = cycles
         self.step = step
-        self.init_position = init_position
         self._delay_position = delay_position
         self._velocity = velocity
         self._axis = axis
@@ -61,13 +60,15 @@ class RotaryStage(Iterator):
     def generate_positions(self):
         end = 360 * math.copysign(1, self.step)
         positions = np.arange(0, end * self.cycles + self.step, self.step, dtype=float)
-        if self.init_position is not None:
-            positions += self.init_position
 
         return positions
 
     def reset(self):
         self._index = 0
+        self._motion_controller.reset_axis(axis=self._axis)
+
+    def set_home(self, position):
+        self._motion_controller.set_home(position, axis=self._axis)
 
     def close(self):
         self._motion_controller.close()
@@ -77,17 +78,5 @@ class RotaryStage(Iterator):
         self._motion_controller.motor_on(axis=self._axis)
 
         logger.info("{} - Setting velocity to {} deg/s.".format(str(self), self._velocity))
-        self._motion_controller.set_velocity(self._velocity)
-        self._motion_controller.set_home_velocity(self._velocity)
-
-        if self.init_position is None:
-            logger.info("{} - Setting initial position as current position.".format(str(self)))
-            self.init_position = self._motion_controller.get_position()
-
-
-class Analyzer(RotaryStage):
-    pass
-
-
-class HalfWavePlate(RotaryStage):
-    pass
+        self._motion_controller.set_velocity(self._velocity, axis=self._axis)
+        self._motion_controller.set_home_velocity(self._velocity, axis=self._axis)
