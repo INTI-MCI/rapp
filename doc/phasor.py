@@ -4,7 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.ticker as tck
 
-from rapp.signal import simulator
+from rapp.signal import signal
 
 dir_path = os.path.dirname(os.path.realpath(__file__))
 
@@ -13,14 +13,18 @@ phi = np.pi / 2
 phi1 = np.pi / 2
 phi2 = phi1 - phi / 2
 
-ANALYZER_AXIS = 0.5
 COLOR_REFERENCE = 'C00'
 COLOR_OBJECT = 'C01'
 
-xs0, s1, s2 = simulator.polarimeter_signal(A=1, cycles=3, phi=-phi, fc=90, fa=1, all_positive=True)
+fc = 90
+
+xs0, s1 = signal.harmonic(A=1, cycles=3, fc=fc, noise=None, all_positive=True)
+_, s2 = signal.harmonic(A=1, phi=phi, cycles=3, fc=fc, noise=None, all_positive=True)
+
 
 # Set analyzer axis
-xs = xs0 - 3 * np.pi / 4
+xs = xs0 / 2
+xs = xs - 3 * np.pi / 4
 
 r = np.arange(0, 1, 0.01)
 theta1 = np.ones(len(r)) * phi1
@@ -54,6 +58,7 @@ ax2.xaxis.set_major_formatter(tck.FormatStrFormatter('%g $\\pi$'))
 ax2.xaxis.set_major_locator(tck.MultipleLocator(base=0.5))
 ax2.xaxis.set_major_locator(plt.MaxNLocator(4))
 
+"""
 ax3 = ax2.twiny()
 ax3.plot(xs0 / np.pi, np.ones(len(xs)), alpha=0)
 ax3.set_xlim(0, 4)
@@ -61,7 +66,7 @@ ax3.set_xlabel("Fase de la señal objeto")
 ax3.xaxis.set_major_formatter(tck.FormatStrFormatter('%g $\\pi$'))
 ax3.xaxis.set_major_locator(tck.MultipleLocator(base=0.5))
 ax3.xaxis.set_major_locator(plt.MaxNLocator(4))
-
+"""
 fig.tight_layout()
 
 fig.savefig(os.path.join(dir_path, "phasor.png"))
