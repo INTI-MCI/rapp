@@ -1,28 +1,39 @@
 import time
 import math
 import logging
+from rapp.motion_controller import ESP301Error
 
 from collections.abc import Iterator
 import numpy as np
 
 logger = logging.getLogger(__name__)
 
+MAX_POSITION_ERROR = 0.005
+
+
+class RotaryStageError(Exception):
+    pass
+
 
 class RotaryStage(Iterator):
-    """Represents an iterator Rotary Stage.
+    """Represents Rotary Stage object. Implements iterator interface.
 
      Args:
-        motion_controller: driver to control the rotary stage.
-        cycles: number of cycles to trasverse.
+        motion_controller: driver to control the stage.
+        cycles: number of cycles to traverse.
         step: step between positions.
-        init_position: initial position.
         delay_position: time to wait after changing position.
-        velocity: velocity of the analyzer.
+        velocity: velocity of the stage.
         axis: axis in the motion controller.
     """
     def __init__(
-        self, motion_controller, cycles=1, step=45,
-        delay_position=1, velocity=4, axis=1
+        self,
+        motion_controller,
+        cycles=1,
+        step=45,
+        delay_position=1,
+        velocity=4,
+        axis=1
     ):
         self._motion_controller = motion_controller
         self.cycles = cycles
@@ -31,9 +42,9 @@ class RotaryStage(Iterator):
         self._velocity = velocity
         self._axis = axis
 
-        self._motor_on()
+        self._positions = self._generate_positions()
+        self.motor_on()
 
-        self._positions = self.generate_positions()
         logger.info("{} - Positions: {}.".format(str(self), self._positions))
 
         self._index = 0
@@ -49,31 +60,49 @@ class RotaryStage(Iterator):
             position = self._positions[self._index]
             self._index += 1
 
-            logger.debug("{} - Changing position to: {}°.".format(str(self), position))
-            self._motion_controller.set_position(position, axis=self._axis)
+            try:
+                res = self._motion_controller.set_position(position, axis=self._axis)
+            except ESP301Error as e:
+                raise RotaryStageError(e)
+
+            if abs(position - res) > MAX_POSITION_ERROR:
+                logger.warning(
+                    "Position error exceeded maximum: "
+                    "{} is not {} +- {}".format(res, position, MAX_POSITION_ERROR))
+
             time.sleep(self._delay_position)
 
             return position
         else:
             raise StopIteration
 
-    def generate_positions(self):
+    def _generate_positions(self):
         end = 360 * math.copysign(1, self.step)
-        positions = np.arange(0, end * self.cycles + self.step, self.step, dtype=float)
 
-        return positions
+        if self.cycles == 0:
+            return [0]
+
+        return np.arange(0, end * self.cycles + self.step, self.step, dtype=float)
 
     def reset(self):
+        """Resets position of the stage."""
+        logger.info("Searching HOME for axis: {}".format(self._axis))
         self._index = 0
         self._motion_controller.reset_axis(axis=self._axis)
 
+    def reconnect(self):
+        """Reconnects motion controller."""
+        self._motion_controller.reconnect()
+
     def set_home(self, position):
+        """Sets a numeric value to current mechanical position."""
         self._motion_controller.set_home(position, axis=self._axis)
 
     def close(self):
+        """Closes connection to the motion controller."""
         self._motion_controller.close()
 
-    def _motor_on(self):
+    def motor_on(self):
         logger.info("{} - Turning motor ON.".format(str(self)))
         self._motion_controller.motor_on(axis=self._axis)
 

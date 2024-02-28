@@ -60,6 +60,9 @@ def progressbar(it, desc="", size=100, step=1, out=sys.stdout, enable=True):
     last_time = start
 
     def show(j):
+        terminal_column_size = shutil.get_terminal_size().columns
+        terminal_column_size -= 2
+
         x = int(size * j / count)
 
         current_time = time()
@@ -79,6 +82,16 @@ def progressbar(it, desc="", size=100, step=1, out=sys.stdout, enable=True):
         pctg = round((j / count) * 100)
 
         bar = bar_string.format(desc, u'='*x, ('.'*(size-x)), pctg, time_str, rate_str)
+        if len(bar) >= terminal_column_size:
+            excess = len(bar) - terminal_column_size
+            if excess < size:
+                resize = size - excess
+                x = int(resize * j / count)
+                bar = bar_string.format(
+                    desc, u'=' * x, ('.' * (resize - x)), pctg, time_str, rate_str)
+            else:
+                bar = bar[:terminal_column_size]
+
         print(bar, end='\r', file=out, flush=True)
 
         return current_time
