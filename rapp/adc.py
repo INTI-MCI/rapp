@@ -44,7 +44,7 @@ class ADC:
         ch0: if true, measures the channel 0.
         ch1: if true, measures the channel 1.
         in_bytes: if true, assumes incoming data is in bytes.
-        progressbar: if true, enables progressbar.
+        progressbar: if true, enables progress bar.
 
     Raises:
         ADCError: when ch0 and ch1 parameters are both False.
@@ -78,7 +78,7 @@ class ADC:
             baudrate: bits per second.
             timeout: read timeout (seconds).
             wait: time to wait after making a connection (seconds).
-            kwargs: optinal arguments for ADC constructor
+            kwargs: optional arguments for ADC constructor
 
         Returns:
             ADC: an instantiated AD object.
@@ -86,8 +86,8 @@ class ADC:
         serial_connection = cls.get_serial_connection(port, baudrate=b, timeout=timeout)
         logger.info("Waiting {} seconds after connecting to ADC...".format(wait))
         # Arduino resets when a new serial connection is made.
-        # We need to wait, otherwise we don't recieve anything.
-        # TODO: check if we can avoid that arduino resets.
+        # We need to wait, otherwise we don't receive anything.
+        # TODO: check if we can avoid that Arduino resets.
         time.sleep(wait)
 
         return cls(serial_connection, **kwargs)
