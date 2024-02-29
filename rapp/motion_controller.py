@@ -30,13 +30,11 @@ class ESP301:
 
     def __init__(self, serial, axis=1, useaxes=None):
         self._serial = serial
-
         self.axes_in_use = useaxes
+        self.default_axis = axis
 
         if self.axes_in_use is None:
             self.axes_in_use = [axis]
-
-        self.default_axis = axis
 
         for n in self.axes_in_use:
             logger.info("Setting motor ON for axis: {}".format(n))
