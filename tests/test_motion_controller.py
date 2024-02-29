@@ -2,7 +2,6 @@ from rapp.motion_controller import ESP301, ESP301Error
 from rapp import mocks
 
 import pytest  # noqa
-import serial
 
 
 class ErrorSerialMock(mocks.SerialMock):
@@ -12,12 +11,7 @@ class ErrorSerialMock(mocks.SerialMock):
 
 def test_init():
     serial_mock = mocks.SerialMock()
-
-    ESP301(serial_mock)
-
-    ESP301(mocks.SerialMock())
     rotator = ESP301(serial_mock, useaxes=[1, 2])
-
     assert rotator.axes_in_use == [1, 2]
 
 
@@ -25,8 +19,7 @@ def test_build(monkeypatch):
     with pytest.raises(ESP301Error):
         ESP301.build(dev='BADDEVICE')
 
-    monkeypatch.setattr(serial, "Serial", lambda *x, **y: mocks.SerialMock())
-    ESP301.build()
+    ESP301.build(mock_serial=True)
 
 
 def test_methods(motion_controller):
