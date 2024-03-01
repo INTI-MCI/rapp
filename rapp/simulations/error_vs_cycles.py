@@ -17,7 +17,7 @@ METHODS = {  # (marker_style, line_style, reps)
 
 TPL_LOG = "cycles={}, φerr: {}."
 TPL_LABEL = "samples={}\nstep={}°"
-TPL_FILENAME = "sim_error_vs_method-reps-{}-samples-{}-step-{}.png"
+TPL_FILENAME = "sim_error_vs_cycles-reps-{}-samples-{}-step-{}.png"
 
 
 def run(
