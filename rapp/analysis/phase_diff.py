@@ -66,7 +66,8 @@ def plot_phase_difference(phase_diff_result, filename=None, show=False):
         markevery=markevery,
         alpha=0.8,
         label='CH0',
-        style='D'
+        style='D',
+        mfc='None',
     )
 
     d2 = plot.add_data(
@@ -77,6 +78,7 @@ def plot_phase_difference(phase_diff_result, filename=None, show=False):
         markevery=markevery,
         alpha=0.8,
         label='CH1',
+        mfc='None',
     )
 
     left_legend = [d1, d2]
