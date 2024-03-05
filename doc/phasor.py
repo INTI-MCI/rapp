@@ -15,6 +15,7 @@ phi2 = phi1 - phi / 2
 
 COLOR_REFERENCE = 'C00'
 COLOR_OBJECT = 'C01'
+COLOR_OBJECT_WO_SAMPLE = 'C01'
 
 fc = 90
 
@@ -29,18 +30,25 @@ xs = xs - 3 * np.pi / 4
 r = np.arange(0, 1, 0.01)
 theta1 = np.ones(len(r)) * phi1
 theta2 = np.ones(len(r)) * phi2
+theta3 = np.ones(len(r)) * phi1 + 0.1
 
 
-fig = plt.figure(figsize=(8, 4.7))
+fig = plt.figure(figsize=(8, 5))
 ax1 = plt.subplot(121, projection='polar')
 ax1.set_title("Analizador", y=0, pad=-25, verticalalignment="top", fontname='serif', fontsize=17)
 
 ax1.set_rticks([])
 ax1.tick_params(axis='x', size=8, labelsize=16)
+
 ax1.plot(theta1, r, lw=2, color=COLOR_REFERENCE, label="Plano del haz de referencia")
 ax1.plot(theta1 + np.pi, r, lw=2, color=COLOR_REFERENCE)
-ax1.plot(theta2, r, lw=2, color=COLOR_OBJECT, label="Plano del haz objeto")
+
+ax1.plot(theta2, r, lw=2, color=COLOR_OBJECT, label="Plano del haz objeto con muestra")
 ax1.plot(theta2 + np.pi, r, lw=2, color=COLOR_OBJECT)
+
+ax1.plot(theta3, r, ':', lw=2, color=COLOR_OBJECT_WO_SAMPLE, label="Plano del haz objeto sin muestra")
+ax1.plot(theta3 + np.pi, r, ':', lw=2, color=COLOR_OBJECT_WO_SAMPLE)
+
 ax1.plot(theta1 * 0, r, lw=2, color="k",  ls="--", label="Eje del analizador")
 ax1.plot(theta1 * 0 + np.pi, r,  lw=2, color="k", ls="--")
 ax1.legend(bbox_to_anchor=(0, 1.15), loc="lower left", fontsize=12)
@@ -52,7 +60,7 @@ ax2.set_xlabel("Posición del Analizador [rad]", size=17)
 ax2.set_ylabel("I [UA]", size=17)
 
 ax2.plot(xs, s1, 'o', lw=2, color=COLOR_REFERENCE,  mfc='None', label="haz de referencia")
-ax2.plot(xs, s2, 'o', lw=2, color=COLOR_OBJECT, mfc='None', label="haz objeto")
+ax2.plot(xs, s2, 'o', lw=2, color=COLOR_OBJECT, mfc='None', label="haz objeto con muestra")
 ax2.legend(loc='upper right', fontsize=11)
 
 ax2.set_xlim(0, 2)
@@ -70,7 +78,7 @@ ax3.xaxis.set_major_formatter(tck.FormatStrFormatter('%g $\\pi$'))
 ax3.xaxis.set_major_locator(tck.MultipleLocator(base=0.5))
 ax3.xaxis.set_major_locator(plt.MaxNLocator(4))
 """
-
+plt.subplots_adjust(wspace=0, hspace=0)
 fig.tight_layout()
 
 fig.savefig(os.path.join(dir_path, "phasor.png"), dpi=300, bbox_inches='tight')
