@@ -81,7 +81,7 @@ ax3.xaxis.set_major_locator(plt.MaxNLocator(4))
 plt.subplots_adjust(wspace=0, hspace=0)
 fig.tight_layout()
 
-fig.savefig(os.path.join(dir_path, "phasor.png"), dpi=300, bbox_inches='tight')
+fig.savefig(os.path.join(dir_path, "phasor.svg"), dpi=300, bbox_inches='tight')
 
 plt.show()
 
