@@ -11,8 +11,8 @@ logger = logging.getLogger(__name__)
 
 TPL_LOG = "cycles={}, φerr: {}."
 TPL_LABEL = "bits={}."
-TPL_FILENAME = "sim_error_vs_resolution-step-{}-samples-{}-reps{}.png"
-TPL_TEXT = "step={}°\nsamples={}\nreps={}"
+TPL_FILENAME = "sim_error_vs_resolution-reps-{}-cycles-{}-step-{}-samples.svg"
+TPL_TEXT = "cycles={}\nstep={}°\nsamples={}\nreps={}"
 
 ARDUINO_MAXV = 5
 ARDUINO_BITS = 10
@@ -74,13 +74,13 @@ def run(
             ls=ls, lw=2, mfc='None', mew=2, color='k', label=label
         )
 
-    annotation = TPL_TEXT.format(step, samples, reps)
+    annotation = TPL_TEXT.format(cycles, step, samples, reps)
     plot._ax.text(0.61, 0.5, annotation, transform=plot._ax.transAxes)
     plot._ax.set_yscale('log')
     plot.legend(fontsize=12)
 
     if save:
-        filename = TPL_FILENAME.format(step, samples, reps)
+        filename = TPL_FILENAME.format(reps, cycles, step, samples)
         plot.save(filename=filename)
 
     if show:

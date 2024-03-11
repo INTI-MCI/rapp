@@ -9,14 +9,14 @@ logger = logging.getLogger(__name__)
 
 TPL_LOG = "step={}, reps:{}, φerr: {}, mean u: {}."
 TPL_LABEL = "cycles={}\nsamples={}"
-TPL_FILENAME = "sim_error_vs_step-samples-{}-reps{}"
+TPL_FILENAME = "sim_error_vs_step-reps-{}-cycles-{}-samples-{}.svg"
 
 STEPS = [0.001, 0.01, 0.1, 1, 2, 4]
 NREPS = [1, 10, 20, 50, 100, 200]
 
 
 def run(
-    angle, folder, method='NLS', samples=5, step=1, reps=1, cycles=2, show=False, save=True
+    folder, angle=22.5, method='NLS', samples=5, step=1, reps=1, cycles=2, show=False, save=True
 ):
     print("")
     logger.info("PHASE DIFFERENCE VS STEP")
@@ -60,7 +60,7 @@ def run(
     plot.legend(fontsize=12)
 
     if save:
-        plot.save(filename=TPL_FILENAME.format(samples, reps))
+        plot.save(filename=TPL_FILENAME.format(samples, cycles, reps))
 
     if show:
         plot.show()

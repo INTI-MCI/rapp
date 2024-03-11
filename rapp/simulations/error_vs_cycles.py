@@ -16,8 +16,8 @@ METHODS = {  # (marker_style, line_style, reps)
 }
 
 TPL_LOG = "cycles={}, φerr: {}."
-TPL_LABEL = "samples={}\nstep={}°"
-TPL_FILENAME = "sim_error_vs_cycles-reps-{}-samples-{}-step-{}.png"
+TPL_LABEL = "samples={}\nstep={}°\nreps={}"
+TPL_FILENAME = "sim_error_vs_cycles-reps-{}-samples-{}-step-{}.svg"
 
 
 def run(
@@ -59,8 +59,8 @@ def run(
         plot.add_data(
             cycles_list * 2, errors[method], style=ms, ls=ls, color='k', lw=2, label=method)
 
-    annotation = TPL_LABEL.format(samples, step)
-    plot._ax.text(0.05, 0.46, annotation, transform=plot._ax.transAxes)
+    annotation = TPL_LABEL.format(samples, step, reps)
+    plot._ax.text(0.05, 0.43, annotation, transform=plot._ax.transAxes)
 
     plot._ax.set_yscale('log')
     plot.legend(loc='center right', fontsize=12)

@@ -12,7 +12,7 @@ logger = logging.getLogger(__name__)
 
 TPL_LOG = "A={}, φerr: {}."
 TPL_LABEL = "cycles={}\nsamples={}\nstep={}°\nreps={}"
-TPL_FILENAME = "sim_error_vs_range-reps-{}-samples-{}-step-{}.png"
+TPL_FILENAME = "sim_error_vs_range-reps-{}-cycles-{}-samples-{}-step-{}.svg"
 
 np.random.seed(1)
 
@@ -76,7 +76,7 @@ def run(
     plot._ax.text(0.25, 0.7, annotation, transform=plot._ax.transAxes)
 
     if save:
-        plot.save(filename=TPL_FILENAME.format(reps, samples, step))
+        plot.save(filename=TPL_FILENAME.format(reps, cycles, samples, step))
 
     if show:
         plot.show()

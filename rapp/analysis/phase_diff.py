@@ -27,7 +27,7 @@ def phase_difference_from_file(filepath, method, show=False):
     measurement = Measurement.from_file(filepath)
     logger.info("Parameters: {}.".format(measurement.parameters_string()))
 
-    filename = "{}.png".format(os.path.basename(filepath)[:-4])
+    filename = "{}.svg".format(os.path.basename(filepath)[:-4])
 
     phase_difference(measurement, method, filename=filename, show=show)
 
@@ -155,7 +155,7 @@ def plot_phase_difference(phase_diff_result, filename=None, show=False):
     plt.legend(loc='upper left', frameon=False)
 
     if filename is not None:
-        plot.save(filename="{}-difference.png".format(filename[-4]))
+        plot.save(filename="{}-difference.svg".format(filename[-4]))
 
     plot._ax.set_ylim(
         np.min([signal_diff_s1, signal_diff_s2]),
