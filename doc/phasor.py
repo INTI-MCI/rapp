@@ -46,7 +46,8 @@ ax1.plot(theta1 + np.pi, r, lw=2, color=COLOR_REFERENCE)
 ax1.plot(theta2, r, lw=2, color=COLOR_OBJECT, label="Plano del haz objeto con muestra")
 ax1.plot(theta2 + np.pi, r, lw=2, color=COLOR_OBJECT)
 
-ax1.plot(theta3, r, ':', lw=2, color=COLOR_OBJECT_WO_SAMPLE, label="Plano del haz objeto sin muestra")
+ax1.plot(
+    theta3, r, ':', lw=2, color=COLOR_OBJECT_WO_SAMPLE, label="Plano del haz objeto sin muestra")
 ax1.plot(theta3 + np.pi, r, ':', lw=2, color=COLOR_OBJECT_WO_SAMPLE)
 
 ax1.plot(theta1 * 0, r, lw=2, color="k",  ls="--", label="Eje del analizador")
