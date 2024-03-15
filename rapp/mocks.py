@@ -4,7 +4,7 @@ import random
 
 class SerialMock:
     """Mock object for serial.Serial."""
-    def __init__(self, delay=0.0018):
+    def __init__(self, delay=0):
         self.delay = delay
 
     def readline(self):
@@ -19,6 +19,9 @@ class SerialMock:
         return int(value).to_bytes(length=2, byteorder='big')
 
     def close(self):
+        pass
+
+    def open(self):
         pass
 
     def flushInput(self):

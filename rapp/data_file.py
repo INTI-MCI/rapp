@@ -72,3 +72,7 @@ class DataFile:
         if self.column_names is not None:
             names = "{}".format(self.delimiter).join(map(str, self.column_names)).expandtabs(10)
             self.write(names)
+
+    def remove(self):
+        self.close()
+        os.remove(self._file.name)
