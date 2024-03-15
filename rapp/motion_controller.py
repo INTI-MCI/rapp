@@ -2,6 +2,8 @@ import logging
 
 import serial
 
+from rapp.mocks import SerialMock
+
 logger = logging.getLogger(__name__)
 
 
@@ -41,17 +43,22 @@ class ESP301:
             self.motor_on(axis=n)
 
     @classmethod
-    def build(cls, port=PORT, b=BAUDRATE, **kwargs):
-        """Builds an ESP object.
+    def build(cls, port=PORT, b=BAUDRATE, mock_serial=False, **kwargs):
+        """Builds an ESP301 object.
 
         Args:
-            port: serial port in which the ESP controller is connected.
+            port: serial port in which the ESP301 controller is connected.
             baudrate: bits per second.
-            kwargs: optional arguments for ESP constructor
+            mock_serial: if True, uses a mocked serial connection.
+            kwargs: optional arguments for the constructor.
 
         Returns:
-            ESP: an instantiated ESP object.
+            ESP301: an instantiated ESP301 object.
         """
+        if mock_serial:
+            logger.warning("Using mocked serial connection.")
+            return cls(SerialMock(), **kwargs)
+
         serial_connection = cls.get_serial_connection(port, baudrate=b)
         return cls(serial_connection, **kwargs)
 
