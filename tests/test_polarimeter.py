@@ -26,8 +26,6 @@ def test_main(tmp_path):
         # plot=True
     )
 
-# TODO: Add test to check repetitions are re-measured after failures.
-
 
 class MotionControllerMock(ESP301):
     i = 0
