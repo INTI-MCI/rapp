@@ -22,7 +22,7 @@ np.set_printoptions(threshold=0, edgeitems=5, suppress=True)
 logger = logging.getLogger(__name__)
 
 
-ADC_WIN_DEVICE = 'COM5'
+ADC_WIN_DEVICE = 'COM4'
 ADC_LINUX_DEVICE = '/dev/ttyACM0'
 
 ADC_BAUDRATE = 57600
@@ -206,15 +206,10 @@ def main(
     handler = logging.FileHandler(os.path.join(work_dir, "rapp.log"))
     logging.getLogger().addHandler(handler)
 
-    # Build Motion Controller
-    if mock_esp:
-        logger.warning("Using ESP Motion Controller mock object.")
-        motion_controller = ESP301(SerialMock())
-    else:
-        logger.info("Connecting to ESP Motion Controller...")
-        motion_controller = ESP301.build(
-            MOTION_CONTROLLER_PORT, b=MOTION_CONTROLLER_BAUDRATE, useaxes=[1, 2], reset=True
-        )
+    logger.info("Connecting to ESP Motion Controller...")
+    motion_controller = ESP301.build(
+        MOTION_CONTROLLER_PORT, b=MOTION_CONTROLLER_BAUDRATE, useaxes=[1, 2], mock_serial=mock_esp
+    )
 
     # Build ADC
     if mock_adc:
