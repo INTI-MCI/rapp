@@ -6,7 +6,7 @@ HELP_POLARIMETER = "Tool for measuring signals with the polarimeter."
 
 HELP_SAMPLES = 'n° of samples per angle, default (%(default)s) gives 10 cycles of 50 Hz noise.'
 HELP_CYCLES = 'n° of cycles to run (default: %(default)s).'
-HELP_STEP = 'motion step of the rotating analyzer (default: %(default)s).'
+HELP_STEP = 'step of the rotating analyzer (default: %(default)s). If cycles==0, step is ignored.'
 HELP_DELAY_POSITION = 'delay (in seconds) after changing analyzer position (default: %(default)s).'
 HELP_VELOCITY = 'velocity of the analyzer in deg/s (default: %(default)s).'
 HELP_INIT_P = 'initial position of the analyzer in deg (default: %(default)s).'

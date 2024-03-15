@@ -5,6 +5,11 @@ import pytest  # noqa
 import serial
 
 
+class ErrorSerialMock(mocks.SerialMock):
+    def readline(*args, **kwargs):
+        return ''
+
+
 def test_init():
     serial_mock = mocks.SerialMock()
 
@@ -14,12 +19,6 @@ def test_init():
     rotator = ESP301(serial_mock, useaxes=[1, 2])
 
     assert rotator.axes_in_use == [1, 2]
-
-    with pytest.raises(ESP301Error):
-        rotator = ESP301(serial_mock, reset=True, useaxes=[1, 2])
-
-    with pytest.raises(ESP301Error):
-        rotator = ESP301(serial_mock, initpos=4)
 
 
 def test_build(monkeypatch):
@@ -48,5 +47,8 @@ def test_methods(motion_controller):
     motion_controller.set_acceleration(4)
     motion_controller.set_units(1, unit=7)
     motion_controller.set_display_resolution(axis=1, resolution=3)
+
+    with pytest.raises(ESP301Error):
+        ESP301(ErrorSerialMock())
 
     motion_controller.close()
