@@ -34,6 +34,8 @@ MOTION_CONTROLLER_PORT = '/dev/ttyACM0'
 MOTION_CONTROLLER_BAUDRATE = 921600
 MOTION_CONTROLLER_WAIT = 10  # Time to wait after error before reconnecting
 
+LOG_FILENAME = "rapp-{datetime}.log"
+
 
 def resolve_adc_port():
     if sys.platform == 'linux':
@@ -198,13 +200,14 @@ class Polarimeter:
 
 
 def main(
-    samples=10, cycles=0, step=45, delay_position=1, velocity=2, no_ch0=False, no_ch1=False,
+    samples=10, cycles=0, step=45, delay_position=0, velocity=2, no_ch0=False, no_ch1=False,
     chunk_size=2000, prefix='test', mock_esp=False, mock_adc=False, plot=False, overwrite=False,
     hwp_cycles=0, hwp_step=45, hwp_delay=5, reps=1,
     mc_wait=MOTION_CONTROLLER_WAIT, work_dir=ct.WORK_DIR
 ):
 
-    handler = logging.FileHandler(os.path.join(work_dir, "rapp.log"))
+    log_filename = LOG_FILENAME.format(datetime=datetime.now().isoformat(timespec="seconds"))
+    handler = logging.FileHandler(os.path.join(work_dir, log_filename))
     logging.getLogger().addHandler(handler)
 
     logger.info("Connecting to ESP Motion Controller...")
