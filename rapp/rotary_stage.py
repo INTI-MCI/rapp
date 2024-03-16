@@ -8,8 +8,6 @@ import numpy as np
 
 logger = logging.getLogger(__name__)
 
-MAX_POSITION_ERROR = 0.005
-
 
 class RotaryStageError(Exception):
     pass
@@ -31,7 +29,7 @@ class RotaryStage(Iterator):
         motion_controller,
         cycles=1,
         step=45,
-        delay_position=1,
+        delay_position=0,
         velocity=4,
         axis=1
     ):
@@ -61,14 +59,9 @@ class RotaryStage(Iterator):
             self._index += 1
 
             try:
-                res = self._motion_controller.set_position(position, axis=self._axis)
+                self._motion_controller.set_position(position, axis=self._axis)
             except ESP301Error as e:
                 raise RotaryStageError(e)
-
-            if abs(position - res) > MAX_POSITION_ERROR:
-                logger.warning(
-                    "Position error exceeded maximum: "
-                    "{} is not {} +- {}".format(res, position, MAX_POSITION_ERROR))
 
             time.sleep(self._delay_position)
 

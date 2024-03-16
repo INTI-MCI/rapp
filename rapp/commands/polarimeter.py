@@ -35,7 +35,7 @@ EPILOG = "Example: {}".format(EXAMPLE)
 def add_to_subparsers(subparsers):
     p = subparsers.add_parser("polarimeter", help=HELP_POLARIMETER, epilog=EPILOG)
     p.add_argument('--samples', type=int, default=169, help=HELP_SAMPLES)
-    p.add_argument('--cycles', type=int, default=0, help=HELP_CYCLES)
+    p.add_argument('--cycles', type=float, default=0, help=HELP_CYCLES)
     p.add_argument('--step', type=float, default=45, help=HELP_STEP)
     p.add_argument('--chunk-size', type=int, default=500, metavar='', help=HELP_CHUNK_SIZE)
     p.add_argument('--delay-position', type=float, default=0, metavar='', help=HELP_DELAY_POSITION)
