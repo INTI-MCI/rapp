@@ -21,6 +21,71 @@ def sine(xs, a, phi, c):
     return a * np.sin(4 * xs + phi) + c
 
 
+def phase_difference_from_folder(folder, method, show=False):
+    logger.info("Calculating phase difference for {}...".format(folder))
+
+    files = sorted([os.path.join(folder, x) for x in os.listdir(folder)])
+
+    results = []
+
+    for filepath in files:
+        measurement = Measurement.from_file(filepath)
+        # logger.info("Parameters: {}.".format(measurement.parameters_string()))
+        res = phase_difference(measurement, method, show=False)
+        results.append(res)
+
+    phase_diffs = []
+    uncertainties = []
+    mses = []
+    for res in results:
+        xs, s1, s2, s1err, s2err, phase_diff = res
+
+        phase_diffs.append(phase_diff.value)
+        uncertainties.append(phase_diff.u)
+
+        signal_diff_s1 = s1 - phase_diff.fits1
+        signal_diff_s2 = s2 - phase_diff.fits2
+        mse = (np.sum(signal_diff_s1 ** 2) + np.sum(signal_diff_s2 ** 2)) / (len(s1) * 2)
+        mses.append(mse)
+
+    std = np.std(phase_diffs)
+
+    print("STD: {}".format(std))
+
+    output_folder = os.path.join(ct.WORK_DIR, ct.OUTPUT_FOLDER_PLOTS)
+    plot = Plot(ylabel="Diferencia de fase (°)", xlabel="Nro de repetición", folder=output_folder)
+
+    plot.add_data(phase_diffs, style='.-', color='k')
+    plot.save(filename="difference-vs-time.svg")
+
+    plot.close()
+
+    plot = Plot(ylabel="Cuentas", xlabel="Diferencia de fase", folder=output_folder)
+
+    counts, edges = np.histogram(phase_diffs, density=True)
+    centers = (edges + np.diff(edges)[0] / 2)[:-1]
+
+    plot._ax.bar(
+        centers, counts,
+        width=np.diff(edges), color='silver', alpha=0.8, lw=1, edgecolor='k',
+        label='Diferencia de fase'
+    )
+    plot.save(filename="phase-difference-histogram.svg")
+    plot.close()
+
+    errors = abs(phase_diffs - np.mean(phase_diffs))
+
+    plot = Plot(ylabel="Error (°)", xlabel="Incertidumbre (°)", folder=output_folder)
+    plot.add_data(uncertainties, errors, color='k', alpha=0.7)
+    plot.save(filename="errors-vs-uncertainties.svg")
+
+    plot = Plot(ylabel="Error (°)", xlabel="MSE (°)", folder=output_folder)
+    plot.add_data(mses, errors, color='k', alpha=0.7)
+    plot.save(filename="errors-vs-mse.svg")
+
+    plot.show()
+
+
 def phase_difference_from_file(filepath, method, show=False):
     logger.info("Calculating phase difference for {}...".format(filepath))
 
