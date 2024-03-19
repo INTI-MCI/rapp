@@ -37,7 +37,7 @@ def phase_difference_from_folder(folder, method, show=False):
     phase_diffs = []
     uncertainties = []
     mses = []
-    for res in results:
+    for i, res in enumerate(results, 1):
         xs, s1, s2, s1err, s2err, phase_diff = res
 
         phase_diffs.append(phase_diff.value)
@@ -47,6 +47,11 @@ def phase_difference_from_folder(folder, method, show=False):
         signal_diff_s2 = s2 - phase_diff.fits2
         mse = (np.sum(signal_diff_s1 ** 2) + np.sum(signal_diff_s2 ** 2)) / (len(s1) * 2)
         mses.append(mse)
+
+        if mse > 0.002:
+            print("Outlier")
+            print(mse)
+            print("Repetition: ", i)
 
     std = np.std(phase_diffs)
 
