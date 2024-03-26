@@ -111,6 +111,9 @@ class Measurement:
         """Returns CHANNEL 1 data."""
         return self._data[COLUMN_CH1]
 
+    def swap_channels(self):
+        self._data[[COLUMN_CH0, COLUMN_CH1]] = self._data[[COLUMN_CH1, COLUMN_CH0]]
+
     def channel_data(self, name=None):
         """Returns CHANNEL data with specific column name. If not provided, returns both."""
 

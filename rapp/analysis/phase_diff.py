@@ -10,7 +10,7 @@ from scipy.optimize import curve_fit
 from rapp import constants as ct
 from rapp.analysis.plot import Plot
 from rapp.measurement import Measurement
-from rapp.utils import create_folder
+from rapp.utils import create_folder, round_to_n
 
 logger = logging.getLogger(__name__)
 
@@ -19,6 +19,106 @@ COVERAGE_FACTOR = 3
 
 def sine(xs, a, phi, c):
     return a * np.sin(4 * xs + phi) + c
+
+
+def phase_difference_from_folder(folder, method, show=False):
+    logger.info("Calculating phase difference for {}...".format(folder))
+
+    files = sorted([os.path.join(folder, x) for x in os.listdir(folder)])
+
+    results = []
+
+    for filepath in files:
+        measurement = Measurement.from_file(filepath)
+        # logger.info("Parameters: {}.".format(measurement.parameters_string()))
+        res = phase_difference(measurement, method, show=False)
+        results.append(res)
+
+    logger.info("PHASE DIFFERENCE SWAPPED CHANNELS...")
+    results_swapped = []
+    for filepath in files:
+        measurement = Measurement.from_file(filepath)
+        measurement.swap_channels()
+        # logger.info("Parameters: {}.".format(measurement.parameters_string()))
+        res = phase_difference(measurement, method, show=False)
+        results_swapped.append(res)
+
+    phase_diffs = []
+    uncertainties = []
+    mses = []
+    phi1 = []
+    for i, res in enumerate(results, 1):
+        xs, s1, s2, s1err, s2err, phase_diff = res
+
+        phase_diffs.append(phase_diff.value)
+        uncertainties.append(phase_diff.u)
+
+        signal_diff_s1 = s1 - phase_diff.fits1
+        signal_diff_s2 = s2 - phase_diff.fits2
+        mse = (np.sum(signal_diff_s1 ** 2) + np.sum(signal_diff_s2 ** 2)) / (len(s1) * 2)
+        mses.append(mse)
+        phi1.append(phase_diff.phi1)
+
+        if mse > 0.002:
+            logger.info("Outlier")
+            logger.info(mse)
+            logger.info("Repetition: {}".format(i))
+
+    phi2 = []
+    for i, res in enumerate(results_swapped, 1):
+        xs, s1, s2, s1err, s2err, phase_diff = res
+        phi2.append(phase_diff.phi1)
+
+    std_phi1 = np.std(phi1)
+    std_phi2 = np.std(phi2)
+
+    logger.info("STD phase difference: {}".format(np.std(phase_diffs)))
+    logger.info("STD phase of CH0: {}".format(std_phi1))
+    logger.info("STD phase of CH1: {}".format(std_phi2))
+
+    output_folder = os.path.join(ct.WORK_DIR, ct.OUTPUT_FOLDER_PLOTS)
+
+    plot = Plot(ylabel="Fase intrínseca CH0 (°)", xlabel="Nro de repetición", folder=output_folder)
+    plot.add_data(phi1, style='.-', color='k', label='STD = {}°'.format(round_to_n(std_phi1, 2)))
+    plot.legend()
+    plot.save(filename="phase-CH0-vs-time.png")
+    # plot.close()
+
+    plot = Plot(ylabel="Fase intrínseca CH1 (°)", xlabel="Nro de repetición", folder=output_folder)
+    plot.add_data(phi2, style='.-', color='k', label='STD = {}°'.format(round_to_n(std_phi2, 2)))
+    plot.legend()
+    plot.save(filename="phase-CH1-vs-time.png")
+    # plot.close()
+
+    plot = Plot(ylabel="Diferencia de fase (°)", xlabel="Nro de repetición", folder=output_folder)
+    plot.add_data(phase_diffs, style='.-', color='k')
+    plot.save(filename="difference-vs-time.png")
+    # plot.close()
+
+    counts, edges = np.histogram(phase_diffs, density=True)
+    centers = (edges + np.diff(edges)[0] / 2)[:-1]
+    errors = abs(phase_diffs - np.mean(phase_diffs))
+
+    plot = Plot(ylabel="Cuentas", xlabel="Diferencia de fase", folder=output_folder)
+    plot._ax.bar(
+        centers, counts,
+        width=np.diff(edges), color='silver', alpha=0.8, lw=1, edgecolor='k',
+        label='Diferencia de fase'
+    )
+    plot.save(filename="phase-difference-histogram.png")
+    plot.close()
+
+    plot = Plot(ylabel="Error (°)", xlabel="Incertidumbre (°)", folder=output_folder)
+    plot.add_data(uncertainties, errors, color='k', alpha=0.7)
+    plot.save(filename="errors-vs-uncertainties.png")
+    plot.close()
+
+    plot = Plot(ylabel="Error (°)", xlabel="MSE (°)", folder=output_folder)
+    plot.add_data(mses, errors, color='k', alpha=0.7)
+    plot.save(filename="errors-vs-mse.png")
+    plot.close()
+
+    plot.show()
 
 
 def phase_difference_from_file(filepath, method, show=False):
