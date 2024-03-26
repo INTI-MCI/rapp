@@ -69,7 +69,7 @@ def test_motion_controller_failure(tmp_path):
 
     data_file = DataFile(overwrite=True, delimiter=FILE_DELIMITER, output_dir=output_dir)
 
-    polarimeter = Polarimeter(adc, analyzer, hwp, data_file)
+    polarimeter = Polarimeter(adc, analyzer, hwp, data_file, wait=0)
 
     failures = polarimeter.start(samples, reps=reps)
     assert failures == 1
