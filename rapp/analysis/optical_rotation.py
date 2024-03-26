@@ -59,27 +59,27 @@ def optical_rotation(folder1, folder2, method='NLS', avg_or=False, hwp=False):
         logger.info("Averaging N phase differences and computing one optical rotation...")
         ors.append(np.mean(phase_diff_f) - np.mean(phase_diff_i))
 
-    result = np.mean(ors)
+    res = np.mean(ors)
 
-    logger.info("Optical rotation measured: {}".format(result))
-    logger.info("Error: {}".format(round_to_n(abs(expected_or) - abs(result.n), 4)))
+    logger.info("Optical rotation measured: {}".format(res.n))
+    logger.info("Error: {}".format(round_to_n(abs(expected_or) - abs(res.n), 4)))
 
-    return ors
+    return res, ors
 
 
 def main():
     hwp_datasets = [
-        ('data/2023-12-22/hwp0/', 'data/2023-12-22/hwp4.5/'),
-        ('data/2023-12-28/hwp0/', 'data/2023-12-28/hwp4.5/'),
-        ('data/2023-12-29/hwp0/', 'data/2023-12-29/hwp4.5/'),
-        ('data/2023-12-28/hwp0/', 'data/2023-12-28/hwp29/'),
+        # ('data/2023-12-22/hwp0/', 'data/2023-12-22/hwp4.5/'),
+        # ('data/2023-12-28/hwp0/', 'data/2023-12-28/hwp4.5/'),
+        # ('data/2023-12-29/hwp0/', 'data/2023-12-29/hwp4.5/'),
+        # ('data/2023-12-28/hwp0/', 'data/2023-12-28/hwp29/'),
         ('data/2024-03-05-repeatability/hwp0', 'data/2024-03-05-repeatability/hwp9')
 
     ]
 
     all_rotations = []
     for dataset in hwp_datasets:
-        rotations = optical_rotation(*dataset, avg_or=True, hwp=True)
+        _, rotations = optical_rotation(*dataset, avg_or=True, hwp=True)
         all_rotations.extend(rotations)
 
     print("")
@@ -90,11 +90,12 @@ def main():
     measurement_u = max(all_rotations_u)
     logger.info("Measurement Uncertainty: {}°".format(measurement_u))
 
-    logger.info("Repeatability for 9 degrees of optical rotation:")
-    rotation_values = all_rotations_values[0:3]
+    rotation_values = all_rotations_values
     logger.debug("Values taken into account for repeatability: {}".format(rotation_values))
-    repeatability_u = np.std(np.abs(rotation_values)) / np.sqrt(len(rotation_values))
-    logger.info("Repeatability Uncertainty: {}°". format(repeatability_u))
+
+    repeatability_u = np.std(np.abs(rotation_values))
+    logger.info(
+        "Repeatability Uncertainty ({} values): {}°".format(len(rotation_values), repeatability_u))
 
     combined_u = np.sqrt(measurement_u ** 2 + repeatability_u ** 2)
     logger.info("Combined Uncertainty (k=2): {}°". format(combined_u * 2))

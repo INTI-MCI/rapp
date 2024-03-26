@@ -1,3 +1,4 @@
+import os
 from rapp import constants as ct
 from rapp.analysis import phase_diff
 
@@ -19,5 +20,9 @@ def add_to_subparsers(subparsers):
     p.add_argument('-v', '--verbose', action='store_true', help=ct.HELP_VERBOSE)
 
 
-def run(**kwargs):
-    phase_diff.phase_difference_from_file(**kwargs)
+def run(filepath, **kwargs):
+    if os.path.isdir(filepath):
+        phase_diff.phase_difference_from_folder(filepath, **kwargs)
+        return
+
+    phase_diff.phase_difference_from_file(filepath, **kwargs)
