@@ -29,10 +29,10 @@ ADC_BAUDRATE = 57600
 ADC_TIMEOUT = 0.1
 ADC_WAIT = 2
 
-# MOTION_CONTROLLER_PORT = "COM4"
-MOTION_CONTROLLER_PORT = '/dev/ttyACM0'
+MOTION_CONTROLLER_PORT = "COM3"
+# MOTION_CONTROLLER_PORT = '/dev/ttyACM0'
 MOTION_CONTROLLER_BAUDRATE = 921600
-MOTION_CONTROLLER_WAIT = 10  # Time to wait after error before reconnecting
+MOTION_CONTROLLER_WAIT = 15  # Time to wait after error before reconnecting
 
 LOG_FILENAME = "rapp-{datetime}.log"
 
@@ -206,7 +206,7 @@ def main(
     mc_wait=MOTION_CONTROLLER_WAIT, work_dir=ct.WORK_DIR
 ):
 
-    log_filename = LOG_FILENAME.format(datetime=datetime.now().isoformat(timespec="seconds"))
+    log_filename = LOG_FILENAME.format(datetime=date.today().isoformat())
     handler = logging.FileHandler(os.path.join(work_dir, log_filename))
     logging.getLogger().addHandler(handler)
 
@@ -240,7 +240,7 @@ def main(
     data_file = DataFile(overwrite, prefix=prefix, delimiter=FILE_DELIMITER, output_dir=output_dir)
 
     # Build Polarimeter
-    polarimeter = Polarimeter(adc, analyzer, hwp, data_file)
+    polarimeter = Polarimeter(adc, analyzer, hwp, data_file, wait=mc_wait)
 
     # Start polarimeter measurement
     polarimeter.start(samples, chunk_size=chunk_size, reps=reps)
