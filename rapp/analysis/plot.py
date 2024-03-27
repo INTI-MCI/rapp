@@ -37,7 +37,7 @@ class Plot:
 
         if ys is None:
             ys = xs
-            xs = np.arange(1, ys.size + 1, step=1)
+            xs = np.arange(1, len(ys) + 1, step=1)
 
         if xrad:
             xs = xs / np.pi
