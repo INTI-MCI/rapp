@@ -39,6 +39,7 @@ class PhaseDifferenceResult:
 
         if self.fitx is not None:
             self.fitx = np.rad2deg(self.fitx)
+            self.phi1 = np.rad2deg(self.phi1)
 
         return self
 

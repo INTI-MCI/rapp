@@ -216,7 +216,7 @@ def plot_phase_difference(phase_diff_result, filename=None, show=False):
 
     # Plot difference between data and fitted model.
 
-    phi = res.phi1
+    phi = np.deg2rad(res.phi1)
 
     def f1(k1):
         return 1 + k1 * signal_diff_s2

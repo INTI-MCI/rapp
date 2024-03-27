@@ -142,8 +142,10 @@ class Measurement:
 
         res.value /= 2
         res.u /= 2
+
         if res.fitx is not None:
             res.fitx /= 2
+            res.phi1 /= 2
 
         xs = np.rad2deg(xs)
         res = res.to_degrees()
