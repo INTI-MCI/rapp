@@ -70,7 +70,8 @@ class Polarimeter:
         wait: time to wait before reconnecting after motion controller error.
     """
     def __init__(
-        self, adc: ADC, analyzer: RotaryStage, hwp: RotaryStage, data_file: DataFile, wait: int = 0
+        self,
+        adc: ADC, analyzer: RotaryStage, hwp: RotaryStage, data_file: DataFile, wait: int = 10
     ):
         self._adc = adc
         self._analyzer = analyzer
