@@ -25,6 +25,7 @@ def phase_difference_from_folder(folder, method, show=False):
     logger.info("Calculating phase difference for {}...".format(folder))
 
     files = sorted([os.path.join(folder, x) for x in os.listdir(folder)])
+    files = files[1:]
 
     results = []
 
@@ -132,7 +133,7 @@ def phase_difference_from_file(filepath, method, show=False):
     phase_difference(measurement, method, filename=filename, show=show)
 
 
-def phase_difference(measurement, method, filename=None, show=False):
+def phase_difference(measurement: Measurement, method, filename=None, show=False):
     xs, s1, s2, s1err, s2err, res = measurement.phase_diff(method=method)
 
     phase_diff, phase_diff_u = res.round_to_n(n=2, k=1)
@@ -140,7 +141,7 @@ def phase_difference(measurement, method, filename=None, show=False):
     log_phi = "{} (k=1).".format("φ=({} ± {})°".format(phase_diff, phase_diff_u))
     logger.info("Detected phase difference (analyzer angles): {}".format(log_phi))
 
-    if method in ['ODR', 'NLS'] and (filename or show):
+    if method in ['ODR', 'NLS', 'WNLS'] and (filename or show):
         plot_phase_difference((xs, s1, s2, s1err, s2err, res), filename, show)
 
     return (xs, s1, s2, s1err, s2err, res)
