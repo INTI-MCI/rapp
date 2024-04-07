@@ -1,3 +1,5 @@
+from enum import Enum
+
 """File to declare constants shared by different modules."""
 
 WORK_DIR = 'workdir'
@@ -27,3 +29,8 @@ ANALYZER_UNCERTAINTY = 0.06
 
 HELP_VERBOSE = 'whether to run with DEBUG log level (default: %(default)s).'
 HELP_SHOW = 'whether to show the plot (default: %(default)s).'
+
+
+class AngleTypes(Enum):
+    RADIANS = 0
+    DEGREES = 1
