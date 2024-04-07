@@ -10,7 +10,7 @@ from rapp.utils import round_to_n_with_uncertainty
 from rapp.signal.models import two_sines, two_sines_model
 
 
-PHASE_DIFFERENCE_METHODS = ['COSINE', 'HILBERT', 'WNLS', 'NLS', 'ODR']
+PHASE_DIFFERENCE_METHODS = ['COSINE', 'HILBERT', 'WNLS', 'NLS', 'ODR', 'DFT']
 MIN_SIGMA_CURVE_FIT = 1e-3
 EXPONENT_WEIGHTS_WNLS = 2
 
@@ -18,21 +18,40 @@ logger = logging.getLogger(__name__)
 
 
 class PhaseDifferenceResult:
-    def __init__(self, value, phi1=None, uncertainty=None, fitx=None, fits1=None, fits2=None):
+    def __init__(
+        self,
+        value,
+        uncertainty=None,
+        phi1=None,
+        phi2=None,
+        fitx=None,
+        fits1=None,
+        fits2=None,
+        degrees=False
+    ):
         self.value = value
         self.u = uncertainty
+        self.phi1 = phi1
+        self.phi2 = phi2
         self.fitx = fitx
         self.fits1 = fits1
         self.fits2 = fits2
-        self.phi1 = phi1
+        self.degrees = degrees
 
     def __str__(self):
-        return "|φ1 - φ2| = ({} ± {})°".format(self.value, self.u)
+        units = '°' if self.degrees else 'rad'
+        return "|φ1 - φ2| = ({} ± {}){}".format(self.value, self.u, units)
 
     def round_to_n(self, n=2, k=2):
+        if self.u == 0:
+            return round(self.value, 6), self.u
+
         return round_to_n_with_uncertainty(self.value, self.u, n=n, k=k)
 
     def to_degrees(self):
+        if self.degrees:
+            return self
+
         self.value = np.rad2deg(self.value)
 
         if self.u is not None:
@@ -40,7 +59,14 @@ class PhaseDifferenceResult:
 
         if self.fitx is not None:
             self.fitx = np.rad2deg(self.fitx)
+
+        if self.phi1 is not None:
             self.phi1 = np.rad2deg(self.phi1)
+
+        if self.phi2 is not None:
+            self.phi2 = np.rad2deg(self.phi2)
+
+        self.degrees = True
 
         return self
 
@@ -48,7 +74,41 @@ class PhaseDifferenceResult:
 def cosine_similarity(s1, s2):
     s1 -= s1.mean()
     s2 -= s2.mean()
+
     return np.arccos(np.dot(s1, s2) / (np.linalg.norm(s1) * np.linalg.norm(s2)))
+
+
+def get_index_for_periodization(xs, period):
+    step = xs[1] - xs[0]
+    if xs[2] - xs[1] != step:
+        raise ValueError("Non regular sampling of x.")
+
+    n_periods = int((xs[-1] - xs[0] + step) // period)
+
+    return n_periods * int(period / step)
+
+
+def DFT(s1, s2, xs=None, period=2*np.pi):
+    if xs is not None:
+        index = get_index_for_periodization(xs, period)
+        xs = xs[:index]
+        s1 = s1[:index]
+        s2 = s2[:index]
+
+    S1 = np.fft.fft(s1)[1:int(s1.size / 2)]
+    S2 = np.fft.fft(s2)[1:int(s2.size / 2)]
+
+    coef1 = S1[np.argmax(np.abs(S1))]
+    coef2 = S2[np.argmax(np.abs(S2))]
+
+    phase1 = np.angle(coef1)
+    phase2 = np.angle(coef2)
+    phase_diff = np.angle(coef2 / coef1)
+
+    logger.debug("{}°, {}rad".format(np.rad2deg(phase1), phase1))
+    logger.debug("{}°, {}rad".format(np.rad2deg(phase2), phase2))
+
+    return phase_diff, phase1, phase2
 
 
 def sine_fit(
@@ -57,10 +117,14 @@ def sine_fit(
     fitx = xs
 
     if method in ['NLS', 'WNLS']:
-        popt, pcov, infodict, mesg, ier = curve_fit(
+        popt, pcov = curve_fit(
             two_sines, xs, ys,
-            p0=p0, sigma=y_sigma, bounds=bounds, absolute_sigma=abs_sigma,
-            full_output=True)  # , ftol=1e-15, xtol=1e-15)
+            p0=p0,
+            sigma=y_sigma,
+            absolute_sigma=abs_sigma,
+            # full_output=True,
+            bounds=bounds,
+        )  # , ftol=1e-15, xtol=1e-15)
 
         # total_error = np.sqrt(np.sum(infodict["fvec"]**2))
 
@@ -94,7 +158,7 @@ def hilbert_transform(s1, s2):
     c = np.inner(
         x1h, np.conj(x2h)) / np.sqrt(np.inner(x1h, np.conj(x1h)) * np.inner(x2h, np.conj(x2h)))
 
-    return np.angle(c)
+    return -np.angle(c)
 
 
 def has_nan_or_zeros(array):
@@ -117,7 +181,7 @@ def phase_difference(
     if method not in PHASE_DIFFERENCE_METHODS:
         raise ValueError("Phase difference method: {} not implemented.".format(method))
 
-    if has_nan_or_zeros(s1_sigma) or has_nan_or_zeros(s2_sigma):
+    if s1_sigma is not None and (has_nan_or_zeros(s1_sigma) or has_nan_or_zeros(s2_sigma)):
         if not allow_nan:
             raise ValueError("Got NaN or zero values in y_sigma(s). Use more samples per angle.")
 
@@ -188,8 +252,13 @@ def phase_difference(
         fity1 = fity1 * s1_norm
         fity2 = fity2 * s2_norm
 
-        return PhaseDifferenceResult(phase_diff, phi1, phase_diff_u, fitx, fity1, fity2)
+        return PhaseDifferenceResult(
+            phase_diff, phase_diff_u, phi1, fitx=fitx, fits1=fity1, fits2=fity2)
 
     if method == 'HILBERT':
         phase_diff = hilbert_transform(s1, s2)
         return PhaseDifferenceResult(phase_diff, uncertainty=0)
+
+    if method == 'DFT':
+        phase_diff, phi1, phi2 = DFT(s1, s2, xs)
+        return PhaseDifferenceResult(phase_diff, uncertainty=0, phi1=phi1, phi2=phi2)
