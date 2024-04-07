@@ -10,10 +10,12 @@ logger = logging.getLogger(__name__)
 
 
 METHODS = {  # (marker_style, line_style, reps)
-    'COSINE': ('-', 'solid', 1),
-    'NLS': ('d', 'solid', None),
+    'DFT': ('-', 'solid', 1),
+    # 'COSINE': ('-', 'solid', 1),
+    # 'NLS': ('d', 'solid', None),
     # 'ODR': ('-', 'dotted', None)
 }
+
 
 TPL_LOG = "cycles={}, φerr: {}."
 TPL_LABEL = "samples={}\nstep={}°\nreps={}"
@@ -44,7 +46,7 @@ def run(
                 step=step,
                 samples=samples,
                 method=method,
-                allow_nan=True
+                allow_nan=True,
             )
 
             error = n_res.rmse()
