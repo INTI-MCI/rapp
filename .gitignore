@@ -9,3 +9,5 @@ workdir
 .idea
 
 .coverage
+
+*.json

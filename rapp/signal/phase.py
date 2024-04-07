@@ -10,8 +10,9 @@ from rapp.utils import round_to_n_with_uncertainty
 from rapp.signal.models import two_sines, two_sines_model
 
 
-PHASE_DIFFERENCE_METHODS = ['COSINE', 'HILBERT', 'NLS', 'ODR']
-
+PHASE_DIFFERENCE_METHODS = ['COSINE', 'HILBERT', 'WNLS', 'NLS', 'ODR']
+MIN_SIGMA_CURVE_FIT = 1e-3
+EXPONENT_WEIGHTS_WNLS = 2
 
 logger = logging.getLogger(__name__)
 
@@ -55,9 +56,13 @@ def sine_fit(
 ):
     fitx = xs
 
-    if method == 'NLS':
-        popt, pcov = curve_fit(
-            two_sines, xs, ys, p0=p0, sigma=y_sigma, bounds=bounds, absolute_sigma=abs_sigma)
+    if method in ['NLS', 'WNLS']:
+        popt, pcov, infodict, mesg, ier = curve_fit(
+            two_sines, xs, ys,
+            p0=p0, sigma=y_sigma, bounds=bounds, absolute_sigma=abs_sigma,
+            full_output=True)  # , ftol=1e-15, xtol=1e-15)
+
+        # total_error = np.sqrt(np.sum(infodict["fvec"]**2))
 
         us = np.sqrt(np.diag(pcov))
         fity = two_sines(fitx, *popt)
@@ -124,7 +129,7 @@ def phase_difference(
         phase_diff = cosine_similarity(s1, s2)
         return PhaseDifferenceResult(phase_diff, uncertainty=0)
 
-    if method in ['NLS', 'ODR']:
+    if method in ['WNLS', 'NLS', 'ODR']:
 
         s1_norm = np.linalg.norm(s1)
         s2_norm = np.linalg.norm(s2)
@@ -132,14 +137,20 @@ def phase_difference(
         s1 = s1 / s1_norm
         s2 = s2 / s2_norm
 
-        if s1_sigma is not None:
-            s1_sigma = s1_sigma / s1_norm
-
-        if s2_sigma is not None:
-            s2_sigma = s2_sigma / s2_norm
-
         s12 = np.hstack([s1, s2])
         x12 = np.hstack([xs, xs])
+
+        if method == 'WNLS':
+            s1_sigma = np.abs(s1 - s1.mean())
+            s1_sigma = (s1_sigma / s1_sigma.max()) ** EXPONENT_WEIGHTS_WNLS + MIN_SIGMA_CURVE_FIT
+            s2_sigma = np.abs(s2 - s2.mean())
+            s2_sigma = (s2_sigma / s2_sigma.max()) ** EXPONENT_WEIGHTS_WNLS + MIN_SIGMA_CURVE_FIT
+        else:
+            if s1_sigma is not None:
+                s1_sigma = s1_sigma / s1_norm
+
+            if s2_sigma is not None:
+                s2_sigma = s2_sigma / s2_norm
 
         s12_sigma = None
         if s1_sigma is not None and s2_sigma is not None:
