@@ -2,6 +2,7 @@ from rapp import constants as ct
 
 from rapp.analysis import raw
 
+
 HELP_PLOT_ROW = "Tool for plotting raw measurements."
 
 HELP_FILEPATH = 'file containing the measurements.'

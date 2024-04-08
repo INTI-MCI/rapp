@@ -22,14 +22,14 @@ np.set_printoptions(threshold=0, edgeitems=5, suppress=True)
 logger = logging.getLogger(__name__)
 
 
-ADC_WIN_DEVICE = 'COM4'
+ADC_WIN_DEVICE = 'COM3'
 ADC_LINUX_DEVICE = '/dev/ttyACM0'
 
 ADC_BAUDRATE = 57600
 ADC_TIMEOUT = 0.1
 ADC_WAIT = 2
 
-MOTION_CONTROLLER_PORT = "COM3"
+MOTION_CONTROLLER_PORT = "COM4"
 # MOTION_CONTROLLER_PORT = '/dev/ttyACM0'
 MOTION_CONTROLLER_BAUDRATE = 921600
 MOTION_CONTROLLER_WAIT = 15  # Time to wait after error before reconnecting
@@ -141,8 +141,8 @@ class Polarimeter:
         """
         n_samples = [samples]
 
-        if chunk_size > 0:
-            n_samples = n_samples * math.ceil(samples / chunk_size)
+        if chunk_size > 0 and samples > chunk_size:
+            n_samples = [chunk_size] * math.ceil(samples / chunk_size)
 
         for samples in n_samples:
             yield self._adc.acquire(samples, flush=True)
@@ -201,8 +201,8 @@ class Polarimeter:
 
 
 def main(
-    samples=10, cycles=0, step=45, delay_position=0, velocity=2, no_ch0=False, no_ch1=False,
-    chunk_size=2000, prefix='test', mock_esp=False, mock_adc=False, plot=False, overwrite=False,
+    samples=169, cycles=0, step=45, delay_position=0, velocity=4, no_ch0=False, no_ch1=False,
+    chunk_size=500, prefix='test', mock_esp=False, mock_adc=False, plot=False, overwrite=False,
     hwp_cycles=0, hwp_step=45, hwp_delay=5, reps=1,
     mc_wait=MOTION_CONTROLLER_WAIT, work_dir=ct.WORK_DIR
 ):
@@ -229,11 +229,14 @@ def main(
 
     # Build Analyzer
     analyzer = RotaryStage(
-        motion_controller, cycles, step, delay_position, velocity, axis=1
+        motion_controller, cycles, step, delay_position, velocity, axis=1,
+        name='Analyzer'
     )
 
     # Build HalfWavePlate
-    hwp = RotaryStage(motion_controller, hwp_cycles, hwp_step, delay_position=hwp_delay, axis=2)
+    hwp = RotaryStage(
+        motion_controller, hwp_cycles, hwp_step, delay_position=hwp_delay, axis=2,
+        name='HalfWavePlate')
 
     # Build DataFile
     output_dir = Path(str(work_dir)).joinpath(ct.OUTPUT_FOLDER_DATA)
