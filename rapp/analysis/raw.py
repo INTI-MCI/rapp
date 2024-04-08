@@ -6,6 +6,10 @@ from rapp import constants as ct
 from rapp.utils import create_folder
 from rapp.measurement import Measurement
 from rapp.analysis.plot import Plot
+from rapp.analysis.noise import plot_histogram_and_pdf
+
+
+logger = logging.getLogger(__name__)
 
 
 logger = logging.getLogger(__name__)
@@ -25,7 +29,7 @@ def plot_raw(
     measurement, output_folder, output_filename, no_ch0=False, no_ch1=False, show=False
 ):
 
-    s1 = np.array(measurement.ch0())
+    s1 = np.array(measurement.ch0())[:150000]
     s2 = np.array(measurement.ch1())
 
     logger.info("STD: {}".format(np.std(s1)))
@@ -35,8 +39,8 @@ def plot_raw(
     plot.set_title(measurement.parameters_string())
 
     if not no_ch0:
-        plot.add_data(s1, style='-', color='k', lw=1.5, label='CH0')
-
+        # plot.add_data(s1, style='-', color='k', lw=1.5, label='CH0')
+        plot._ax.hist(s1, bins=4)
     if not no_ch1:
         plot.add_data(s2, style='--', color='k', lw=1.5, label='CH1')
 
