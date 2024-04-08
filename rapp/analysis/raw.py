@@ -1,11 +1,14 @@
 import os
-
+import logging
 import numpy as np
 
 from rapp import constants as ct
 from rapp.utils import create_folder
 from rapp.measurement import Measurement
 from rapp.analysis.plot import Plot
+
+
+logger = logging.getLogger(__name__)
 
 
 def plot_raw_from_file(filepath, work_dir=ct.WORK_DIR, **kwargs):
@@ -24,6 +27,8 @@ def plot_raw(
 
     s1 = np.array(measurement.ch0())
     s2 = np.array(measurement.ch1())
+
+    logger.info("STD: {}".format(np.std(s1)))
 
     plot = Plot(ylabel=ct.LABEL_VOLTAGE, xlabel=ct.LABEL_ANGLE, folder=output_folder)
 

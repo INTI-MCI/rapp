@@ -31,7 +31,8 @@ class RotaryStage(Iterator):
         step=45,
         delay_position=0,
         velocity=4,
-        axis=1
+        axis=1,
+        name=''
     ):
         self._motion_controller = motion_controller
         self.cycles = cycles
@@ -39,6 +40,8 @@ class RotaryStage(Iterator):
         self._delay_position = delay_position
         self._velocity = velocity
         self._axis = axis
+
+        self._name = name
 
         self._positions = self._generate_positions()
         self.motor_on()
@@ -48,7 +51,7 @@ class RotaryStage(Iterator):
         self._index = 0
 
     def __str__(self):
-        return type(self).__name__
+        return "{} - {}".format(type(self).__name__, self._name)
 
     def __len__(self):
         return len(self._positions)
