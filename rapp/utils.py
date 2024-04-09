@@ -24,7 +24,7 @@ def round_to_n(number, n):
     return round(number, n - int(math.floor(math.log10(abs(number)))) - 1)
 
 
-def round_to_n_with_uncertainty(v: float, u: float, n: int, k: int = 2):
+def round_to_n_with_uncertainty(v: float, u: float, n: int, k: int = 2, default_n=6):
     """Rounds a magnitude to N significant figures in the uncertainty.
 
     Args:
@@ -34,7 +34,7 @@ def round_to_n_with_uncertainty(v: float, u: float, n: int, k: int = 2):
         k: coverage factor.
     """
     u_rounded = round_to_n(u * k, n)
-    d = abs(decimal.Decimal(str(u_rounded)).as_tuple().exponent)
+    d = abs(decimal.Decimal(str(u_rounded)).as_tuple().exponent) if u != 0 else default_n
 
     return round(v, d), u_rounded
 
