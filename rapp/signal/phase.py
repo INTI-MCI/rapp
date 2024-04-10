@@ -91,7 +91,6 @@ def get_index_for_periodization(xs, period):
 def DFT(s1, s2, xs=None, period=2*np.pi):
     if xs is not None:
         index = get_index_for_periodization(xs, period)
-        xs = xs[:index]
         s1 = s1[:index]
         s2 = s2[:index]
 
