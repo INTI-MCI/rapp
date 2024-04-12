@@ -22,9 +22,10 @@ def add_to_subparsers(subparsers):
     p.add_argument('-v', '--verbose', action='store_true', help=ct.HELP_VERBOSE)
 
 
-def run(filepath, **kwargs):
+def run(filepath, appended_measurements=None, **kwargs):
     if os.path.isdir(filepath):
-        phase_diff.phase_difference_from_folder(filepath, **kwargs)
+        phase_diff.phase_difference_from_folder(
+            filepath, appended_measurements=appended_measurements, **kwargs)
         return
 
     phase_diff.phase_difference_from_file(filepath, **kwargs)
