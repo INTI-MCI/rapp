@@ -6,7 +6,7 @@ import numpy as np
 from typing import TypeVar
 
 from rapp import constants as ct
-from rapp.signal.phase import phase_difference
+from rapp.signal.phase import phase_difference, get_index_for_periodization
 from rapp.signal import signal
 
 logger = logging.getLogger(__name__)
@@ -194,18 +194,8 @@ class Measurement:
         return [COLUMN_CH0, COLUMN_CH0]
 
     @staticmethod
-    def get_index_for_periodization(x, period):
-        step = x[1] - x[0]
-        if x[2] - x[1] != step:
-            raise ValueError("Non regular sampling of x.")
-        if period is None:
-            raise ValueError("No given value of period.")
-        amount_of_periods = int((x[-1] - x[0] + step) // period)
-        return amount_of_periods * int(period / step)
-
-    @staticmethod
     def trim_signals_for_periodization(x, s1, s2, period):
-        last_multiple_index = Measurement.get_index_for_periodization(x, period)
+        last_multiple_index = get_index_for_periodization(x, period)
 
         return x[:last_multiple_index], s1[:last_multiple_index], s2[:last_multiple_index]
 
@@ -213,7 +203,7 @@ class Measurement:
         angles = self._data[COLUMN_ANGLE].to_numpy()
         unique_angles, counts = np.unique(angles, return_counts=True)
         period = 360 if degrees else 2 * np.pi
-        last_multiple_index = self.get_index_for_periodization(unique_angles, period)
+        last_multiple_index = get_index_for_periodization(unique_angles, period)
 
         if not np.all(counts == int(self._samples)):
             raise ValueError("Not all the positions have the expected amount of samples.")
@@ -222,5 +212,5 @@ class Measurement:
 
         self._data.drop(range(last_multiple_index, self._data.shape[0]), inplace=True)
 
-        m2._data[COLUMN_ANGLE] += angles[last_multiple_index]
+        m2._data[COLUMN_ANGLE] += angles[last_multiple_index - 1] + float(self._step)
         self._data = pd.concat([self._data, m2._data], ignore_index=True)

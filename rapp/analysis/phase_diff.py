@@ -80,28 +80,35 @@ def phase_difference_from_folder(folder, method, show=False, appended_measuremen
         xs, s1, s2, s1err, s2err, phase_diff = res
         phi2.append(phase_diff.phi1)
 
-    std_phi1 = np.std(phi1)
-    std_phi2 = np.std(phi2)
+    if phi1[0] is not None:
+        std_phi1 = np.std(phi1)
+        std_phi2 = np.std(phi2)
+
+        logger.info("STD phase of CH0: {}".format(std_phi1))
+        logger.info("STD phase of CH1: {}".format(std_phi2))
 
     logger.info("STD phase difference: {}".format(np.std(phase_diffs)))
-    logger.info("STD phase of CH0: {}".format(std_phi1))
-    logger.info("STD phase of CH1: {}".format(std_phi2))
 
     output_folder = os.path.join(ct.WORK_DIR, ct.OUTPUT_FOLDER_PLOTS)
 
-    plot = Plot(ylabel="Fase intrínseca CH0 (°)", xlabel="Nro de repetición", folder=output_folder)
-    plot.add_data(phi1, style='.-', color='k', label='STD = {}°'.format(round_to_n(std_phi1, 2)))
+    plot = Plot(ylabel="Fase intrínseca CH0 (°)", xlabel="Nro de repetición",
+                folder=output_folder)
+    plot.add_data(phi1, style='.-', color='k', label='STD = {}°'.format(
+        round_to_n(std_phi1, 2)))
     plot.legend()
     plot.save(filename="phase-CH0-vs-time.png")
     # plot.close()
 
-    plot = Plot(ylabel="Fase intrínseca CH1 (°)", xlabel="Nro de repetición", folder=output_folder)
-    plot.add_data(phi2, style='.-', color='k', label='STD = {}°'.format(round_to_n(std_phi2, 2)))
+    plot = Plot(ylabel="Fase intrínseca CH1 (°)", xlabel="Nro de repetición",
+                folder=output_folder)
+    plot.add_data(phi2, style='.-', color='k', label='STD = {}°'.format(
+        round_to_n(std_phi2, 2)))
     plot.legend()
     plot.save(filename="phase-CH1-vs-time.png")
     # plot.close()
 
-    plot = Plot(ylabel="Diferencia de fase (°)", xlabel="Nro de repetición", folder=output_folder)
+    plot = Plot(ylabel="Diferencia de fase (°)", xlabel="Nro de repetición",
+                folder=output_folder)
     plot.add_data(phase_diffs, style='.-', color='k')
     plot.save(filename="difference-vs-time.png")
     # plot.close()
@@ -130,7 +137,8 @@ def phase_difference_from_folder(folder, method, show=False, appended_measuremen
         plot.save(filename="errors-vs-mse.png")
         plot.close()
 
-    plot.show()
+    if show:
+        plot.show()
 
 
 def phase_difference_from_file(filepath, method, show=False):
