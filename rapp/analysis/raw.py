@@ -6,7 +6,6 @@ from rapp import constants as ct
 from rapp.utils import create_folder
 from rapp.measurement import Measurement
 from rapp.analysis.plot import Plot
-from rapp.analysis.noise import plot_histogram_and_pdf
 
 
 logger = logging.getLogger(__name__)
