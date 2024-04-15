@@ -34,7 +34,7 @@ def harmonic(
         The signal as an (xs, ys) tuple.
     """
 
-    xs = np.linspace(0, 2 * np.pi * cycles, num=int(cycles * fc))
+    xs = np.linspace(0, 2 * np.pi * cycles, num=int(cycles * fc), endpoint=False)
     xs = np.repeat(xs, samples)
 
     signal = A * np.sin(xs + phi)

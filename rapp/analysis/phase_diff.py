@@ -53,17 +53,18 @@ def phase_difference_from_folder(folder, method, show=False):
 
         phase_diffs.append(phase_diff.value)
         uncertainties.append(phase_diff.u)
-
-        signal_diff_s1 = s1 - phase_diff.fits1
-        signal_diff_s2 = s2 - phase_diff.fits2
-        mse = (np.sum(signal_diff_s1 ** 2) + np.sum(signal_diff_s2 ** 2)) / (len(s1) * 2)
-        mses.append(mse)
         phi1.append(phase_diff.phi1)
 
-        if mse > 0.002:
-            logger.info("Outlier")
-            logger.info(mse)
-            logger.info("Repetition: {}".format(i))
+        if phase_diff.fits1 is not None:
+            signal_diff_s1 = s1 - phase_diff.fits1
+            signal_diff_s2 = s2 - phase_diff.fits2
+            mse = (np.sum(signal_diff_s1 ** 2) + np.sum(signal_diff_s2 ** 2)) / (len(s1) * 2)
+            mses.append(mse)
+
+            if mse > 0.002:
+                logger.info("Outlier")
+                logger.info(mse)
+                logger.info("Repetition: {}".format(i))
 
     phi2 = []
     for i, res in enumerate(results_swapped, 1):
@@ -114,10 +115,11 @@ def phase_difference_from_folder(folder, method, show=False):
     plot.save(filename="errors-vs-uncertainties.png")
     plot.close()
 
-    plot = Plot(ylabel="Error (°)", xlabel="MSE (°)", folder=output_folder)
-    plot.add_data(mses, errors, color='k', alpha=0.7)
-    plot.save(filename="errors-vs-mse.png")
-    plot.close()
+    if mses:
+        plot = Plot(ylabel="Error (°)", xlabel="MSE (°)", folder=output_folder)
+        plot.add_data(mses, errors, color='k', alpha=0.7)
+        plot.save(filename="errors-vs-mse.png")
+        plot.close()
 
     plot.show()
 
