@@ -13,7 +13,7 @@ def two_sines(x12, A1, A2, phi1, delta, C1, C2):
     x2 = x12[half:total]
 
     s1 = sine(x1, A1, phi1, C1)
-    s2 = sine(x2 - phi1, A2, delta, C2)
+    s2 = sine(x2 + phi1, A2, delta, C2)
 
     return np.hstack([s1, s2])
 

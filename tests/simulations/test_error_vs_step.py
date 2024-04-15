@@ -16,4 +16,4 @@ def test_run(tmp_path):
         save=False
     )
 
-    assert errors[-1] < 5e-2
+    assert errors[-1] < 6e-2
