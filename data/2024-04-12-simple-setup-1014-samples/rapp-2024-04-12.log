@@ -1,0 +1,477 @@
+Connecting to ESP Motion Controller...
+Setting motor ON for axis: 1
+Setting motor ON for axis: 2
+Connecting to ADC...
+Waiting 2 seconds after connecting to ADC...
+RotaryStage - Analyzer - Turning motor ON.
+RotaryStage - Analyzer - Setting velocity to 4 deg/s.
+RotaryStage - Analyzer - Positions: [  0.   1.   2.   3.   4. ... 356. 357. 358. 359. 360.].
+RotaryStage - HalfWavePlate - Turning motor ON.
+RotaryStage - HalfWavePlate - Setting velocity to 4 deg/s.
+RotaryStage - HalfWavePlate - Positions: [0].
+Samples to measure in each analyzer position: 1014.
+Maximum chunk size: 500.
+Searching HOME for axis: 2
+HWP angle: 0°, repetition 1/100
+Searching HOME for axis: 1
+Connecting to ESP Motion Controller...
+Setting motor ON for axis: 1
+Setting motor ON for axis: 2
+Connecting to ADC...
+Waiting 2 seconds after connecting to ADC...
+RotaryStage - Analyzer - Turning motor ON.
+RotaryStage - Analyzer - Setting velocity to 4 deg/s.
+RotaryStage - Analyzer - Positions: [  0.   1.   2.   3.   4. ... 356. 357. 358. 359. 360.].
+RotaryStage - HalfWavePlate - Turning motor ON.
+RotaryStage - HalfWavePlate - Setting velocity to 4 deg/s.
+RotaryStage - HalfWavePlate - Positions: [0].
+Samples to measure in each analyzer position: 1014.
+Maximum chunk size: 500.
+Searching HOME for axis: 2
+HWP angle: 0°, repetition 1/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 2/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 3/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 4/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 5/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 6/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 7/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 8/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 9/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 10/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 11/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 12/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 13/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 14/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 15/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 16/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 17/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 18/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 19/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 20/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 21/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 22/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 23/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 24/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 25/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 26/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 27/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 28/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 29/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 30/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 31/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 32/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 33/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 34/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 35/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 36/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 37/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 38/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 39/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 40/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 41/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 42/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 43/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 44/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 45/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 46/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 47/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 48/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 49/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 50/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 51/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 52/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 53/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 54/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 55/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 56/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 57/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 58/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 59/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 60/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 61/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 62/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 63/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 64/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 65/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 66/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 67/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 68/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 69/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 70/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 71/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 72/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 73/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 74/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 75/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 76/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 77/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 78/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 79/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 80/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 81/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 82/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 83/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 84/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 85/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 86/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 87/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 88/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 89/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 90/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 91/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 92/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 93/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 94/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 95/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 96/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 97/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 98/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 99/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 100/100
+Searching HOME for axis: 1
+Done!
+Results in file: workdir\output-data\min-setup2-1-hwp0-cycles1-step1-samples1014-rep100.txt
+Total of 0 failures with the Motion Controller.
+The log is in: C:\Users\adminx\sources\rapp\workdir\rapp-2024-04-12.log
+EXPERIMENTO 2: {'cycles': 1, 'step': 1, 'samples': 169, 'reps': 100, 'no_ch1': True}
+Connecting to ESP Motion Controller...
+Setting motor ON for axis: 1
+Setting motor ON for axis: 2
+Connecting to ADC...
+Waiting 2 seconds after connecting to ADC...
+RotaryStage - Analyzer - Turning motor ON.
+RotaryStage - Analyzer - Setting velocity to 4 deg/s.
+RotaryStage - Analyzer - Positions: [  0.   1.   2.   3.   4. ... 356. 357. 358. 359. 360.].
+RotaryStage - HalfWavePlate - Turning motor ON.
+RotaryStage - HalfWavePlate - Setting velocity to 4 deg/s.
+RotaryStage - HalfWavePlate - Positions: [0].
+Samples to measure in each analyzer position: 169.
+Maximum chunk size: 500.
+Searching HOME for axis: 2
+HWP angle: 0°, repetition 1/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 2/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 3/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 4/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 5/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 6/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 7/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 8/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 9/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 10/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 11/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 12/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 13/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 14/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 15/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 16/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 17/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 18/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 19/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 20/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 21/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 22/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 23/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 24/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 25/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 26/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 27/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 28/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 29/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 30/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 31/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 32/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 33/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 34/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 35/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 36/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 37/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 38/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 39/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 40/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 41/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 42/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 43/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 44/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 45/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 46/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 47/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 48/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 49/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 50/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 51/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 52/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 53/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 54/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 55/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 56/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 57/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 58/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 59/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 60/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 61/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 62/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 63/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 64/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 65/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 66/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 67/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 68/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 69/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 70/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 71/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 72/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 73/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 74/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 75/100
+Searching HOME for axis: 1
+Motion Controller error: Found empty buffer trying to read serial data.
+Waiting 15 seconds...
+Reconnecting the Motion Controller...
+Turning motors ON again...
+RotaryStage - Analyzer - Turning motor ON.
+RotaryStage - Analyzer - Setting velocity to 4 deg/s.
+RotaryStage - HalfWavePlate - Turning motor ON.
+RotaryStage - HalfWavePlate - Setting velocity to 4 deg/s.
+Setting HWP position to 0
+Removing unfinished file...
+HWP angle: 0°, repetition 75/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 76/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 77/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 78/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 79/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 80/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 81/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 82/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 83/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 84/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 85/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 86/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 87/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 88/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 89/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 90/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 91/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 92/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 93/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 94/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 95/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 96/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 97/100
+Searching HOME for axis: 1
+Motion Controller error: Found empty buffer trying to read serial data.
+Waiting 15 seconds...
+Reconnecting the Motion Controller...
+Turning motors ON again...
+RotaryStage - Analyzer - Turning motor ON.
+RotaryStage - Analyzer - Setting velocity to 4 deg/s.
+RotaryStage - HalfWavePlate - Turning motor ON.
+RotaryStage - HalfWavePlate - Setting velocity to 4 deg/s.
+Setting HWP position to 0
+Removing unfinished file...
+HWP angle: 0°, repetition 97/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 98/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 99/100
+Searching HOME for axis: 1
+HWP angle: 0°, repetition 100/100
+Searching HOME for axis: 1
+Done!
+Results in file: workdir\output-data\min-setup2-2-hwp0-cycles1-step1-samples169-rep100.txt
+Total of 2 failures with the Motion Controller.
+The log is in: C:\Users\adminx\sources\rapp\workdir\rapp-2024-04-12.log
