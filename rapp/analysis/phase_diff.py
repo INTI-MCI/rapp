@@ -24,8 +24,8 @@ def sine(xs, a, phi, c):
 def phase_difference_from_folder(folder, method, show=False, appended_measurements=None):
     logger.info("Calculating phase difference for {}...".format(folder))
 
-    files = sorted([os.path.join(folder, x) for x in os.listdir(folder)])
-    files = files[1:]   # First measurement is broken in data/2024-03-05-repeatability/hwp0
+    files = sorted([os.path.join(folder, x) for x in os.listdir(folder) if x.endswith('txt')])
+    # files = files[1:]  # First measurement is broken in data/2024-03-05-repeatability/hwp0
     # files = files[:-1]   # Last measurement is broken in data/2024-04-05-simple-setup
 
     results = []
