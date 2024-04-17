@@ -10,10 +10,10 @@ logger = logging.getLogger(__name__)
 
 
 METHODS = {  # (marker_style, line_style, reps)
-    'DFT': ('-', 'solid', 1),
-    # 'COSINE': ('-', 'solid', 1),
-    # 'NLS': ('d', 'solid', None),
-    # 'ODR': ('-', 'dotted', None)
+    'DFT': ('-', 'solid', None),
+    'COSINE': ('s', 'solid', None),
+    'NLS': ('d', 'solid', None),
+    'HILBERT': ('-', 'dotted', None)
 }
 
 
@@ -59,7 +59,7 @@ def run(
 
     for method, (ms, ls, _) in METHODS.items():
         plot.add_data(
-            cycles_list * 2, errors[method], style=ms, ls=ls, color='k', lw=2, label=method)
+            cycles_list * 2, errors[method], style=ms, ls=ls, lw=2, label=method)
 
     annotation = TPL_LABEL.format(samples, step, reps)
     plot._ax.text(0.05, 0.43, annotation, transform=plot._ax.transAxes)

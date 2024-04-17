@@ -71,7 +71,12 @@ class PhaseDifferenceResult:
         return self
 
 
-def cosine_similarity(s1, s2):
+def cosine_similarity(s1, s2, x=None, period=None):
+    if x is not None:
+        index = get_index_for_periodization(x, period)
+        s1 = s1[:index]
+        s2 = s2[:index]
+
     s1 -= s1.mean()
     s2 -= s2.mean()
 
@@ -91,7 +96,6 @@ def get_index_for_periodization(xs, period):
 def DFT(s1, s2, xs=None, period=2*np.pi):
     if xs is not None:
         index = get_index_for_periodization(xs, period)
-        xs = xs[:index]
         s1 = s1[:index]
         s2 = s2[:index]
 
@@ -189,10 +193,6 @@ def phase_difference(
         s2_sigma = np.ones(shape=len(s2_sigma))
         abs_sigma = False
 
-    if method == 'COSINE':
-        phase_diff = cosine_similarity(s1, s2)
-        return PhaseDifferenceResult(phase_diff, uncertainty=0)
-
     if method in ['WNLS', 'NLS', 'ODR']:
 
         s1_norm = np.linalg.norm(s1)
@@ -253,7 +253,7 @@ def phase_difference(
         fity2 = fity2 * s2_norm
 
         return PhaseDifferenceResult(
-            phase_diff, phase_diff_u, phi1, fitx=fitx, fits1=fity1, fits2=fity2)
+            phase_diff, phase_diff_u, phi1=phi1, fitx=fitx, fits1=fity1, fits2=fity2)
 
     if method == 'HILBERT':
         phase_diff = hilbert_transform(s1, s2)
@@ -262,3 +262,7 @@ def phase_difference(
     if method == 'DFT':
         phase_diff, phi1, phi2 = DFT(s1, s2, xs)
         return PhaseDifferenceResult(phase_diff, uncertainty=0, phi1=phi1, phi2=phi2)
+
+    if method == 'COSINE':
+        phase_diff = cosine_similarity(s1, s2, x=xs, period=2*np.pi)
+        return PhaseDifferenceResult(phase_diff, uncertainty=0)
