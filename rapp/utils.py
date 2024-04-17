@@ -33,6 +33,9 @@ def round_to_n_with_uncertainty(v: float, u: float, n: int, k: int = 2):
         n: number of significant digits.
         k: coverage factor.
     """
+    if u == 0:
+        raise ValueError("Uncertainty cannot be zero!")
+
     u_rounded = round_to_n(u * k, n)
     d = abs(decimal.Decimal(str(u_rounded)).as_tuple().exponent)
 
