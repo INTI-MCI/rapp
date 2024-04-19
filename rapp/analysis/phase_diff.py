@@ -21,7 +21,7 @@ def sine(xs, a, phi, c):
     return a * np.sin(4 * xs + phi) + c
 
 
-def phase_difference_from_folder(folder, method, show=False, appended_measurements=None):
+def phase_difference_from_folder(folder, method, channel=-1, show=False, appended_measurements=None):
     logger.info("Calculating phase difference for {}...".format(folder))
 
     files = sorted([os.path.join(folder, x) for x in os.listdir(folder) if x.endswith('txt')])
@@ -41,6 +41,8 @@ def phase_difference_from_folder(folder, method, show=False, appended_measuremen
 
         # logger.info("Parameters: {}.".format(measurement.parameters_string()))
         if new_measurement:
+            if channel in [0, 1]:
+                measurement.replicate_channel(channel)
             res = phase_difference(measurement, method, show=False)
             results.append(res)
 
@@ -141,13 +143,16 @@ def phase_difference_from_folder(folder, method, show=False, appended_measuremen
         plot.show()
 
 
-def phase_difference_from_file(filepath, method, show=False):
+def phase_difference_from_file(filepath, method, channel=-1, show=False):
     logger.info("Calculating phase difference for {}...".format(filepath))
 
     measurement = Measurement.from_file(filepath)
     logger.info("Parameters: {}.".format(measurement.parameters_string()))
 
     filename = "{}.svg".format(os.path.basename(filepath)[:-4])
+
+    if channel in [0, 1]:
+        measurement.replicate_channel(channel)
 
     phase_difference(measurement, method, filename=filename, show=show)
 

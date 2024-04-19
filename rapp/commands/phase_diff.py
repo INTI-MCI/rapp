@@ -6,6 +6,7 @@ from rapp.analysis import phase_diff
 HELP_PHASE_DIFF = 'Tool for calculating phase difference from single polarimeter measurement.'
 
 HELP_METHOD = 'phase difference calculation method (default: %(default)s).'
+HELP_CHANNEL = 'channel for single phase calculation'
 HELP_FILEPATH = 'file containing the measurements.'
 HELP_APPEND = 'number of appended measurements for analysis.'
 
@@ -17,6 +18,7 @@ def add_to_subparsers(subparsers):
     p = subparsers.add_parser("phase_diff", help=HELP_PHASE_DIFF, epilog=EPILOG)
     p.add_argument('filepath', type=str, help=HELP_FILEPATH)
     p.add_argument('--method', type=str, default='NLS', help=HELP_METHOD)
+    p.add_argument('-c', '--channel', type=int, default=-1, help=HELP_CHANNEL, choices=[0, 1, -1])
     p.add_argument('-a', '--appended_measurements', default=None, type=int, help=HELP_APPEND)
     p.add_argument('--show', action='store_true', help=ct.HELP_SHOW)
     p.add_argument('-v', '--verbose', action='store_true', help=ct.HELP_VERBOSE)

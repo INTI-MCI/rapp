@@ -126,6 +126,12 @@ class Measurement:
 
         return self._data[[COLUMN_CH0, COLUMN_CH1]]
 
+    def replicate_channel(self, requested_channel):
+        """Replicates data from requested channel into empty channel"""
+        source_ch = f"CH{requested_channel}"
+        destination_ch = f"CH{(requested_channel - 1) % 2}"
+        self._data[destination_ch] = self._data[source_ch]
+
     def phase_diff(self, **kwargs):
         """Calculates phase difference between the measured signals.
 
