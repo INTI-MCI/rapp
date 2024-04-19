@@ -50,7 +50,7 @@ def phase_difference_from_folder(folder, method, channel=-1, show=False, appende
     results_swapped = []
     for filepath in files:
         measurement = Measurement.from_file(filepath)
-        measurement.swap_channels()
+        measurement.swap_channels(requested_channel=channel)
         # logger.info("Parameters: {}.".format(measurement.parameters_string()))
         res = phase_difference(measurement, method, show=False)
         results_swapped.append(res)
