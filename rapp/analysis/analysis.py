@@ -14,6 +14,7 @@ ANALYSIS_NAMES = [
     'all',
     'darkcurrent',
     'noise',
+    'noise_cos',
     'drift',
     'OR',
 ]
@@ -31,6 +32,9 @@ def main(name, show=False):
 
     if name in ['all', 'noise']:
         noise.plot_noise_with_laser_on(output_folder, show=show)
+
+    if name in ['all', 'noise_cos']:
+        noise.plot_noise_with_signal(show=show)
 
     if name in ['drift']:
         drift.plot_drift(output_folder, show=show)
