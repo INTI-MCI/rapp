@@ -16,6 +16,16 @@ def create_folder(folder, overwrite=False):
     os.makedirs(folder, exist_ok=True)
 
 
+def split_number_to_list(num, size):
+    """Divides a number into list of equally sized numbers."""
+    lst = [size] * (num // size)
+    rest = num % size
+    if rest > 0:
+        lst.append(rest)
+
+    return lst
+
+
 def round_to_n(number, n):
     """Rounds a number to n significant digits."""
     if number == 0:
