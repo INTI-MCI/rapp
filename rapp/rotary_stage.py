@@ -85,6 +85,7 @@ class RotaryStage(Iterator):
         logger.info("Searching HOME for axis: {}".format(self._axis))
         self._index = 0
         self._motion_controller.reset_axis(axis=self._axis)
+        logger.info("HOME found.")
 
     def reconnect(self):
         """Reconnects motion controller."""
