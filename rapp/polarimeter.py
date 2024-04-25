@@ -1,7 +1,6 @@
 import os
 import sys
 import time
-import math
 import logging
 from pathlib import Path
 from datetime import date, datetime
@@ -14,7 +13,7 @@ from rapp.data_file import DataFile
 from rapp.mocks import SerialMock
 from rapp.motion_controller import ESP301
 from rapp.rotary_stage import RotaryStage, RotaryStageError
-from rapp.utils import progressbar
+from rapp.utils import progressbar, split_number_to_list
 
 
 # Always truncate arrays when printing, without scientific notation.
@@ -140,9 +139,8 @@ class Polarimeter:
             chunk_size: reads data in chunks of this size. If 0, no chunks are used.
         """
         n_samples = [samples]
-
-        if chunk_size > 0 and samples > chunk_size:
-            n_samples = [chunk_size] * math.ceil(samples / chunk_size)
+        if chunk_size > 0:
+            n_samples = split_number_to_list(num=samples, size=chunk_size)
 
         for samples in n_samples:
             yield self._adc.acquire(samples, flush=True)
