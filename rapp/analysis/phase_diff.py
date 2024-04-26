@@ -21,7 +21,9 @@ def sine(xs, a, phi, c):
     return a * np.sin(4 * xs + phi) + c
 
 
-def phase_difference_from_folder(folder, method, show=False, appended_measurements=None):
+def phase_difference_from_folder(
+    folder, method, show=False, fill_none=False, appended_measurements=None
+):
     logger.info("Calculating phase difference for {}...".format(folder))
 
     files = sorted([os.path.join(folder, x) for x in os.listdir(folder) if x.endswith('txt')])
@@ -32,9 +34,9 @@ def phase_difference_from_folder(folder, method, show=False, appended_measuremen
 
     for file_number, filepath in enumerate(files):
         if appended_measurements is None or file_number % appended_measurements == 0:
-            measurement = Measurement.from_file(filepath)
+            measurement = Measurement.from_file(filepath, fill_none=fill_none)
         else:
-            measurement.append(Measurement.from_file(filepath), degrees=True)
+            measurement.append(Measurement.from_file(filepath, fill_none=fill_none), degrees=True)
 
         new_measurement = appended_measurements is None or (
             file_number + 1) % appended_measurements == 0
@@ -47,7 +49,7 @@ def phase_difference_from_folder(folder, method, show=False, appended_measuremen
     logger.info("PHASE DIFFERENCE SWAPPED CHANNELS...")
     results_swapped = []
     for filepath in files:
-        measurement = Measurement.from_file(filepath)
+        measurement = Measurement.from_file(filepath, fill_none=fill_none)
         measurement.swap_channels()
         # logger.info("Parameters: {}.".format(measurement.parameters_string()))
         res = phase_difference(measurement, method, show=False)
@@ -141,10 +143,10 @@ def phase_difference_from_folder(folder, method, show=False, appended_measuremen
         plot.show()
 
 
-def phase_difference_from_file(filepath, method, show=False):
+def phase_difference_from_file(filepath, method, fill_none=False, show=False):
     logger.info("Calculating phase difference for {}...".format(filepath))
 
-    measurement = Measurement.from_file(filepath)
+    measurement = Measurement.from_file(filepath, fill_none=fill_none)
     logger.info("Parameters: {}.".format(measurement.parameters_string()))
 
     filename = "{}.svg".format(os.path.basename(filepath)[:-4])
