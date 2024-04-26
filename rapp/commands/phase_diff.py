@@ -7,6 +7,7 @@ HELP_PHASE_DIFF = 'Tool for calculating phase difference from single polarimeter
 
 HELP_METHOD = 'phase difference calculation method (default: %(default)s).'
 HELP_FILEPATH = 'file containing the measurements.'
+HELP_FILL_NONE = 'if true, fills a channel with None with data from the other channel.'
 HELP_APPEND = 'number of appended measurements for analysis.'
 
 EXAMPLE = "rapp phase_diff data/sine-range4V-632nm-cycles2-step1.0-samples50.txt"
@@ -18,8 +19,9 @@ def add_to_subparsers(subparsers):
     p.add_argument('filepath', type=str, help=HELP_FILEPATH)
     p.add_argument('--method', type=str, default='NLS', help=HELP_METHOD)
     p.add_argument('-a', '--appended_measurements', default=None, type=int, help=HELP_APPEND)
-    p.add_argument('--show', action='store_true', help=ct.HELP_SHOW)
+    p.add_argument('-f', '--fill_none', action='store_true', help=HELP_FILL_NONE)
     p.add_argument('-v', '--verbose', action='store_true', help=ct.HELP_VERBOSE)
+    p.add_argument('--show', action='store_true', help=ct.HELP_SHOW)
 
 
 def run(filepath, appended_measurements=None, **kwargs):
