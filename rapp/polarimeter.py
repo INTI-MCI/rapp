@@ -7,13 +7,15 @@ from datetime import date, datetime
 
 import numpy as np
 
+from rich.progress import track
+
 from rapp import constants as ct
 from rapp.adc import ADC
 from rapp.data_file import DataFile
 from rapp.mocks import SerialMock
 from rapp.motion_controller import ESP301
 from rapp.rotary_stage import RotaryStage, RotaryStageError
-from rapp.utils import progressbar, split_number_to_list
+from rapp.utils import split_number_to_list
 
 
 # Always truncate arrays when printing, without scientific notation.
@@ -90,6 +92,12 @@ class Polarimeter:
         logger.info("Samples to measure in each analyzer position: {}.".format(samples))
         logger.info("Maximum chunk size: {}.".format(chunk_size))
 
+        analyzer_bar = True
+        self._adc.progressbar = False  # We disable lower level progress bar.
+        if len(self._analyzer) == 1:
+            self._adc.progressbar = True
+            analyzer_bar = False
+
         failures = 0
 
         self._hwp.reset()
@@ -100,11 +108,12 @@ class Polarimeter:
 
                 self._analyzer.reset()
                 self._setup_data_file(samples, rep, hwp_position)
-                self._adc.progressbar = False  # We disable lower level progress bar.
-                progressbar_desc = '{} cycle(s): '.format(self._analyzer.cycles)
+                p_desc = 'rep no. {}: '.format(rep)
 
                 try:
-                    for position in progressbar(self._analyzer, desc=progressbar_desc):
+                    for position in track(
+                        self._analyzer, style='white', description=p_desc, disable=not analyzer_bar
+                    ):
                         for data_chunk in self.read_samples(samples, chunk_size):
                             self._add_data_to_file(data_chunk, position=position)
 

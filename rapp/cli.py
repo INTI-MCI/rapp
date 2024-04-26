@@ -2,6 +2,8 @@ import sys
 import logging
 import argparse
 
+from rich.logging import RichHandler
+
 from rapp.commands import COMMANDS
 
 
@@ -10,11 +12,12 @@ logger = logging.getLogger(__name__)
 
 APP_NAME = 'RAPP'
 DESCRIPTION = 'Tools for measuring the rotation angle of the plane of polarization (RAPP).'
-LOG_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+LOG_FORMAT = '%(name)s - %(message)s'
 
 
 def setup_logger():
-    logging.basicConfig(level=logging.INFO, format=LOG_FORMAT)
+    logging.basicConfig(
+        level=logging.INFO, format=LOG_FORMAT, handlers=[RichHandler(level="NOTSET")])
 
     # Hide logging from external libraries
     external_libs = ['matplotlib', 'PIL']
