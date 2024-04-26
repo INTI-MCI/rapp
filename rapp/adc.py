@@ -4,7 +4,8 @@ import logging
 import serial
 import numpy as np
 
-from rapp.utils import progressbar
+from rich.progress import track
+
 
 logger = logging.getLogger(__name__)
 
@@ -141,7 +142,9 @@ class ADC:
 
     def _read_data(self, n_samples, name=''):
         data = []
-        for _ in progressbar(range(n_samples), desc="{}:".format(name), enable=self.progressbar):
+        desc = "Measuring {}:".format(name)
+
+        for _ in track(range(n_samples), description=desc, disable=not self.progressbar):
             try:
                 data.append(self._bits_to_volts(self._read_bits()))
             except (ValueError, UnicodeDecodeError) as e:

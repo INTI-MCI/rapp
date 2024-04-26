@@ -39,6 +39,7 @@ setuptools.setup(
         'matplotlib<4',
         'pandas<2',
         'pyserial<4',
-        'scipy<2'
+        'scipy<2',
+        'rich<14'
     ]
 )
