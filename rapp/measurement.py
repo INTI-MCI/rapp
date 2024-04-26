@@ -60,7 +60,7 @@ class Measurement:
         return self._data[data_slice]
 
     @classmethod
-    def from_file(cls, filepath, sep=DELIMITER):
+    def from_file(cls, filepath, sep=DELIMITER, fill_none=False):
         """Instantiates a Measurement with data read from a file."""
         data = pd.read_csv(
             filepath,
@@ -70,6 +70,15 @@ class Measurement:
         if not set(data.columns).issubset(ALL_COLUMNS):
             raise ValueError(
                 "Bad column format in measurement file. Columns must be: {}".format(ALL_COLUMNS))
+
+        if fill_none:
+            data = data.replace({'None': np.nan})
+
+            if data[COLUMN_CH0].isnull().values.any():
+                data[COLUMN_CH0] = data[COLUMN_CH1]
+
+            if data[COLUMN_CH1].isnull().values.any():
+                data[COLUMN_CH1] = data[COLUMN_CH0]
 
         return cls(data, **parse_input_parameters_from_filepath(filepath))
 
