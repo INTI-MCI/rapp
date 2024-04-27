@@ -105,12 +105,15 @@ def DFT(s1, s2, xs=None, period=2*np.pi):
     coef1 = S1[np.argmax(np.abs(S1))]
     coef2 = S2[np.argmax(np.abs(S2))]
 
-    phase1 = np.angle(coef1)
-    phase2 = np.angle(coef2)
+    phase1 = np.arctan(np.real(coef1) / np.imag(coef1)) * -1
+    phase2 = np.arctan(np.real(coef2) / np.imag(coef2)) * -1
+
     phase_diff = np.angle(coef2 / coef1)
 
-    logger.debug("{}°, {}rad".format(np.rad2deg(phase1), phase1))
-    logger.debug("{}°, {}rad".format(np.rad2deg(phase2), phase2))
+    logger.debug("φ1 = {}°, {}rad".format(np.rad2deg(phase1), phase1))
+    logger.debug("φ2 = {}°, {}rad".format(np.rad2deg(phase2), phase2))
+    logger.debug(
+        "|φ1 - φ2| = ({} ± {})°".format(np.rad2deg(phase_diff), 0))
 
     return phase_diff, phase1, phase2
 
@@ -246,6 +249,11 @@ def phase_difference(
         if abs(phase_diff) > np.pi and fix_range:
             phase_diff = (phase_diff % np.pi) * -1
 
+        phi2 = phi1 + phase_diff
+        phi2_u = np.sqrt(phase_diff_u ** 2 + phi1_u ** 2)
+
+        logger.debug("φ2 = ({} ± {})°".format(np.rad2deg(phi2), np.rad2deg(phi2_u)))
+
         logger.debug(
             "|φ1 - φ2| = ({} ± {})°".format(np.rad2deg(phase_diff), np.rad2deg(phase_diff_u)))
 
@@ -253,7 +261,7 @@ def phase_difference(
         fity2 = fity2 * s2_norm
 
         return PhaseDifferenceResult(
-            phase_diff, phase_diff_u, phi1=phi1, fitx=fitx, fits1=fity1, fits2=fity2)
+            phase_diff, phase_diff_u, phi1=phi1, phi2=phi2, fitx=fitx, fits1=fity1, fits2=fity2)
 
     if method == 'HILBERT':
         phase_diff = hilbert_transform(s1, s2)

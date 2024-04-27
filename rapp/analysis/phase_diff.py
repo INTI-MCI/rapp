@@ -27,6 +27,9 @@ def phase_difference_from_folder(
     logger.info("Calculating phase difference for {}...".format(folder))
 
     files = sorted([os.path.join(folder, x) for x in os.listdir(folder) if x.endswith('txt')])
+    if not files:
+        raise ValueError("Folder does not contain measurements!")
+
     # files = files[1:]  # First measurement is broken in data/2024-03-05-repeatability/hwp0
     # files = files[:-1]   # Last measurement is broken in data/2024-04-05-simple-setup
 
@@ -46,25 +49,23 @@ def phase_difference_from_folder(
             res = phase_difference(measurement, method, show=False)
             results.append(res)
 
-    logger.info("PHASE DIFFERENCE SWAPPED CHANNELS...")
-    results_swapped = []
-    for filepath in files:
-        measurement = Measurement.from_file(filepath, fill_none=fill_none)
-        measurement.swap_channels()
-        # logger.info("Parameters: {}.".format(measurement.parameters_string()))
-        res = phase_difference(measurement, method, show=False)
-        results_swapped.append(res)
-
     phase_diffs = []
     uncertainties = []
     mses = []
     phi1 = []
+    phi2 = []
+
     for i, res in enumerate(results, 1):
         xs, s1, s2, s1err, s2err, phase_diff = res
 
         phase_diffs.append(phase_diff.value)
         uncertainties.append(phase_diff.u)
-        phi1.append(phase_diff.phi1)
+
+        if phase_diff.phi1 is not None:
+            phi1.append(phase_diff.phi1)
+
+        if phase_diff.phi2 is not None:
+            phi2.append(phase_diff.phi2)
 
         if phase_diff.fits1 is not None:
             signal_diff_s1 = s1 - phase_diff.fits1
@@ -77,16 +78,12 @@ def phase_difference_from_folder(
                 logger.info(mse)
                 logger.info("Repetition: {}".format(i))
 
-    phi2 = []
-    for i, res in enumerate(results_swapped, 1):
-        xs, s1, s2, s1err, s2err, phase_diff = res
-        phi2.append(phase_diff.phi1)
-
-    if phi1[0] is not None:
+    if len(phi1) > 0:
         std_phi1 = np.std(phi1)
-        std_phi2 = np.std(phi2)
-
         logger.info("STD phase of CH0: {}".format(std_phi1))
+
+    if len(phi2) > 0:
+        std_phi2 = np.std(phi2)
         logger.info("STD phase of CH1: {}".format(std_phi2))
 
     logger.info("STD phase difference: {}".format(np.std(phase_diffs)))
@@ -99,7 +96,6 @@ def phase_difference_from_folder(
         round_to_n(std_phi1, 2)))
     plot.legend()
     plot.save(filename="phase-CH0-vs-time.png")
-    # plot.close()
 
     plot = Plot(ylabel="Fase intrínseca CH1 (°)", xlabel="Nro de repetición",
                 folder=output_folder)
@@ -107,17 +103,14 @@ def phase_difference_from_folder(
         round_to_n(std_phi2, 2)))
     plot.legend()
     plot.save(filename="phase-CH1-vs-time.png")
-    # plot.close()
 
     plot = Plot(ylabel="Diferencia de fase (°)", xlabel="Nro de repetición",
                 folder=output_folder)
     plot.add_data(phase_diffs, style='.-', color='k')
     plot.save(filename="difference-vs-time.png")
-    # plot.close()
 
     counts, edges = np.histogram(phase_diffs, density=True)
     centers = (edges + np.diff(edges)[0] / 2)[:-1]
-    errors = abs(phase_diffs - np.mean(phase_diffs))
 
     plot = Plot(ylabel="Cuentas", xlabel="Diferencia de fase", folder=output_folder)
     plot._ax.bar(
@@ -128,6 +121,8 @@ def phase_difference_from_folder(
     plot.save(filename="phase-difference-histogram.png")
     plot.close()
 
+    """
+    errors = abs(phase_diffs - np.mean(phase_diffs))
     plot = Plot(ylabel="Error (°)", xlabel="Incertidumbre (°)", folder=output_folder)
     plot.add_data(uncertainties, errors, color='k', alpha=0.7)
     plot.save(filename="errors-vs-uncertainties.png")
@@ -138,7 +133,7 @@ def phase_difference_from_folder(
         plot.add_data(mses, errors, color='k', alpha=0.7)
         plot.save(filename="errors-vs-mse.png")
         plot.close()
-
+    """
     if show:
         plot.show()
 
