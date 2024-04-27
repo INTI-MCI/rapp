@@ -22,7 +22,7 @@ class SimulationResult:
         return round_to_n(np.rad2deg(np.mean(self._us)), 2)
 
 
-def n_simulations(N=1, angle=DEFAULT_ANGLE, method='ODR', allow_nan=False, **kwargs):
+def n_simulations(N=1, angle=DEFAULT_ANGLE, method='NLS', allow_nan=False, **kwargs):
     """Performs N measurement simulations and calculates their phase difference.
 
     Args:
