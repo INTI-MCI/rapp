@@ -129,11 +129,8 @@ def sine_fit(
             p0=p0,
             sigma=y_sigma,
             absolute_sigma=abs_sigma,
-            # full_output=True,
             bounds=bounds,
-        )  # , ftol=1e-15, xtol=1e-15)
-
-        # total_error = np.sqrt(np.sum(infodict["fvec"]**2))
+        )
 
         us = np.sqrt(np.diag(pcov))
         fity = two_sines(fitx, *popt)
@@ -223,7 +220,12 @@ def phase_difference(
         if s1_sigma is not None and s2_sigma is not None:
             s12_sigma = np.hstack([s1_sigma, s2_sigma])
 
-        bounds = ([0, 0, -np.inf, -np.inf, 0, 0], [np.inf] * 6)
+        phase_lower_bound = np.deg2rad(-180)
+        phase_upper_bound = np.deg2rad(180)
+
+        bounds = (
+            [0, 0, phase_lower_bound, phase_lower_bound, 0, 0],
+            [np.inf, np.inf, phase_upper_bound, phase_upper_bound, np.inf, np.inf])
 
         popt, us, fitx, fity = sine_fit(
             x12, s12,
@@ -246,8 +248,8 @@ def phase_difference(
         phase_diff = popt[3]
         phase_diff_u = us[3]
 
-        if abs(phase_diff) > np.pi and fix_range:
-            phase_diff = (phase_diff % np.pi) * -1
+        # if abs(phase_diff) > np.pi and fix_range:
+        #    phase_diff = (phase_diff % np.pi) * -1
 
         phi2 = phi1 + phase_diff
         phi2_u = np.sqrt(phase_diff_u ** 2 + phi1_u ** 2)

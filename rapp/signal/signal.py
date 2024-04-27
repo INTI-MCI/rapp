@@ -77,6 +77,4 @@ def quantize(
     q_signal[q_signal > max_q - 1] = max_q - 1
     q_signal[q_signal < -max_q] = -max_q
 
-    logger.debug("Quantization: bits={}, factor={}".format(bits, q_factor))
-
     return q_signal * q_factor

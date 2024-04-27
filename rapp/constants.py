@@ -18,6 +18,7 @@ LABEL_DYNAMIC_RANGE_USE = "Uso del rango dinámico [%]"
 LABEL_DEGREE = "Ángulo del rotador [°]"
 LABEL_RADIANS = "Fase [rad]"
 LABEL_PSD = "PSD [V² / Hz]"
+
 SAMPLES_PER_ANGLE = "N° de muestras por ángulo"
 
 ENCONDIG = 'iso-8859-1'
