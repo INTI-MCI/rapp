@@ -23,9 +23,8 @@ def plot_res(xs, s1, s2, res):
 
 
 def test_phase_difference():
-    phase_diffs = [-90, -60, -44, -28, -1, 0, 1, 28, 44, 60]
+    phase_diffs = [-90, -87, -60, -44, -28, -1, 0, 1, 28, 44, 60]
 
-    # phase_diffs.append(-87)  # NLS fails to get correct phase_diff for -87
     # phase_diffs.extend([87, 90])  # DFT fails to get correct phi2 for +87, +90
     # Check why and make sure the method works for all phase differences.
 
