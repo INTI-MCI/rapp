@@ -26,7 +26,7 @@ def phase_difference_from_folder(
 ):
     logger.info("Calculating phase difference for {}...".format(folder))
 
-    files = sorted([os.path.join(folder, x) for x in os.listdir(folder) if x.endswith('txt')])
+    files = sorted([os.path.join(folder, x) for x in os.listdir(folder) if x.endswith('csv')])
     if not files:
         raise ValueError("Folder does not contain measurements!")
 
