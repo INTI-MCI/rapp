@@ -33,7 +33,7 @@ def plot_raw(
 
     logger.info("STD: {}".format(np.std(s1)))
 
-    plot = Plot(ylabel=ct.LABEL_VOLTAGE, xlabel=ct.LABEL_ANGLE, folder=output_folder)
+    plot = Plot(ylabel=ct.LABEL_VOLTAGE, xlabel=ct.LABEL_N_SAMPLE, folder=output_folder)
 
     plot.set_title(measurement.parameters_string())
 
