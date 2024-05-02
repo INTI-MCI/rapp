@@ -21,10 +21,10 @@ def setup_logger():
 
 def main():
     setup_logger()
-    e1 = dict(cycles=1, step=1, samples=169, reps=50, no_ch0=True)
-    e2 = dict(cycles=1, step=1, samples=169, reps=50, delay_position=1, no_ch0=True)
-    e3 = dict(cycles=1, step=1, samples=1014, reps=50, no_ch0=True)
-    experimentos = [e1, e2, e3]
+    e1 = dict(cycles=1, step=1, samples=169, reps=100)
+    e3 = dict(cycles=0, samples=6000000, chunk_size=600000, reps=1, no_ch1=True)
+    # e2 = dict(cycles=1, step=1, samples=169, reps=100, delay_position=1)
+    experimentos = [e3, e1]
 
     for i, exp in enumerate(experimentos, 1):
         logger.info("EXPERIMENTO {}: {}".format(i, exp))
