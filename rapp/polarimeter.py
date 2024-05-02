@@ -3,7 +3,7 @@ import sys
 import time
 import logging
 from pathlib import Path
-from datetime import date, datetime
+from datetime import date
 
 import numpy as np
 
@@ -45,18 +45,13 @@ def resolve_adc_port():
     return ADC_WIN_DEVICE
 
 
-FILE_DELIMITER = "\t"
-FILE_COLUMN_NAMES = ["ANGLE", "CH0", "CH1", "DATETIME"]
-FILE_NAME = "cycles{}-step{}-samples{}-rep{}.txt"
+FILE_DELIMITER = ","
+FILE_COLUMN_NAMES = ["ANGLE", "CH0", "CH1"]
+FILE_NAME = "cycles{}-step{}-samples{}-rep{}.csv"
 FILE_HEADER = (
     "#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#\n"
     "#~~~~~~~~~ RAPP measurements | INTI {date} ~~~~~~~~#\n"
-    "#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#\n"
-    "# HWP     : {}\n"
-    "# cycles  : {}\n"
-    "# step    : {}\n"
-    "# samples : {}\n"
-    "# ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#"
+    "#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#"
 )
 
 
@@ -168,24 +163,19 @@ class Polarimeter:
         return filename
 
     def _setup_data_file(self, samples, rep, hwp_position):
-        self._data_file.header = self._build_data_file_header(samples, hwp_position)
+        self._data_file.header = self._build_data_file_header()
         self._data_file.column_names = FILE_COLUMN_NAMES
         self._data_file.open(self._build_data_file_name(samples, rep, hwp_position))
 
-    def _build_data_file_header(self, samples, hwp_position):
+    def _build_data_file_header(self):
         return FILE_HEADER.format(
-            hwp_position,
-            self._analyzer.cycles,
-            self._analyzer.step,
-            samples,
             date=date.today()
         )
 
     def _add_data_to_file(self, data, position=None):
         logger.debug("Writing data to file...")
-        time = datetime.now().isoformat()  # TODO: get real measurement time from ADC?
         for row in data:
-            self._data_file.add_row([position] + list(row) + [time])
+            self._data_file.add_row([position] + list(row))
 
     def _handle_motion_controller_error(self, hwp_position):
         logger.warning("Waiting {} seconds...".format(self._wait))

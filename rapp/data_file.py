@@ -4,7 +4,7 @@ import os
 class DataFile:
     MESSAGE_OVERWRITE = "File already exists. Do you want to overwrite it? y/n (default is NO): "
 
-    def __init__(self, overwrite=False, output_dir='data', prefix=None, delimiter='\t'):
+    def __init__(self, overwrite=False, output_dir='data', prefix=None, delimiter=','):
         self._overwrite = overwrite
         self._output_dir = output_dir
         self._file = None
@@ -46,7 +46,7 @@ class DataFile:
         Args:
             row: iterable with values of each column.
         """
-        row = "{}".format(self.delimiter).join(map(str, row)).expandtabs(10)
+        row = "{}".format(self.delimiter).join(map(str, row))
         self.write(row)
 
     def write(self, string, new_line=True):
@@ -70,7 +70,7 @@ class DataFile:
 
     def _add_column_names(self):
         if self.column_names is not None:
-            names = "{}".format(self.delimiter).join(map(str, self.column_names)).expandtabs(10)
+            names = "{}".format(self.delimiter).join(map(str, self.column_names))
             self.write(names)
 
     def remove(self):
