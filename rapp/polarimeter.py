@@ -3,7 +3,7 @@ import sys
 import time
 import logging
 from pathlib import Path
-from datetime import date, datetime
+from datetime import date
 
 import numpy as np
 
@@ -47,7 +47,7 @@ def resolve_adc_port():
 
 FILE_DELIMITER = ","
 FILE_COLUMN_NAMES = ["ANGLE", "CH0", "CH1"]
-FILE_NAME = "cycles{}-step{}-samples{}-rep{}.txt"
+FILE_NAME = "cycles{}-step{}-samples{}-rep{}.csv"
 FILE_HEADER = (
     "#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#\n"
     "#~~~~~~~~~ RAPP measurements | INTI {date} ~~~~~~~~#\n"
