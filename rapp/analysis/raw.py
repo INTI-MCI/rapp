@@ -28,7 +28,7 @@ def plot_raw(
     measurement, output_folder, output_filename, no_ch0=False, no_ch1=False, show=False
 ):
 
-    s1 = np.array(measurement.ch0())[:150000]
+    s1 = np.array(measurement.ch0())
     s2 = np.array(measurement.ch1())
 
     logger.info("STD: {}".format(np.std(s1)))
@@ -38,12 +38,14 @@ def plot_raw(
     plot.set_title(measurement.parameters_string())
 
     if not no_ch0:
-        # plot.add_data(s1, style='-', color='k', lw=1.5, label='CH0')
-        plot._ax.hist(s1, bins=4)
+        plot.add_data(s1, style='-', color='k', lw=1.5, label='CH0')
+
     if not no_ch1:
         plot.add_data(s2, style='--', color='k', lw=1.5, label='CH1')
 
+    # plot._ax.hist(s1, bins=4)
     # plot._ax.xaxis.set_major_locator(plt.MaxNLocator(5))
+
     plot.legend(loc='upper right', fontsize=12, frameon=True)
 
     plot.save(filename="{}.png".format(output_filename))
