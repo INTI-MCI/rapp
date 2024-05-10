@@ -552,3 +552,33 @@ def plot_noise_with_laser_on(output_folder, show=False):
         plt.show()
 
     plt.close()
+
+
+def plot_noise_with_signal(show=False):
+    print("")
+    logger.info("ANALYZING NOISE WITH LASER ON...")
+
+    filename = "2024-03-05-repeatability/hwp0/" \
+               "repeatability5-hwp0.0-cycles1-step1.0-samples169-rep4.csv"
+    # filename = "2024-04-13-simple-setup-0s-delay/" \
+    #            "min-setup2-2-hwp0-cycles1-step1-samples169-rep2.csv"
+
+    filepath = os.path.join(ct.INPUT_DIR, filename)
+
+    measurement = Measurement.from_file(filepath)
+
+    logger.info("Show standard deviation as a function of intensity.")
+    f, axs = plt.subplots(1, 2, figsize=(8, 5), subplot_kw=dict(box_aspect=1), sharey=False)
+
+    xs, s1, s2, s1u, s2u = measurement.average_data()
+
+    axs[0].plot(xs, s1, 'o', color='k', mfc='None', ms=4, markevery=5, alpha=0.6, label="Datos")
+    axs[0].title.set_text('Averaged signal (1 sample per angle)')
+
+    axs[1].plot(xs, s1u)
+    axs[1].title.set_text('Std (1 std value per angle)')
+
+    if show:
+        plt.show()
+
+    plt.close()
