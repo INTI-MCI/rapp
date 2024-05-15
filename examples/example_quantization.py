@@ -2,6 +2,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.stats import normaltest
 
+print("\nThis example has two parts:\n"
+      " 1) show in a plot that the RMSE of an averaging operation is higher than the theoretical\n"
+      "    std(mean) when the std of the added Gaussian noise is less that half the quantization\n"
+      "    quantum.\n"
+      " 2) show that the random variable given by mean(array of Poisson noise) has a Gaussian\n"
+      "    distribution.")
+
 n_samples = 100
 n_stds = 25
 n_bits = 16
@@ -25,7 +32,6 @@ for k, std in enumerate(stds):
 plt.loglog(stds / quantum, rmse / rmse_non_quant)
 plt.xlabel("Std of noise / quantum")
 plt.ylabel("RMSE / RMSE_non_quantized(theoretical)")
-plt.show(block=False)
 
 n_samples_draw = 1000
 lam = 1000
@@ -55,3 +61,5 @@ mean_intensities = np.array([np.mean(np.random.poisson(lam=lam, size=n_samples))
 stats, pvalue = normaltest(mean_intensities)
 print(stats)
 print(pvalue)
+
+plt.show()
