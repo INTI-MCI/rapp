@@ -22,7 +22,7 @@ def setup_logger():
 def main():
     setup_logger()
     # e1 = dict(cycles=1, step=1, samples=169, reps=100)
-    e3 = dict(cycles=0, samples=6000000, chunk_size=600000, reps=1, no_ch1=True)
+    e3 = dict(cycles=0, samples=20000000, chunk_size=169, reps=1, mock_esp=True)
     # e2 = dict(cycles=1, step=1, samples=169, reps=100, delay_position=1)
     experimentos = [e3]
 
