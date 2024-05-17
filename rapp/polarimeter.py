@@ -214,15 +214,16 @@ def main(
     )
 
     # Build ADC
+    progressbar_chunk = no_ch0 != no_ch1
     if mock_adc:
         logger.warning("Using ADC mock object.")
-        adc = ADC(SerialMock(), ch0=not no_ch0, ch1=not no_ch1)
+        adc = ADC(SerialMock(), ch0=not no_ch0, ch1=not no_ch1, progressbar=progressbar_chunk)
     else:
         logger.info("Connecting to ADC...")
         adc = ADC.build(
             resolve_adc_port(),
-            b=ADC_BAUDRATE, timeout=ADC_TIMEOUT, wait=ADC_WAIT, ch0=not no_ch0, ch1=not no_ch1
-        )
+            b=ADC_BAUDRATE, timeout=ADC_TIMEOUT, wait=ADC_WAIT, ch0=not no_ch0, ch1=not no_ch1,
+            progressbar=progressbar_chunk)
 
     # Build Analyzer
     analyzer = RotaryStage(
