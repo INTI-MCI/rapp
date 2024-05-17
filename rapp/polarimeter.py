@@ -222,7 +222,7 @@ def main(
         logger.info("Connecting to ADC...")
         adc = ADC.build(
             resolve_adc_port(),
-            b=ADC_BAUDRATE, timeout=ADC_TIMEOUT, wait=ADC_WAIT, ch0=not no_ch0, ch1=not no_ch1, 
+            b=ADC_BAUDRATE, timeout=ADC_TIMEOUT, wait=ADC_WAIT, ch0=not no_ch0, ch1=not no_ch1,
             progressbar=progressbar_chunk)
 
     # Build Analyzer
