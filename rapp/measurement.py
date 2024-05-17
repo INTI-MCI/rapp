@@ -12,9 +12,9 @@ from rapp.signal import signal
 logger = logging.getLogger(__name__)
 
 
-# Noise measured with laser ON
-A0_NOISE = [2.6352759502752957e-06, 0.0003747564924374617]
-A1_NOISE = [3.817173720425239e-06, 0.0002145422291402638]
+# Mean of signal and STD of Noise measured with laser ON
+A0_NOISE = [3.586207454574546, 0.0003747564924374617]
+A1_NOISE = [2.742854497294973, 0.0002145422291402638]
 
 COLUMN_CH0 = 'CH0'
 COLUMN_CH1 = 'CH1'

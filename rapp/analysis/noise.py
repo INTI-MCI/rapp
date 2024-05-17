@@ -371,6 +371,7 @@ def plot_noise_with_laser_on(output_folder, show=False):
     for i, ax in enumerate(axs):
         channel_data = measurement.channel_data('CH{}'.format(i))[1:]
 
+        logger.info("mean CH{}: {}".format(i, np.mean(channel_data)))
         d = np.diff(np.unique(channel_data)).min()
         logger.info("Discretization step: {}".format(d))
 

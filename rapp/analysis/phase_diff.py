@@ -149,8 +149,8 @@ def phase_difference_from_file(filepath, method, fill_none=False, show=False):
     phase_difference(measurement, method, filename=filename, show=show)
 
 
-def phase_difference(measurement: Measurement, method, filename=None, show=False):
-    xs, s1, s2, s1err, s2err, res = measurement.phase_diff(method=method)
+def phase_difference(measurement: Measurement, method, filename=None, show=False, **kwargs):
+    xs, s1, s2, s1err, s2err, res = measurement.phase_diff(method=method, **kwargs)
 
     phase_diff, phase_diff_u = res.round_to_n(n=2, k=1)
 
