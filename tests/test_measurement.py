@@ -23,6 +23,6 @@ def test_phase_difference():
     for angle in angles:
         print("True phase diff: {}".format(angle))
         measurement = Measurement.simulate(angle, cycles=cycles, samples=samples, step=step)
-        xs, s1, s2, s1_sigma, s2_sigma, res = measurement.phase_diff(method='NLS')
+        xs, s1, s2, s1_sigma, s2_sigma, res = measurement.phase_diff(method='NLS', allow_nan=True)
         plot_phase_difference((xs, s1, s2, s1_sigma, s2_sigma, res), show=False)
         assert angle == pytest.approx(res.value, abs=0.001)

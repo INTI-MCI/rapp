@@ -19,15 +19,14 @@ logger = logging.getLogger(__name__)
 WIDTH_10HZ = 1
 
 FILE_PARAMS = {
-    "darkcurrent-range4V-samples40000-sps59.txt": {
+    "darkcurrent-range4V-samples40000-sps59.csv": {
         "sps": 59.5,
-        "sep": " ",
         "band_stop_freq": [(9.45, 0.1), (9.45 * 3, 0.1), (6, 0.1)],
         "high_pass_freq": None,
         "outliers": None,
         "bins": "quantized"
     },
-    "darkcurrent-range2V-samples100000.txt": {
+    "darkcurrent-range2V-samples100000.csv": {
         "sps": 838,
         "sep": "\t",
         "band_stop_freq": [(50, 10), (100, 1), (150, 1)],
@@ -35,9 +34,8 @@ FILE_PARAMS = {
         "outliers": None,
         "bins": "quantized"
     },
-    "darkcurrent-range4V-samples100000.txt": {
+    "darkcurrent-range4V-samples100000.csv": {
         "sps": 835,
-        "sep": r"\s+",
         "band_stop_freq": None,
         # [
         #    (50 * x, 0.5) for x in range(1, 6)] + [
@@ -51,17 +49,15 @@ FILE_PARAMS = {
         # "bins": 35
         "bins": "quantized"
     },
-    "continuous-range4V-584nm-samples10000-sps59.txt": {
+    "continuous-range4V-584nm-samples10000-sps59.csv": {
         "sps": 59.5,
-        "sep": " ",
         "band_stop_freq": None,  # [(9.4, 0.3), (18.09, 0.3), (18.8, 0.3), (28.22, 0.3)],
         "high_pass_freq": 2,
         "outliers": None,
         "bins": "quantized"
     },
-    "continuous-range4V-632nm-samples100000.txt": {
+    "continuous-range4V-632nm-samples100000.csv": {
         "sps": 847,  # This fits OK with line frequencies.
-        "sep": r"\s+",
         "band_stop_freq": [
             (50, 15)] + [(50 * x, 2) for x in range(2, 8)] + [
             (110, WIDTH_10HZ), (170, WIDTH_10HZ), (210, WIDTH_10HZ), (230, WIDTH_10HZ),
@@ -170,16 +166,16 @@ def plot_noise_with_laser_off(output_folder, show=False):
     print("")
     logger.info("PROCESSING SIGNAL WITH LASER OFF (dark current)...")
 
-    # filename = "darkcurrent-range4V-samples40000-sps59.txt"
-    # filename = "darkcurrent-range2V-samples100000.txt"
-    filename = "darkcurrent-range4V-samples100000.txt"
+    # filename = "darkcurrent-range4V-samples40000-sps59.csv"
+    # filename = "darkcurrent-range2V-samples100000.csv"
+    filename = "darkcurrent-range4V-samples100000.csv"
 
-    sps, sep, bstop, hpass, outliers, bins = FILE_PARAMS[filename].values()
+    sps, bstop, hpass, outliers, bins = FILE_PARAMS[filename].values()
     filepath = os.path.join(ct.INPUT_DIR, filename)
 
     base_output_fname = "{}".format(os.path.join(output_folder, filename[:-4]))
 
-    measurement = Measurement.from_file(filepath, sep=sep)
+    measurement = Measurement.from_file(filepath)
 
     logger.info("Plotting raw data...")
     f, axs = plt.subplots(1, 2, figsize=(8, 5), subplot_kw=dict(box_aspect=1), sharey=True)
@@ -359,14 +355,14 @@ def plot_noise_with_laser_on(output_folder, show=False):
     print("")
     logger.info("ANALYZING NOISE WITH LASER ON...")
 
-    # filename = "continuous-range4V-584nm-samples10000-sps59.txt"
-    filename = "continuous-range4V-632nm-samples100000.txt"
+    # filename = "continuous-range4V-584nm-samples10000-sps59.csv"
+    filename = "continuous-range4V-632nm-samples100000.csv"
 
     filepath = os.path.join(ct.INPUT_DIR, filename)
 
-    sps, sep, bstop, hpass, outliers, bins = FILE_PARAMS[filename].values()
+    sps, bstop, hpass, outliers, bins = FILE_PARAMS[filename].values()
 
-    measurement = Measurement.from_file(filepath, sep=sep)
+    measurement = Measurement.from_file(filepath)
     data = measurement[1:]  # remove big outlier in ch0
     base_output_fname = "{}".format(os.path.join(output_folder, filename[:-4]))
 
@@ -375,6 +371,7 @@ def plot_noise_with_laser_on(output_folder, show=False):
     for i, ax in enumerate(axs):
         channel_data = measurement.channel_data('CH{}'.format(i))[1:]
 
+        logger.info("mean CH{}: {}".format(i, np.mean(channel_data)))
         d = np.diff(np.unique(channel_data)).min()
         logger.info("Discretization step: {}".format(d))
 
@@ -410,8 +407,8 @@ def plot_noise_with_laser_on(output_folder, show=False):
     f.tight_layout()
     f.savefig("{}-poly-fit".format(base_output_fname))
 
-    # if show:
-    #    plt.show()
+    if show:
+        plt.show()
 
     plt.close()
 
@@ -474,8 +471,8 @@ def plot_noise_with_laser_on(output_folder, show=False):
     f.tight_layout()
     f.savefig("{}-fft".format(base_output_fname))
 
-    # if show:
-    #    plt.show()
+    if show:
+        plt.show()
 
     plt.close()
 
@@ -521,8 +518,8 @@ def plot_noise_with_laser_on(output_folder, show=False):
     f.tight_layout()
     f.savefig("{}-filtered-fft".format(base_output_fname))
 
-    # if show:
-    #    plt.show()
+    if show:
+        plt.show()
 
     plt.close()
 
@@ -538,8 +535,8 @@ def plot_noise_with_laser_on(output_folder, show=False):
 
     plot.save("{}-filtered-signal.png".format(filename[:-4]))
 
-    # if show:
-    #    plt.show()
+    if show:
+        plt.show()
 
     plt.close()
 

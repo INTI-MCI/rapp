@@ -28,4 +28,4 @@ def run(
     if save:
         filename = 'sim-one-phase_diff.png'
 
-    phase_difference(measurement, method, filename, show=show)
+    phase_difference(measurement, method, filename, allow_nan=True, show=show)
