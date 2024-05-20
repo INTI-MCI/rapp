@@ -25,7 +25,7 @@ def harmonic(
         fc: samples per cycle.
         samples: samples per angle.
         phi: phase (radians).
-        noise: (mu, sigma) of additive white Gaussian noise.
+        noise: (mu, sigma) sigma of additive white Gaussian noise that depends on the intensity mu.
         bits: number of bits for quantization. If None, doesn't quantize the signal.
         max_v: maximum value of ADC scale [0, max_v] (in Volts).
         all_positive: if true, shifts the signal to the positive axis.
@@ -33,6 +33,13 @@ def harmonic(
     Returns:
         The signal as an (xs, ys) tuple.
     """
+    def normalize_sigma(mu, sigma):
+        if mu == 0:
+            mu = 1
+
+        sigma = sigma / mu
+
+        return sigma
 
     xs = np.linspace(0, 2 * np.pi * cycles, num=int(cycles * fc), endpoint=False)
     xs = np.repeat(xs, samples)
@@ -41,8 +48,8 @@ def harmonic(
 
     additive_noise = np.zeros(xs.size)
     if noise is not None:
-        mu, sigma = noise
-        additive_noise = np.random.normal(loc=mu, scale=sigma, size=xs.size)
+        sigma = normalize_sigma(*noise)
+        additive_noise = np.random.normal(loc=0, scale=sigma, size=xs.size) * signal
 
     signal = signal + additive_noise
 
