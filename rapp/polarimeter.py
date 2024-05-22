@@ -17,7 +17,7 @@ from rapp.mocks import PM100Mock
 from rapp.motion_controller import ESP301
 from rapp.rotary_stage import RotaryStage, RotaryStageError
 from rapp.utils import split_number_to_list
-from rapp.pm100 import PM100, PM100Error
+from rapp.pm100 import PM100
 
 
 # Always truncate arrays when printing, without scientific notation.
@@ -50,6 +50,7 @@ def resolve_adc_port():
 
 FILE_DELIMITER = ","
 FILE_COLUMNS = ["ANGLE", "CH0", "CH1"]
+FILE_NORMALIZATION_COLUMN_NAME = "NORM"
 FILE_HEADER = (
     "#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#\n"
     "#~~~~~~~~~~~~~~ RAPP measurements | INTI ~~~~~~~~~~~~~~#\n"
@@ -70,12 +71,14 @@ class Polarimeter:
 
     def __init__(
         self,
-        adc: ADC, analyzer: RotaryStage, hwp: RotaryStage, data_file: DataFile, wait: int = 10
+        adc: ADC, analyzer: RotaryStage, hwp: RotaryStage, data_file: DataFile,
+        normalization_detector: PM100 = None, wait: int = 10
     ):
         self._adc = adc
         self._analyzer = analyzer
         self._hwp = hwp
         self._data_file = data_file
+        self._norm_det = normalization_detector
         self._wait = wait
 
     def start(self, samples, chunk_size: int = 0, reps: int = 1):
@@ -144,11 +147,16 @@ class Polarimeter:
             n_samples = split_number_to_list(num=samples, size=chunk_size)
 
         for samples in n_samples:
-            yield self._adc.acquire(samples, flush=True)
+            acquired_samples = self._adc.acquire(samples, flush=True)
+            if self._norm_det is not None:
+                normalization_value = self._norm_det.get_voltage()
+                acquired_samples = [(*acq_s, normalization_value) for acq_s in acquired_samples]
+            yield acquired_samples
 
     def close(self):
         self._adc.close()
         self._analyzer.close()
+        self._norm_det.close()
 
     def _build_data_filename(self, rep, hwp_position=None):
         filename = "rep{}.csv".format(rep)
@@ -239,8 +247,7 @@ def run(
         logger.info("Connecting to Thorlabs PM100.")
         pm100 = PM100.build(THORLABS_PM100_VISA)
         if pm100 is None:
-            raise PM100Error("PM100 not detected. Check if it is powered.")
-        # voltage_value = pm100.get_voltage()
+            logger.info("PM100 not detected.")
 
     logger.info("Connecting Analyzer...")
     analyzer = RotaryStage(
@@ -251,12 +258,16 @@ def run(
         motion_controller, hwp_cycles, hwp_step, hwp_delay_position, axis=2, name='HalfWavePlate')
 
     logger.info("Building DataFile...")
+    normalization_column = [] if pm100 is None else FILE_NORMALIZATION_COLUMN_NAME
+    file_columns = FILE_COLUMNS + normalization_column
     data_file = DataFile(
-        overwrite, header=FILE_HEADER, column_names=FILE_COLUMNS, delimiter=FILE_DELIMITER,
+        overwrite, header=FILE_HEADER, column_names=file_columns, delimiter=FILE_DELIMITER,
         output_dir=measurement_dir)
 
     logger.info("Building Polarimeter...")
-    polarimeter = Polarimeter(adc, analyzer, hwp, data_file, wait=mc_wait)
+    polarimeter = Polarimeter(
+        adc, analyzer, hwp, data_file, normalization_detector=pm100, wait=mc_wait
+    )
 
     logger.info("Starting measurement...")
     polarimeter.start(samples, chunk_size=chunk_size, reps=reps)
