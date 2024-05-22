@@ -13,9 +13,11 @@ from rich.progress import track
 from rapp import constants as ct
 from rapp.adc import ADC
 from rapp.data_file import DataFile
+from rapp.mocks import PM100Mock
 from rapp.motion_controller import ESP301
 from rapp.rotary_stage import RotaryStage, RotaryStageError
 from rapp.utils import split_number_to_list
+from rapp.pm100 import PM100, PM100Error
 
 
 # Always truncate arrays when printing, without scientific notation.
@@ -29,6 +31,8 @@ ADC_LINUX_PORT = '/dev/ttyACM0'
 ADC_BAUDRATE = 57600
 ADC_TIMEOUT = 0.1
 ADC_WAIT = 2
+
+THORLABS_PM100_VISA = "USB0::4883::32889::P1000529::0::INSTR"
 
 MOTION_CONTROLLER_PORT = "COM4"
 # MOTION_CONTROLLER_PORT = '/dev/ttyACM0'
@@ -63,6 +67,7 @@ class Polarimeter:
         data_file: handles the file writing.
         wait: time to wait before reconnecting after motion controller error.
     """
+
     def __init__(
         self,
         adc: ADC, analyzer: RotaryStage, hwp: RotaryStage, data_file: DataFile, wait: int = 10
@@ -192,6 +197,7 @@ def run(
     prefix: str = 'test',
     mock_esp: bool = False,
     mock_adc: bool = False,
+    mock_pm100: bool = False,
     overwrite: bool = False,
     hwp_cycles: float = 0,
     hwp_step: float = 45,
@@ -224,6 +230,17 @@ def run(
         ch0=not no_ch0,
         ch1=not no_ch1,
         mock_serial=mock_adc)
+
+    # Search for Normalization Detector and build
+    if mock_pm100:
+        logger.warning("Using PM100 mock object.")
+        pm100 = PM100Mock(THORLABS_PM100_VISA)
+    else:
+        logger.info("Connecting to Thorlabs PM100.")
+        pm100 = PM100.build(THORLABS_PM100_VISA)
+        if pm100 is None:
+            raise PM100Error("PM100 not detected. Check if it is powered.")
+        # voltage_value = pm100.get_voltage()
 
     logger.info("Connecting Analyzer...")
     analyzer = RotaryStage(
