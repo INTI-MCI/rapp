@@ -49,3 +49,6 @@ class PM100Mock:
 
     def _random_value(self):
         return random.gammavariate(alpha=1, beta=1)
+
+    def close(self):
+        pass

@@ -58,3 +58,6 @@ class PM100:
             return self._pd.read
         else:
             raise PM100Error("PM100 not configured to measure voltage.")
+
+    def close(self):
+        self.rm.close()
