@@ -1,5 +1,6 @@
 import pyvisa
 from ThorlabsPM100 import ThorlabsPM100
+import time
 
 
 class PM100Error(Exception):
@@ -7,19 +8,20 @@ class PM100Error(Exception):
 
 
 class PM100:
-    def __init__(self, resource, rm, average_count=1, wavelength=633):
+    def __init__(self, resource, rm, average_count=1, wavelength=633, timeout=25000):
         """
         resource: if unknown, use list_resources
         rm: VISA Resource Manager
         average_count: amount of averaged samples. Each of them taked 3 ms
         wavelength: operation wavelength [nm]
+        timeout: [ms]
         """
         self.resource = resource
         self._rm = rm
 
         self.inst = self._rm.open_resource(
             self.resource,
-            timeout=1000,
+            timeout=timeout,
             write_termination="\n",
             read_termination="\n",
         )
@@ -32,7 +34,7 @@ class PM100:
         self._pd.sense.average.count = average_count
         self.wavelength = wavelength
         self._pd.sense.correction.wavelength = wavelength
-        self.bandwidth = self._pd.input.pdiode.filter.lpass.state
+        self.low_pass_filter_state = self._pd.input.pdiode.filter.lpass.state
 
         # Configure for voltage measurement
         self.configure_voltage = self._pd.configure.scalar.voltage.dc()
@@ -47,8 +49,7 @@ class PM100:
         else:
             return None
 
-    @classmethod
-    def list_resources(cls):
+    def list_resources():
         rm = pyvisa.ResourceManager()
         print(rm.list_resources())
         rm.close()
@@ -61,3 +62,49 @@ class PM100:
 
     def close(self):
         self.rm.close()
+
+    def set_average_count(self, average_count):
+        if self.average_count != average_count:
+            self.average_count = average_count
+            self._pd.sense.average.count = average_count
+
+    def start_measurement(self):
+        self._pd.initiate.immediate()
+
+    def fetch_measurement(self):
+        return self._pd.fetch
+
+    def try_delayed_measurement(self, average_count, wait_time=1e-3, timeout=1):
+        old_measurement = self._pd.read
+        print(f"Old measurement using read: {old_measurement}")
+        print("Starting new read.")
+        self.set_average_count(average_count)
+
+        volt_m = self._pd.measure.scalar.voltage.dc()
+        print(f"Old measurement using measure: {volt_m}")
+        time_ini = time.time()
+
+        """First try using OPC. But fetch waits for the measurement..."""
+        """
+        self._pd._write('*OPC')
+        while True:
+            if time.time() - time_ini >= timeout:
+                print(f"{__name__} : Timeout ({timeout} s)")
+                break
+            opc_bit = self._pd._ask('*OPC?')
+            if opc_bit:
+                # Fetch waits until a new measurement is available
+                new_measurement = self._pd.fetch
+                time_end = time.time()
+                print(f"OPC was set in {time_end - time_ini:.2f} s. New measurement: "
+                      f"{new_measurement}")
+                break
+            time.sleep(wait_time)
+        """
+
+        self._pd.initiate.immediate()
+        time.sleep(wait_time)
+        new_measurement = self._pd.fetch
+        time_end = time.time()
+        print(f"Fetch completed after {time_end - time_ini:.2f} s. New measurement: "
+              f"{new_measurement}")
