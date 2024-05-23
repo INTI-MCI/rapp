@@ -31,8 +31,10 @@ ADC_LINUX_PORT = '/dev/ttyACM0'
 ADC_BAUDRATE = 57600
 ADC_TIMEOUT = 0.1
 ADC_WAIT = 2
+ADC_SAMPLE_RATE = 840
 
 THORLABS_PM100_VISA = "USB0::4883::32889::P1000529::0::INSTR"
+THORLABS_PM100_TIME_PER_SAMPLE_MS = 3
 
 MOTION_CONTROLLER_PORT = "COM4"
 # MOTION_CONTROLLER_PORT = '/dev/ttyACM0'
@@ -147,9 +149,13 @@ class Polarimeter:
             n_samples = split_number_to_list(num=samples, size=chunk_size)
 
         for samples in n_samples:
+            if self._norm_det is not None:
+                self._norm_det.set_average_count(self._amount_samples_pm100(samples))
+                self._norm_det.start_measurement()
+
             acquired_samples = self._adc.acquire(samples, flush=True)
             if self._norm_det is not None:
-                normalization_value = self._norm_det.get_voltage()
+                normalization_value = self._norm_det.fetch_measurement()
                 acquired_samples = [(*acq_s, normalization_value) for acq_s in acquired_samples]
             yield acquired_samples
 
@@ -190,6 +196,11 @@ class Polarimeter:
 
         logger.warning("Removing unfinished file...")
         self._data_file.remove()
+
+    def _amount_samples_pm100(self, samples):
+        n_channels = int(self._adc._ch0) + int(self._adc._ch1)
+        delay_adc = samples * n_channels / ADC_SAMPLE_RATE
+        return int(delay_adc / THORLABS_PM100_TIME_PER_SAMPLE_MS * 1e3)
 
 
 def run(

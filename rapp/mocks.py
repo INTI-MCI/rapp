@@ -47,8 +47,17 @@ class PM100Mock:
         time.sleep(self.delay)
         return self._random_value()
 
+    def start_measurement(self):
+        pass
+
+    def fetch_measurement(self):
+        return self._random_value()
+
     def _random_value(self):
         return random.gammavariate(alpha=1, beta=1)
 
     def close(self):
+        pass
+
+    def set_average_count(self, average_count):
         pass
