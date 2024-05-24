@@ -33,7 +33,8 @@ ADC_TIMEOUT = 0.1
 ADC_WAIT = 2
 ADC_SAMPLE_RATE = 840
 
-THORLABS_PM100_VISA = "USB0::4883::32889::P1000529::0::INSTR"
+THORLABS_PM100_VISA_LINUX = "USB0::4883::32889::P1000529::0::INSTR"
+THORLABS_PM100_VISA_WIN = 'USB0::0x1313::0x8079::P1000529::INSTR'
 THORLABS_PM100_TIME_PER_SAMPLE_MS = 3
 
 MOTION_CONTROLLER_PORT = "COM4"
@@ -162,7 +163,9 @@ class Polarimeter:
     def close(self):
         self._adc.close()
         self._analyzer.close()
-        self._norm_det.close()
+
+        if self._norm_det is not None:
+            self._norm_det.close()
 
     def _build_data_filename(self, rep, hwp_position=None):
         filename = "rep{}.csv".format(rep)
@@ -253,10 +256,10 @@ def run(
     # Search for Normalization Detector and build
     if mock_pm100:
         logger.warning("Using PM100 mock object.")
-        pm100 = PM100Mock(THORLABS_PM100_VISA)
+        pm100 = PM100Mock(THORLABS_PM100_VISA_WIN)
     else:
         logger.info("Connecting to Thorlabs PM100.")
-        pm100 = PM100.build(THORLABS_PM100_VISA)
+        pm100 = PM100.build(THORLABS_PM100_VISA_WIN)
         if pm100 is None:
             logger.info("PM100 not detected.")
 
