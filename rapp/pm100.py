@@ -61,7 +61,7 @@ class PM100:
             raise PM100Error("PM100 not configured to measure voltage.")
 
     def close(self):
-        self.rm.close()
+        self._rm.close()
 
     def set_average_count(self, average_count):
         if self.average_count != average_count:
