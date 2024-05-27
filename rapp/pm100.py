@@ -1,7 +1,9 @@
 import pyvisa
 from ThorlabsPM100 import ThorlabsPM100
 import time
+import logging
 
+logger = logging.getLogger(__name__)
 
 class PM100Error(Exception):
     pass
@@ -37,9 +39,13 @@ class PM100:
         self.low_pass_filter_state = self._pd.input.pdiode.filter.lpass.state
 
         # Configure for voltage measurement
-        self.configure_voltage = self._pd.configure.scalar.voltage.dc()
-        self.voltage_range = self._pd.sense.voltage.dc.range.upper
-        self.auto_voltage_range = self._pd.sense.voltage.dc.range.auto
+        #self.configure_voltage = self._pd.configure.scalar.voltage.dc()
+        #self.voltage_range = self._pd.sense.voltage.dc.range.upper
+        #self.auto_voltage_range = self._pd.sense.voltage.dc.range.auto
+
+        self.configure_voltage = self._pd.configure.scalar.power()
+        self._pd.sense.power.dc.range.auto = 'ON'
+        self.voltage_range = self._pd.sense.power.dc.range.upper
 
     @classmethod
     def build(cls, resource):
@@ -80,6 +86,7 @@ class PM100:
         print("Starting new read.")
         self.set_average_count(average_count)
 
+        # volt_m = self._pd.measure.scalar.power()
         volt_m = self._pd.measure.scalar.voltage.dc()
         print(f"Old measurement using measure: {volt_m}")
         time_ini = time.time()
