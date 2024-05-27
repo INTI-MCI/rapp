@@ -32,6 +32,10 @@ def plot_raw(
     s2 = np.array(measurement.ch1())
     s3 = np.array(measurement.ch2())
 
+    s1_n = s1/np.max(s1)
+    s3_n = s3/np.max(s3)
+    logger.info(np.max(s3))
+
     logger.info("STD: {}".format(np.std(s1)))
 
     plot = Plot(ylabel=ct.LABEL_VOLTAGE, xlabel=ct.LABEL_N_SAMPLE, folder=output_folder)
