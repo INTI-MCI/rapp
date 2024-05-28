@@ -43,6 +43,10 @@ def plot_raw(
     if not no_ch1:
         plot.add_data(s2, style='--', color='k', lw=1.5, label='CH1')
 
+    norm_data = measurement.norm_data()
+    if norm_data is not None:
+        plot.add_data(norm_data, style='.-', lw=1.5, label='NORM')
+
     # plot._ax.hist(s1, bins=4)
     # plot._ax.xaxis.set_major_locator(plt.MaxNLocator(5))
 
