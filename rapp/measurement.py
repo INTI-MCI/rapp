@@ -18,9 +18,10 @@ A1_NOISE = [2.742854497294973, 0.0002145422291402638]
 
 COLUMN_CH0 = 'CH0'
 COLUMN_CH1 = 'CH1'
+COLUMN_CH2 = 'NORM'
+
 COLUMN_ANGLE = 'ANGLE'
-COLUMN_DATETIME = 'DATETIME'
-ALL_COLUMNS = [COLUMN_ANGLE, COLUMN_CH0, COLUMN_CH1, COLUMN_DATETIME]
+ALLOWED_COLUMNS = [COLUMN_ANGLE, COLUMN_CH0, COLUMN_CH1, COLUMN_CH2]
 
 DELIMITER = ","
 PARAMETER_STRING = "cycles={}, step={}°, samples={}."
@@ -64,12 +65,13 @@ class Measurement:
         """Instantiates a Measurement with data read from a file."""
         data = pd.read_csv(
             filepath,
-            sep=sep, skip_blank_lines=True, comment='#', usecols=(0, 1, 2), encoding=ct.ENCONDIG
+            sep=sep, skip_blank_lines=True, comment='#', encoding=ct.ENCONDIG
         )
 
-        if not set(data.columns).issubset(ALL_COLUMNS):
+        if not set(data.columns).issubset(ALLOWED_COLUMNS):
             raise ValueError(
-                "Bad column format in measurement file. Columns must be: {}".format(ALL_COLUMNS))
+                "Bad column format in measurement file. Columns must be: {}"
+                .format(ALLOWED_COLUMNS))
 
         if fill_none:
             data = data.replace({'None': np.nan})
@@ -124,6 +126,13 @@ class Measurement:
         """Returns CHANNEL 1 data."""
         return self._data[COLUMN_CH1]
 
+    def norm_data(self):
+        """Returns normalization data, if exists."""
+        if COLUMN_CH2 in self._data:
+            return self._data[COLUMN_CH2]
+
+        return None
+
     def swap_channels(self):
         self._data[[COLUMN_CH0, COLUMN_CH1]] = self._data[[COLUMN_CH1, COLUMN_CH0]]
 
@@ -135,13 +144,13 @@ class Measurement:
 
         return self._data[[COLUMN_CH0, COLUMN_CH1]]
 
-    def phase_diff(self, **kwargs):
+    def phase_diff(self, norm=False, **kwargs):
         """Calculates phase difference between the measured signals.
 
         Args:
             kwargs: extra arguments for phase.phase_difference function.
         """
-        xs, s1, s2, s1_sigma, s2_sigma = self.average_data()
+        xs, s1, s2, s1_sigma, s2_sigma = self.average_data(norm=norm)
 
         xs = np.deg2rad(xs)
 
@@ -170,20 +179,20 @@ class Measurement:
 
         return xs, s1, s2, s1_sigma, s2_sigma, res
 
-    def average_data(self):
+    def average_data(self, norm: bool):
         """Performs the average of the number of samples per angle.
             Returns the new signal points and their uncertainties.
         """
-        data = self._data.groupby([COLUMN_ANGLE], as_index=False)
+        _data = self._data.groupby([COLUMN_ANGLE], as_index=False)
 
         try:  # python 3.4
-            group_size = int(np.array(data.size())[0])
+            group_size = int(np.array(_data.size())[0])
         except TypeError:
-            group_size = int(data.size()['size'][0])
+            group_size = int(_data.size()['size'][0])
 
-        data = data.agg({
+        data = _data.agg({
             COLUMN_CH0: ['mean', 'std'],
-            COLUMN_CH1: ['mean', 'std']
+            COLUMN_CH1: ['mean', 'std'],
         })
 
         ch0_std = data[COLUMN_CH0]['std']
@@ -195,6 +204,12 @@ class Measurement:
 
         s1u = np.array(ch0_std) / np.sqrt(int(group_size))
         s2u = np.array(ch1_std) / np.sqrt(int(group_size))
+
+        norm_data = self.norm_data()
+        if norm and norm_data is not None:
+            norm = _data.agg({COLUMN_CH2: ['mean', 'std']})[COLUMN_CH2]['mean']
+            s1 /= norm
+            s2 /= norm
 
         return xs, s1, s2, s1u, s2u
 
