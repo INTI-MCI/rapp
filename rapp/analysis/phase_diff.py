@@ -22,7 +22,7 @@ def sine(xs, a, phi, c):
 
 
 def phase_difference_from_folder(
-    folder, method, show=False, fill_none=False, appended_measurements=None
+    folder, method, norm=False, show=False, fill_none=False, appended_measurements=None
 ):
     logger.info("Calculating phase difference for {}...".format(folder))
 
@@ -46,7 +46,7 @@ def phase_difference_from_folder(
 
         # logger.info("Parameters: {}.".format(measurement.parameters_string()))
         if new_measurement:
-            res = phase_difference(measurement, method, show=False)
+            res = phase_difference(measurement, method, norm=norm, show=False)
             results.append(res)
 
     phase_diffs = []
@@ -138,7 +138,7 @@ def phase_difference_from_folder(
         plot.show()
 
 
-def phase_difference_from_file(filepath, method, fill_none=False, show=False):
+def phase_difference_from_file(filepath, method, norm=False, fill_none=False, show=False):
     logger.info("Calculating phase difference for {}...".format(filepath))
 
     measurement = Measurement.from_file(filepath, fill_none=fill_none)
@@ -149,8 +149,10 @@ def phase_difference_from_file(filepath, method, fill_none=False, show=False):
     phase_difference(measurement, method, filename=filename, show=show)
 
 
-def phase_difference(measurement: Measurement, method, filename=None, show=False, **kwargs):
-    xs, s1, s2, s1err, s2err, res = measurement.phase_diff(method=method, **kwargs)
+def phase_difference(
+    measurement: Measurement, method, filename=None, norm=False, show=False, **kwargs
+):
+    xs, s1, s2, s1err, s2err, res = measurement.phase_diff(method=method, norm=norm, **kwargs)
 
     phase_diff, phase_diff_u = res.round_to_n(n=2, k=1)
 
