@@ -37,9 +37,10 @@ setuptools.setup(
     install_requires=[
         'numpy<2',
         'matplotlib<4',
-        'pandas<2',
+        'pandas<3',
         'pyserial<4',
         'scipy<2',
+        'uncertainties<4',
         'rich<14'
     ]
 )
