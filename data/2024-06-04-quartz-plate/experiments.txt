@@ -1,0 +1,17 @@
+Exp 1: Altura del soporte ajustada para que el láser incida en el centro de la placa
+
+Análisis con ajuste
+INFO     rapp.analysis.phase_diff - Calculating phase difference for data\2024-06-04-quartz-plate\off...                          phase_diff.py:27
+INFO     rapp.analysis.phase_diff - Detected phase difference (analyzer angles): φ=(-42.875261 ± 4.8e-05)° (k=1).
+
+INFO     rapp.analysis.phase_diff - Calculating phase difference for data\2024-06-04-quartz-plate\on-exp1...                      phase_diff.py:27
+INFO     rapp.analysis.phase_diff - Detected phase difference (analyzer angles): φ=(-52.634849 ± 5.1e-05)° (k=1).
+Rotación óptica exp 1: -9.759588
+
+Análisis con Fourier
+INFO     rapp.analysis.phase_diff - Calculating phase difference for data\2024-06-04-quartz-plate\off...                          phase_diff.py:27
+INFO     rapp.analysis.phase_diff - Detected phase difference (analyzer angles): φ=(-43.060641 ± 0.0)° (k=1).
+
+INFO     rapp.analysis.phase_diff - Calculating phase difference for data\2024-06-04-quartz-plate\on-exp1...                      phase_diff.py:27
+INFO     rapp.analysis.phase_diff - Detected phase difference (analyzer angles): φ=(-52.815693 ± 0.0)° (k=1)
+Rotación óptica exp 1 : -9.755052

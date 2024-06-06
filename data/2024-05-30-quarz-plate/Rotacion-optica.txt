@@ -1,0 +1,47 @@
+Análisis con ajuste
+INFO     rapp.analysis.phase_diff - Calculating phase difference for data\2024-05-30-quarz-plate\off...                             phase_diff.py:27
+INFO     rapp.analysis.phase_diff - Detected phase difference (analyzer angles): φ=(-44.385151 ± 9.5e-05)° (k=1)
+
+INFO     rapp.analysis.phase_diff - Calculating phase difference for data\2024-05-30-quarz-plate\on-exp1...                         phase_diff.py:27
+INFO     rapp.analysis.phase_diff - Detected phase difference (analyzer angles): φ=(-54.139426 ± 9.7e-05)° (k=1).
+Rotación óptica exp 1: -9.754275
+
+INFO     rapp.analysis.phase_diff - Calculating phase difference for data\2024-05-30-quarz-plate\on-exp2...                         phase_diff.py:27
+INFO     rapp.analysis.phase_diff - Detected phase difference (analyzer angles): φ=(-55.660552 ± 9.6e-05)° (k=1)
+Rotación óptica exp 2: -11.275401
+
+INFO     rapp.analysis.phase_diff - Calculating phase difference for data\2024-05-30-quarz-plate\on-exp3...                         phase_diff.py:27
+INFO     rapp.analysis.phase_diff - Detected phase difference (analyzer angles): φ=(-70.67234 ± 5e-05)° (k=1).
+Rotación óptica exp 3: -26.287189 
+
+INFO     rapp.analysis.phase_diff - Calculating phase difference for data\2024-05-30-quarz-plate\on-exp4...                         phase_diff.py:27
+INFO     rapp.analysis.phase_diff - Detected phase difference (analyzer angles): φ=(-53.779813 ± 4.8e-05)° (k=1).
+Rotación óptica exp 4: -9.394662 
+
+INFO     rapp.analysis.phase_diff - Calculating phase difference for data\2024-05-30-quarz-plate\on-exp5...                         phase_diff.py:27
+INFO     rapp.analysis.phase_diff - Detected phase difference (analyzer angles): φ=(-52.62249 ± 4.6e-05)° (k=1).
+Rotación óptica exp 5: -8.237339
+
+Análisis con Fourier
+INFO     rapp.analysis.phase_diff - Calculating phase difference for data\2024-05-30-quarz-plate\off...                             phase_diff.py:27
+INFO     rapp.analysis.phase_diff - Detected phase difference (analyzer angles): φ=(-44.423381 ± 0.0)° (k=1)
+
+INFO     rapp.analysis.phase_diff - Calculating phase difference for data\2024-05-30-quarz-plate\on-exp1...                         phase_diff.py:27
+INFO     rapp.analysis.phase_diff - Detected phase difference (analyzer angles): φ=(-54.172792 ± 0.0)° (k=1)
+Rotación óptica exp 1: -9.749411 
+
+INFO     rapp.analysis.phase_diff - Calculating phase difference for data\2024-05-30-quarz-plate\on-exp2...                         phase_diff.py:27
+INFO     rapp.analysis.phase_diff - Detected phase difference (analyzer angles): φ=(-55.692051 ± 0.0)° (k=1).
+Rotación óptica exp 2: -11.26867 
+
+INFO     rapp.analysis.phase_diff - Calculating phase difference for data\2024-05-30-quarz-plate\on-exp3...                         phase_diff.py:27
+INFO     rapp.analysis.phase_diff - Detected phase difference (analyzer angles): φ=(-70.826117 ± 0.0)° (k=1).
+Rotación óptica exp 3: -26.402736 
+
+INFO     rapp.analysis.phase_diff - Calculating phase difference for data\2024-05-30-quarz-plate\on-exp4...                         phase_diff.py:27
+INFO     rapp.analysis.phase_diff - Detected phase difference (analyzer angles): φ=(-53.959466 ± 0.0)° (k=1)
+Rotación óptica exp 4: -9.536085 
+
+INFO     rapp.analysis.phase_diff - Calculating phase difference for data\2024-05-30-quarz-plate\on-exp5...                         phase_diff.py:27
+INFO     rapp.analysis.phase_diff - Detected phase difference (analyzer angles): φ=(-52.805094 ± 0.0)° (k=1)
+Rotación óptica exp 5: -8.381713 
