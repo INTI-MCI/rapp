@@ -20,7 +20,6 @@ COLUMN_CH0 = 'CH0'
 COLUMN_CH1 = 'CH1'
 COLUMN_CH2 = 'NORM'
 COLUMN_ANGLE = 'ANGLE'
-COLUMN_DATETIME = 'DATETIME'
 ALLOWED_COLUMNS = [COLUMN_ANGLE, COLUMN_CH0, COLUMN_CH1, COLUMN_CH2]
 
 DELIMITER = ","
@@ -129,6 +128,12 @@ class Measurement:
     def ch2(self):
         """Returns CHANNEL 2 data."""
         return self._data[COLUMN_CH2]
+
+    def norm_data(self):
+        """Returns normalization data, if exists."""
+        if COLUMN_CH2 in self._data:
+            return self._data[COLUMN_CH2]
+        return None
 
     def swap_channels(self):
         self._data[[COLUMN_CH0, COLUMN_CH1]] = self._data[[COLUMN_CH1, COLUMN_CH0]]

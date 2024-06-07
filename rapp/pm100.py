@@ -1,7 +1,7 @@
 import pyvisa
 from ThorlabsPM100 import ThorlabsPM100
 import logging
-from mocks import ThorlabsPM100Mock
+from rapp.mocks import ThorlabsPM100Mock
 
 logger = logging.getLogger(__name__)
 
@@ -49,7 +49,7 @@ class PM100:
     @classmethod
     def build(cls, resource):
         rm = pyvisa.ResourceManager()
-        if resource in rm.list_resources():
+        if resource in (*(rm.list_resources()), "mock"):
             return cls(resource, rm)
         else:
             return None
