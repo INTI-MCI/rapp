@@ -44,19 +44,21 @@ class ThorlabsPM100Mock:
         self.initiate = self._innerA
         self._fetch = 0
 
-        @property
-        def read(self):
-            time.sleep(self.get_delay_time())
-            return random.gammavariate(alpha=1, beta=1)
+    @property
+    def read(self):
+        time.sleep(self.get_delay_time())
+        return random.gammavariate(alpha=1, beta=1)
 
-        @property
-        def fetch(self):
-            wait_time = self.get_delay_time() - self.initiate.start_time
+    @property
+    def fetch(self):
+        wait_time = self.get_delay_time() - (time.time() - self.initiate.start_time)
+        if wait_time > 0:
             time.sleep(wait_time)
-            return random.gammavariate(alpha=1, beta=1)
+        self._fetch = random.gammavariate(alpha=1, beta=1)
+        return self._fetch
 
-        def get_delay_time(self):
-            return 3e-3 * self.sense.average.count
+    def get_delay_time(self):
+        return 3e-3 * self.sense.average.count
 
 
 class innerAThorlabs:
@@ -75,8 +77,8 @@ class innerAThorlabs:
         # Configure
         self.scalar = self.innerB
 
-        def immediate(self):
-            self.start_time = time.time()
+    def immediate(self):
+        self.start_time = time.time()
 
 
 class innerBThorlabs:
@@ -91,7 +93,7 @@ class innerBThorlabs:
         # Input
         self.filter = self.innerC
 
-    def power():
+    def power(self):
         # Configure
         return random.gammavariate(alpha=1, beta=1)
 
