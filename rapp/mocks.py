@@ -32,32 +32,81 @@ class SerialMock:
         return random.randint(1000, 5000)
 
 
-class PM100Mock:
-    """Mock object for ThorlabsPM100."""
+class ThorlabsPM100Mock:
+    def __init__(self):
+        self._innerA = innerAThorlabs()
+        self.system = self._innerA
+        self.sense = self._innerA
+        self.input = self._innerA
+        self.configure = self._innerA
+        self.getconfigure = 'POW'
+        self._read = 0
+        self.initiate = self._innerA
+        self._fetch = 0
 
-    def __init__(self, resource, delay=3e-3):
-        self.resource = resource
-        self.delay = delay
+        @property
+        def read(self):
+            time.sleep(self.get_delay_time())
+            return random.gammavariate(alpha=1, beta=1)
 
-    @classmethod
-    def build(cls, resource):
-        return cls(resource)
+        @property
+        def fetch(self):
+            wait_time = self.get_delay_time() - self.initiate.start_time
+            time.sleep(wait_time)
+            return random.gammavariate(alpha=1, beta=1)
 
-    def get_voltage(self):
-        time.sleep(self.delay)
-        return self._random_value()
+        def get_delay_time(self):
+            return 3e-3 * self.sense.average.count
 
-    def start_measurement(self):
-        pass
 
-    def fetch_measurement(self):
-        return self._random_value()
+class innerAThorlabs:
+    def __init__(self):
+        self.innerB = innerBThorlabs()
+        self.start_time = time.time()
+        # System
+        self.lfrequency = 50
+        self.sensor = self.innerB
+        # Sense
+        self.average = self.innerB
+        self.correction = self.innerB
+        self.power = self.innerB
+        # Input
+        self.pdiode = self.innerB
+        # Configure
+        self.scalar = self.innerB
 
-    def _random_value(self):
+        def immediate(self):
+            self.start_time = time.time()
+
+
+class innerBThorlabs:
+    def __init__(self) -> None:
+        self.innerC = innerCThorlabs()
+        # System
+        self.idn = "Mocked sensor"
+        # Sense
+        self.count = 1
+        self.wavelength = 633
+        self.dc = self.innerC
+        # Input
+        self.filter = self.innerC
+
+    def power():
+        # Configure
         return random.gammavariate(alpha=1, beta=1)
 
-    def close(self):
-        pass
 
-    def set_average_count(self, average_count):
-        pass
+class innerCThorlabs:
+    def __init__(self) -> None:
+        self.innerD = innerDThorlabs()
+        # Input
+        self.lpass = self.innerD
+        # Sense
+        self.range = self.innerD
+
+
+class innerDThorlabs:
+    def __init__(self) -> None:
+        self.state = 1
+        self.auto = 'ON'
+        self.upper = 1

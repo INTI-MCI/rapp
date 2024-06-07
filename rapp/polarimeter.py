@@ -13,7 +13,6 @@ from rich.progress import track
 from rapp import constants as ct
 from rapp.adc import ADC
 from rapp.data_file import DataFile
-from rapp.mocks import PM100Mock
 from rapp.motion_controller import ESP301
 from rapp.rotary_stage import RotaryStage, RotaryStageError
 from rapp.utils import split_number_to_list
@@ -254,14 +253,16 @@ def run(
         mock_serial=mock_adc)
 
     # Search for Normalization Detector and build
+
     if mock_pm100:
         logger.warning("Using PM100 mock object.")
-        pm100 = PM100Mock(THORLABS_PM100_VISA_WIN)
+        resource = "mock"
     else:
+        resource = THORLABS_PM100_VISA_WIN if os.name == "nt" else THORLABS_PM100_VISA_LINUX
         logger.info("Connecting to Thorlabs PM100.")
-        pm100 = PM100.build(THORLABS_PM100_VISA_WIN)
-        if pm100 is None:
-            logger.info("PM100 not detected.")
+    pm100 = PM100.build(resource)
+    if pm100 is None:
+        logger.info("PM100 not detected.")
 
     logger.info("Connecting Analyzer...")
     analyzer = RotaryStage(
