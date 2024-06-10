@@ -34,14 +34,13 @@ class SerialMock:
 
 class ThorlabsPM100Mock:
     def __init__(self):
-        self._innerA = innerAThorlabs()
-        self.system = self._innerA
-        self.sense = self._innerA
-        self.input = self._innerA
-        self.configure = self._innerA
+        self.system = SystemPM100Mock()
+        self.sense = SensePM100Mock()
+        self.input = InputPM100Mock()
+        self.configure = ConfigurePM100Mock()
         self.getconfigure = 'POW'
         self._read = 0
-        self.initiate = self._innerA
+        self.initiate = InitiatePM100Mock()
         self._fetch = 0
 
     @property
@@ -61,54 +60,83 @@ class ThorlabsPM100Mock:
         return 3e-3 * self.sense.average.count
 
 
-class innerAThorlabs:
-    def __init__(self):
-        self.innerB = innerBThorlabs()
-        self.start_time = time.time()
-        # System
-        self.lfrequency = 50
-        self.sensor = self.innerB
-        # Sense
-        self.average = self.innerB
-        self.correction = self.innerB
-        self.power = self.innerB
-        # Input
-        self.pdiode = self.innerB
-        # Configure
-        self.scalar = self.innerB
-
-    def immediate(self):
-        self.start_time = time.time()
-
-
-class innerBThorlabs:
+class SystemPM100Mock:
     def __init__(self) -> None:
-        self.innerC = innerCThorlabs()
-        # System
-        self.idn = "Mocked sensor"
-        # Sense
-        self.count = 1
-        self.wavelength = 633
-        self.dc = self.innerC
-        # Input
-        self.filter = self.innerC
+        self.lfrequency = 50
+        self.sensor = SystemSensorPM100Mock()
 
+
+class SystemSensorPM100Mock:
+    def __init__(self) -> None:
+        self.idn = "Mocked sensor"
+
+
+class SensePM100Mock:
+    def __init__(self) -> None:
+        self.average = SenseAveragePM100Mock()
+        self.correction = SenseCorrectionPM100Mock()
+        self.power = SensePowerPM100Mock()
+
+
+class SenseAveragePM100Mock:
+    def __init__(self) -> None:
+        self.count = 1
+
+
+class SenseCorrectionPM100Mock:
+    def __init__(self) -> None:
+        self.wavelength = 633
+
+
+class SensePowerPM100Mock:
+    def __init__(self) -> None:
+        self.dc = SensePowerDCPM100Mock()
+
+
+class SensePowerDCPM100Mock:
+    def __init__(self) -> None:
+        self.range = SensePowerDcRangePM100Mock()
+
+
+class SensePowerDcRangePM100Mock:
+    def __init__(self) -> None:
+        self.auto = 'ON'
+        self.upper = 1
+
+
+class InputPM100Mock:
+    def __init__(self) -> None:
+        self.pdiode = InputPdiodePM100Mock()
+
+
+class InputPdiodePM100Mock:
+    def __init__(self) -> None:
+        self.filter = InputPdiodeFilterPM100Mock()
+
+
+class InputPdiodeFilterPM100Mock:
+    def __init__(self) -> None:
+        self.lpass = InputPdiodeFilterLpassPM100Mock()
+
+
+class InputPdiodeFilterLpassPM100Mock:
+    def __init__(self) -> None:
+        self.state = 1
+
+
+class ConfigurePM100Mock:
+    def __init__(self) -> None:
+        self.scalar = ConfigureScalarPM100Mock()
+
+
+class ConfigureScalarPM100Mock:
     def power(self):
-        # Configure
         return random.gammavariate(alpha=1, beta=1)
 
 
-class innerCThorlabs:
-    def __init__(self) -> None:
-        self.innerD = innerDThorlabs()
-        # Input
-        self.lpass = self.innerD
-        # Sense
-        self.range = self.innerD
+class InitiatePM100Mock:
+    def __init__(self):
+        self.start_time = time.time()
 
-
-class innerDThorlabs:
-    def __init__(self) -> None:
-        self.state = 1
-        self.auto = 'ON'
-        self.upper = 1
+    def immediate(self):
+        self.start_time = time.time()
