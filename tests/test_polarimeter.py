@@ -13,7 +13,7 @@ from pathlib import Path
 FILE_DELIMITER = "\t"
 
 
-def test_main(tmp_path):
+def test_main_pm100_mocked(tmp_path):
     config = dict(
         cycles=0,
         samples=1,
