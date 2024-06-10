@@ -2,8 +2,11 @@ import pyvisa
 from ThorlabsPM100 import ThorlabsPM100
 import logging
 from rapp.mocks import ThorlabsPM100Mock
+import time
 
 logger = logging.getLogger(__name__)
+
+TOLERABLE_COMM_TIME = 0.01
 
 
 class PM100Error(Exception):
@@ -11,16 +14,20 @@ class PM100Error(Exception):
 
 
 class PM100:
-    def __init__(self, resource, rm, average_count=1, wavelength=633, timeout=25000):
+    def __init__(
+            self, resource, rm, average_count=1, wavelength=633, timeout=25000, warnings=True
+    ):
         """
         resource: if unknown, use list_resources
         rm: VISA Resource Manager
         average_count: amount of averaged samples. Each of them taked 3 ms
         wavelength: operation wavelength [nm]
         timeout: [ms]
+        warnings: (de)activate warnings
         """
         self.resource = resource
         self._rm = rm
+        self.warnings = warnings
 
         if resource == "mock":
             self._pd = ThorlabsPM100Mock()
@@ -77,4 +84,11 @@ class PM100:
         self._pd.initiate.immediate()
 
     def fetch_measurement(self):
-        return self._pd.fetch
+        if self.warnings:
+            time_pre_fetch = time.time()
+        value = self._pd.fetch
+        if self.warnings:
+            elapsed_time = time.time() - time_pre_fetch
+            if elapsed_time > TOLERABLE_COMM_TIME:
+                logger.warning(f"Thorlabs PM100 fetch time was {elapsed_time:.2f} s.")
+        return value
