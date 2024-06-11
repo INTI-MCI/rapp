@@ -1,9 +1,6 @@
 import sys
-import os
 import logging
 import argparse
-
-from pathlib import Path
 
 from rich.logging import RichHandler
 
@@ -58,14 +55,9 @@ class CLI:
 
     def _setup_logger(self):
         rh = RichHandler(level="NOTSET")
-        rh.setFormatter(logging.Formatter(self.LOG_FORMAT_RICH))
+        rh.setFormatter(logging.Formatter(self.LOG_FORMAT))
 
-        os.makedirs(self.args.work_dir, exist_ok=True)
-        log_file = Path(self.args.work_dir).joinpath("{}.log".format(self.NAME))
-
-        logging.basicConfig(
-            level=logging.INFO,
-            format=self.LOG_FORMAT, handlers=[logging.FileHandler(log_file), rh])
+        logging.basicConfig(level=logging.INFO, format=self.LOG_FORMAT, handlers=[rh])
 
         for module in self.SUPRESS_LOG:
             logging.getLogger(module).setLevel(logging.ERROR)
@@ -78,8 +70,7 @@ class RAPPError(Exception):
 class RAPP(CLI):
     NAME = 'RAPP'
     DESCRIPTION = 'Tools for measuring the rotation angle of the plane of polarization (RAPP).'
-    LOG_FORMAT_RICH = '%(name)s - %(message)s'
-    LOG_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+    LOG_FORMAT = '%(name)s - %(message)s'
 
     # packages / moudules for which to supress any log level except ERROR.
     SUPRESS_LOG = ['matplotlib', 'PIL']
