@@ -40,7 +40,8 @@ MOTION_CONTROLLER_PORT = "COM4"
 # MOTION_CONTROLLER_PORT = '/dev/ttyACM0'
 MOTION_CONTROLLER_BAUDRATE = 921600
 
-LOG_FILENAME = "rapp.log"
+LOG_FILE_NAME = "rapp.log"
+LOG_FILE_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 
 
 def resolve_adc_port():
@@ -205,6 +206,13 @@ class Polarimeter:
         return int(delay_adc / THORLABS_PM100_TIME_PER_SAMPLE_MS * 1e3)
 
 
+def setup_log_file(filepath):
+    formatter = logging.Formatter(LOG_FILE_FORMAT)
+    fh = logging.FileHandler(filepath, mode='w')
+    fh.setFormatter(formatter)
+    logger.addHandler(fh)
+
+
 def run(
     samples: int = 169,
     cycles: float = 0,
@@ -232,8 +240,12 @@ def run(
 
     params = "cycles{}-step{}-samples{}".format(cycles, step, samples)
     measurement_name = f"{date.today()}-{prefix}-{params}"
-    measurement_dir = Path(work_dir).joinpath(ct.OUTPUT_FOLDER_DATA, measurement_name)
+    output_folder = Path(work_dir).joinpath(ct.OUTPUT_FOLDER_DATA)
+    measurement_dir = output_folder.joinpath(measurement_name)
     os.makedirs(measurement_dir, exist_ok=True)
+
+    log_filename = Path(output_folder).joinpath("{}.log".format(measurement_name))
+    setup_log_file(log_filename)
 
     logger.info("Writing metadata...")
     metadata_file = measurement_dir.joinpath("metadata.json")
