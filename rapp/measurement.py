@@ -37,7 +37,7 @@ def parse_input_parameters_from_filepath(filepath):
     step = step_find[0] if step_find else 0
     samples = samples_find[0] if samples_find else 0
 
-    return dict(cycles=cycles, step=step, samples=samples)
+    return dict(cycles=float(cycles), step=float(step), samples=int(samples))
 
 
 TypeMeasurement = TypeVar('TypeMeasurement', bound='Measurement')
