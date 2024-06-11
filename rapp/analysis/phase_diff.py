@@ -17,6 +17,11 @@ logger = logging.getLogger(__name__)
 
 COVERAGE_FACTOR = 3
 
+TABLE_COLUMNS = [
+    "CYCLES", "STEP", "SAMPLES", "REPS",
+    "CH0 MEAN", "CH0 STD", "CH1 MEAN", "CH1 STD", "DIFF MEAN", "DIFF STD", "DIFF STD STD"
+]
+
 
 def sine(xs, a, phi, c):
     return a * np.sin(4 * xs + phi) + c
@@ -30,9 +35,6 @@ def phase_difference_from_folder(
     files = sorted([os.path.join(folder, x) for x in os.listdir(folder) if x.endswith('csv')])
     if not files:
         raise ValueError("Folder does not contain measurements!")
-
-    # files = files[1:]  # First measurement is broken in data/2024-03-05-repeatability/hwp0
-    # files = files[:-1]   # Last measurement is broken in data/2024-04-05-simple-setup
 
     results = []
 
@@ -81,41 +83,75 @@ def phase_difference_from_folder(
 
     if len(phi1) > 0:
         std_phi1 = np.std(phi1)
+        mean_phi1 = np.mean(phi1)
         logger.info("STD phase of CH0: {}".format(std_phi1))
 
     if len(phi2) > 0:
         std_phi2 = np.std(phi2)
+        mean_phi2 = np.mean(phi2)
         logger.info("STD phase of CH1: {}".format(std_phi2))
 
-    std_phase_diffs = np.std(phase_diffs, ddof=1)
+    mean_phase_diff = np.mean(phase_diffs)
+    std_phase_diff = np.std(phase_diffs, ddof=1)
     # Standard deviation of the sample standard deviation.
     # The latter should be np.std(phase_diffs, ddof=1).
     # See https://stats.stackexchange.com/questions/631/standard-deviation-of-standard-deviation
     n = len(phase_diffs)
-    std_std = std_phase_diffs * np.sqrt(1 - 2/(n - 1) * (gamma(n/2) / gamma((n-1)/2))**2)
+    std_std = std_phase_diff * np.sqrt(1 - 2/(n - 1) * (gamma(n/2) / gamma((n-1)/2))**2)
 
-    logger.info("STD phase difference: {:.5f} ± {:.5f} (k=1)".format(std_phase_diffs, std_std))
+    logger.info("STD phase difference: {:.5f} ± {:.5f} (k=1)".format(std_phase_diff, std_std))
 
+    reps = len(files)
+
+    row = [
+        measurement._cycles,
+        measurement._step,
+        measurement._samples,
+        reps,
+        mean_phi1,
+        std_phi1,
+        mean_phi2,
+        std_phi2,
+        mean_phase_diff,
+        std_phase_diff,
+        std_std
+    ]
+
+    logger.info("ROW FOR TABLE: ")
+    print(TABLE_COLUMNS)
+    print(*row, sep='\t')
+
+    # PLOTS
     output_folder = os.path.join(ct.WORK_DIR, ct.OUTPUT_FOLDER_PLOTS)
 
-    plot = Plot(ylabel="Fase intrínseca CH0 (°)", xlabel="Nro de repetición",
-                folder=output_folder)
-    plot.add_data(phi1, style='.-', color='k', label='STD = {}°'.format(
-        round_to_n(std_phi1, 2)))
-    plot.legend()
-    plot.save(filename="phase-CH0-vs-time.png")
+    f, axs = plt.subplots(
+        1, 3,
+        figsize=(12, 4),
+        # subplot_kw=dict(box_aspect=1),
+        sharey=False,
+        sharex=True
+    )
 
-    plot = Plot(ylabel="Fase intrínseca CH1 (°)", xlabel="Nro de repetición",
-                folder=output_folder)
-    plot.add_data(phi2, style='.-', color='k', label='STD = {}°'.format(
-        round_to_n(std_phi2, 2)))
-    plot.legend()
-    plot.save(filename="phase-CH1-vs-time.png")
+    axs[0].plot(phi1, '.-', color='k', label='STD = {}°'.format(round_to_n(std_phi1, 2)))
+    axs[0].set_title("CH0")
+    axs[0].set_ylabel("Fase intrínseca (°)")
+    axs[0].set_xlabel("Nro de repetición")
+    axs[0].legend()
 
-    plot = Plot(ylabel="Diferencia de fase (°)", xlabel="Nro de repetición",
-                folder=output_folder)
-    plot.add_data(phase_diffs, style='.-', color='k')
-    plot.save(filename="difference-vs-time.png")
+    axs[1].plot(phi2, '.-', color='k', label='STD = {}°'.format(round_to_n(std_phi2, 2)))
+    axs[1].set_ylabel("Fase intrínseca (°)")
+    axs[1].set_xlabel("Nro de repetición")
+    axs[1].set_title("CH1")
+
+    axs[2].plot(phase_diffs, '.-', color='k')
+    axs[2].set_ylabel("Diferencia de fase (°)")
+    axs[2].set_xlabel("Nro de repetición")
+    axs[2].set_title("DIFF")
+
+    f.tight_layout()
+
+    filename = os.path.join(output_folder, "difference-vs-time.png")
+    f.savefig(fname=filename)
 
     counts, edges = np.histogram(phase_diffs, density=True)
     centers = (edges + np.diff(edges)[0] / 2)[:-1]
