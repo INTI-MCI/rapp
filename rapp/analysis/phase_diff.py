@@ -5,6 +5,7 @@ import numpy as np
 
 from matplotlib import pyplot as plt
 from scipy.optimize import curve_fit
+from scipy.special import gamma
 
 
 from rapp import constants as ct
@@ -86,7 +87,14 @@ def phase_difference_from_folder(
         std_phi2 = np.std(phi2)
         logger.info("STD phase of CH1: {}".format(std_phi2))
 
-    logger.info("STD phase difference: {}".format(np.std(phase_diffs)))
+    std_phase_diffs = np.std(phase_diffs, ddof=1)
+    # Standard deviation of the sample standard deviation.
+    # The latter should be np.std(phase_diffs, ddof=1).
+    # See https://stats.stackexchange.com/questions/631/standard-deviation-of-standard-deviation
+    n = len(phase_diffs)
+    std_std = std_phase_diffs * np.sqrt(1 - 2/(n - 1) * (gamma(n/2) / gamma((n-1)/2))**2)
+
+    logger.info("STD phase difference: {:.5f} ± {:.5f} (k=1)".format(std_phase_diffs, std_std))
 
     output_folder = os.path.join(ct.WORK_DIR, ct.OUTPUT_FOLDER_PLOTS)
 
