@@ -1,6 +1,6 @@
 import os
 
-from rapp.polarimeter import main, Polarimeter
+from rapp import polarimeter
 from rapp.motion_controller import ESP301, ESP301Error
 from rapp.rotary_stage import RotaryStage
 from rapp.data_file import DataFile
@@ -14,17 +14,18 @@ FILE_DELIMITER = "\t"
 
 
 def test_main(tmp_path):
-    main(
+    config = dict(
         cycles=0,
         samples=1,
         delay_position=0,
-        hwp_delay=0,
+        hwp_delay_position=0,
         mock_esp=True,
         mock_adc=True,
         overwrite=True,
         work_dir=tmp_path,
-        # plot=True
     )
+
+    polarimeter.run(**config)
 
 
 class MotionControllerMock(ESP301):
@@ -69,12 +70,12 @@ def test_motion_controller_failure(tmp_path):
 
     data_file = DataFile(overwrite=True, delimiter=FILE_DELIMITER, output_dir=output_dir)
 
-    polarimeter = Polarimeter(adc, analyzer, hwp, data_file, wait=0)
+    p = polarimeter.Polarimeter(adc, analyzer, hwp, data_file, wait=0)
 
-    failures = polarimeter.start(samples, reps=reps)
+    failures = p.start(samples, reps=reps)
     assert failures == 1
 
-    polarimeter.close()
+    p.close()
 
     files_in_dir = os.listdir(output_dir)
     assert len(files_in_dir) == 6

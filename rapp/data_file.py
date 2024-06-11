@@ -4,15 +4,23 @@ import os
 class DataFile:
     MESSAGE_OVERWRITE = "File already exists. Do you want to overwrite it? y/n (default is NO): "
 
-    def __init__(self, overwrite=False, output_dir='data', prefix=None, delimiter=','):
+    def __init__(
+        self,
+        overwrite: bool = False,
+        output_dir: str = 'data',
+        header: str = None,
+        column_names: list = None,
+        prefix: str = None,
+        delimiter: str = ','
+    ):
         self._overwrite = overwrite
         self._output_dir = output_dir
-        self._file = None
+        self._header = header
+        self._column_names = column_names
         self._prefix = prefix
+        self._delimiter = delimiter
 
-        self.header = None
-        self.column_names = None
-        self.delimiter = delimiter
+        self._file = None
 
     @property
     def path(self):
@@ -46,7 +54,7 @@ class DataFile:
         Args:
             row: iterable with values of each column.
         """
-        row = "{}".format(self.delimiter).join(map(str, row))
+        row = "{}".format(self._delimiter).join(map(str, row))
         self.write(row)
 
     def write(self, string, new_line=True):
@@ -65,12 +73,12 @@ class DataFile:
         return False
 
     def _add_header(self):
-        if self.header is not None:
-            self.write(self.header)
+        if self._header is not None:
+            self.write(self._header)
 
     def _add_column_names(self):
-        if self.column_names is not None:
-            names = "{}".format(self.delimiter).join(map(str, self.column_names))
+        if self._column_names is not None:
+            names = "{}".format(self._delimiter).join(map(str, self._column_names))
             self.write(names)
 
     def remove(self):

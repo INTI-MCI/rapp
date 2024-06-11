@@ -22,13 +22,14 @@ class ESP301:
         serial: serial connection to the motion controller.
         axis: axis to use in every command unless specified otherwise.
         useaxis: list of axis that are going to be used.
+        motors_on: turn motors ON for all axis in use.
     """
 
     ALLOWED_AXES = (1, 2, 3)
     PORT = '/dev/ttyACM0'
     BAUDRATE = 19200
 
-    def __init__(self, serial, axis=1, useaxes=None):
+    def __init__(self, serial, axis=1, useaxes=None, motors_on=False):
         self._serial = serial
         self.axes_in_use = useaxes
         self.default_axis = axis
@@ -36,9 +37,10 @@ class ESP301:
         if self.axes_in_use is None:
             self.axes_in_use = [axis]
 
-        for n in self.axes_in_use:
-            logger.info("Setting motor ON for axis: {}".format(n))
-            self.motor_on(axis=n)
+        if motors_on:
+            for n in self.axes_in_use:
+                logger.info("Setting motor ON for axis: {}".format(n))
+                self.motor_on(axis=n)
 
     @classmethod
     def build(cls, port=PORT, b=BAUDRATE, mock_serial=False, **kwargs):
@@ -55,9 +57,10 @@ class ESP301:
         """
         if mock_serial:
             logger.warning("Using mocked serial connection.")
-            return cls(SerialMock(), **kwargs)
+            serial_connection = SerialMock()
+        else:
+            serial_connection = cls.get_serial_connection(port, baudrate=b)
 
-        serial_connection = cls.get_serial_connection(port, baudrate=b)
         return cls(serial_connection, **kwargs)
 
     @staticmethod

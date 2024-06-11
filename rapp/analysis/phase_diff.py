@@ -165,10 +165,10 @@ def phase_difference(
     return (xs, s1, s2, s1err, s2err, res)
 
 
-def plot_phase_difference(phase_diff_result, filename=None, show=False):
+def plot_phase_difference(phase_diff_result, work_dir=ct.WORK_DIR, filename=None, show=False):
     xs, s1, s2, s1err, s2err, res = phase_diff_result
 
-    output_folder = os.path.join(ct.WORK_DIR, ct.OUTPUT_FOLDER_PLOTS)
+    output_folder = os.path.join(work_dir, ct.OUTPUT_FOLDER_PLOTS)
     create_folder(output_folder)
 
     # Plot data and sinusoidal fits

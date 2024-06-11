@@ -6,6 +6,7 @@ import numpy as np
 
 from rich.progress import track
 
+from rapp.mocks import SerialMock
 
 logger = logging.getLogger(__name__)
 
@@ -64,14 +65,14 @@ class ADC:
         self._in_bytes = in_bytes
         self._ch0 = ch0
         self._ch1 = ch1
-        self.progressbar = progressbar
+        self.progressbar = ch0 != ch1
         self.max_V, self._multiplier_mV = GAINS[gain]
 
         if not (ch0 or ch1):
             raise ADCError(MESSAGE_CHANNELS)
 
     @classmethod
-    def build(cls, port=PORT, b=BAUDRATE, timeout=TIMEOUT, wait=WAIT, **kwargs):
+    def build(cls, port=PORT, b=BAUDRATE, timeout=TIMEOUT, wait=WAIT, mock_serial=False, **kwargs):
         """Builds an ADC object.
 
         Args:
@@ -79,17 +80,22 @@ class ADC:
             baudrate: bits per second.
             timeout: read timeout (seconds).
             wait: time to wait after making a connection (seconds).
+            mock_serial: if True, uses a mocked serial connection.
             kwargs: optional arguments for ADC constructor
 
         Returns:
             ADC: an instantiated AD object.
         """
-        serial_connection = cls.get_serial_connection(port, baudrate=b, timeout=timeout)
-        logger.info("Waiting {} seconds after connecting to ADC...".format(wait))
-        # Arduino resets when a new serial connection is made.
-        # We need to wait, otherwise we don't receive anything.
-        # TODO: check if we can avoid that Arduino resets.
-        time.sleep(wait)
+        if mock_serial:
+            logger.warning("Using mocked serial connection.")
+            serial_connection = SerialMock()
+        else:
+            serial_connection = cls.get_serial_connection(port, baudrate=b, timeout=timeout)
+            logger.info("Waiting {} seconds after connecting to ADC...".format(wait))
+            # Arduino resets when a new serial connection is made.
+            # We need to wait, otherwise we don't receive anything.
+            # TODO: check if we can avoid that Arduino resets.
+            time.sleep(wait)
 
         return cls(serial_connection, **kwargs)
 

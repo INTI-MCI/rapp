@@ -1,6 +1,7 @@
 import os
 import sys
 import time
+import json
 import logging
 from pathlib import Path
 from datetime import date
@@ -12,7 +13,6 @@ from rich.progress import track
 from rapp import constants as ct
 from rapp.adc import ADC
 from rapp.data_file import DataFile
-from rapp.mocks import SerialMock
 from rapp.motion_controller import ESP301
 from rapp.rotary_stage import RotaryStage, RotaryStageError
 from rapp.utils import split_number_to_list
@@ -23,8 +23,8 @@ np.set_printoptions(threshold=0, edgeitems=5, suppress=True)
 logger = logging.getLogger(__name__)
 
 
-ADC_WIN_DEVICE = 'COM3'
-ADC_LINUX_DEVICE = '/dev/ttyACM0'
+ADC_WIN_PORT = 'COM3'
+ADC_LINUX_PORT = '/dev/ttyACM0'
 
 ADC_BAUDRATE = 57600
 ADC_TIMEOUT = 0.1
@@ -33,24 +33,22 @@ ADC_WAIT = 2
 MOTION_CONTROLLER_PORT = "COM4"
 # MOTION_CONTROLLER_PORT = '/dev/ttyACM0'
 MOTION_CONTROLLER_BAUDRATE = 921600
-MOTION_CONTROLLER_WAIT = 15  # Time to wait after error before reconnecting
 
-LOG_FILENAME = "rapp-{datetime}.log"
+LOG_FILENAME = "rapp.log"
 
 
 def resolve_adc_port():
     if sys.platform == 'linux':
-        return ADC_LINUX_DEVICE
+        return ADC_LINUX_PORT
 
-    return ADC_WIN_DEVICE
+    return ADC_WIN_PORT
 
 
 FILE_DELIMITER = ","
-FILE_COLUMN_NAMES = ["ANGLE", "CH0", "CH1"]
-FILE_NAME = "cycles{}-step{}-samples{}-rep{}.csv"
+FILE_COLUMNS = ["ANGLE", "CH0", "CH1"]
 FILE_HEADER = (
     "#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#\n"
-    "#~~~~~~~~~ RAPP measurements | INTI {date} ~~~~~~~~#\n"
+    "#~~~~~~~~~~~~~~ RAPP measurements | INTI ~~~~~~~~~~~~~~#\n"
     "#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#"
 )
 
@@ -102,9 +100,9 @@ class Polarimeter:
                 logger.info("HWP angle: {}°, repetition {}/{}".format(hwp_position, rep, reps))
 
                 self._analyzer.reset()
-                self._setup_data_file(samples, rep, hwp_position)
-                p_desc = 'rep no. {}: '.format(rep)
+                self._data_file.open(self._build_data_filename(rep, hwp_position))
 
+                p_desc = 'rep no. {}: '.format(rep)
                 try:
                     for position in track(
                         self._analyzer, style='white', description=p_desc, disable=not analyzer_bar
@@ -124,12 +122,6 @@ class Polarimeter:
         logger.info("Done!")
         logger.info("Results in file: {}".format(self._data_file.path))
         logger.info("Total of {} failures with the Motion Controller.".format(failures))
-
-        log_file = None
-        handler = logging.getLogger().handlers[1]
-        if hasattr(handler, 'baseFilename'):
-            log_file = handler.baseFilename
-            logger.info("The log is in: {}".format(log_file))
 
         self.close()
 
@@ -153,24 +145,14 @@ class Polarimeter:
         self._adc.close()
         self._analyzer.close()
 
-    def _build_data_file_name(self, samples, rep, hwp_position=None):
-        filename = FILE_NAME.format(self._analyzer.cycles, self._analyzer.step, samples, rep)
+    def _build_data_filename(self, rep, hwp_position=None):
+        filename = "rep{}.csv".format(rep)
 
         if hwp_position is not None:
             hwp_prefix = "hwp{}".format(hwp_position)
             filename = "{}-{}".format(hwp_prefix, filename)
 
         return filename
-
-    def _setup_data_file(self, samples, rep, hwp_position):
-        self._data_file.header = self._build_data_file_header()
-        self._data_file.column_names = FILE_COLUMN_NAMES
-        self._data_file.open(self._build_data_file_name(samples, rep, hwp_position))
-
-    def _build_data_file_header(self):
-        return FILE_HEADER.format(
-            date=date.today()
-        )
 
     def _add_data_to_file(self, data, position=None):
         logger.debug("Writing data to file...")
@@ -197,52 +179,67 @@ class Polarimeter:
         self._data_file.remove()
 
 
-def main(
-    samples=169, cycles=0, step=45, delay_position=0, velocity=4, no_ch0=False, no_ch1=False,
-    chunk_size=500, prefix='test', mock_esp=False, mock_adc=False, plot=False, overwrite=False,
-    hwp_cycles=0, hwp_step=45, hwp_delay=5, reps=1,
-    mc_wait=MOTION_CONTROLLER_WAIT, work_dir=ct.WORK_DIR
+def run(
+    samples: int = 169,
+    cycles: float = 0,
+    step: float = 45,
+    reps: int = 1,
+    delay_position: float = 0,
+    velocity: float = 4,
+    chunk_size: int = 500,
+    no_ch0: bool = False,
+    no_ch1: bool = False,
+    prefix: str = 'test',
+    mock_esp: bool = False,
+    mock_adc: bool = False,
+    overwrite: bool = False,
+    hwp_cycles: float = 0,
+    hwp_step: float = 45,
+    hwp_delay_position: float = 5,
+    mc_wait: float = 15,
+    work_dir: str = ct.WORK_DIR
 ):
 
-    log_filename = LOG_FILENAME.format(datetime=date.today().isoformat())
-    handler = logging.FileHandler(os.path.join(work_dir, log_filename))
-    logging.getLogger().addHandler(handler)
+    metadata = locals().copy()
+    del metadata['work_dir']
+
+    params = "cycles{}-step{}-samples{}".format(cycles, step, samples)
+    measurement_name = f"{date.today()}-{prefix}-{params}"
+    measurement_dir = Path(work_dir).joinpath(ct.OUTPUT_FOLDER_DATA, measurement_name)
+    os.makedirs(measurement_dir, exist_ok=True)
+
+    logger.info("Writing metadata...")
+    metadata_file = measurement_dir.joinpath("metadata.json")
+    with open(metadata_file, 'w') as f:
+        json.dump(metadata, f, indent=4)
 
     logger.info("Connecting to ESP Motion Controller...")
     motion_controller = ESP301.build(
-        MOTION_CONTROLLER_PORT, b=MOTION_CONTROLLER_BAUDRATE, useaxes=[1, 2], mock_serial=mock_esp
-    )
+        MOTION_CONTROLLER_PORT, b=MOTION_CONTROLLER_BAUDRATE,
+        useaxes=[1, 2], mock_serial=mock_esp)
 
-    # Build ADC
-    progressbar_chunk = no_ch0 != no_ch1
-    if mock_adc:
-        logger.warning("Using ADC mock object.")
-        adc = ADC(SerialMock(), ch0=not no_ch0, ch1=not no_ch1, progressbar=progressbar_chunk)
-    else:
-        logger.info("Connecting to ADC...")
-        adc = ADC.build(
-            resolve_adc_port(),
-            b=ADC_BAUDRATE, timeout=ADC_TIMEOUT, wait=ADC_WAIT, ch0=not no_ch0, ch1=not no_ch1,
-            progressbar=progressbar_chunk)
+    logger.info("Connecting to ADC...")
+    adc = ADC.build(
+        resolve_adc_port(), b=ADC_BAUDRATE, timeout=ADC_TIMEOUT, wait=ADC_WAIT,
+        ch0=not no_ch0,
+        ch1=not no_ch1,
+        mock_serial=mock_adc)
 
-    # Build Analyzer
+    logger.info("Connecting Analyzer...")
     analyzer = RotaryStage(
-        motion_controller, cycles, step, delay_position, velocity, axis=1,
-        name='Analyzer'
-    )
+        motion_controller, cycles, step, delay_position, velocity, axis=1, name='Analyzer')
 
-    # Build HalfWavePlate
+    logger.info("Connecting HalfWavePlate...")
     hwp = RotaryStage(
-        motion_controller, hwp_cycles, hwp_step, delay_position=hwp_delay, axis=2,
-        name='HalfWavePlate')
+        motion_controller, hwp_cycles, hwp_step, hwp_delay_position, axis=2, name='HalfWavePlate')
 
-    # Build DataFile
-    output_dir = Path(str(work_dir)).joinpath(ct.OUTPUT_FOLDER_DATA)
-    output_dir = str(output_dir)
-    data_file = DataFile(overwrite, prefix=prefix, delimiter=FILE_DELIMITER, output_dir=output_dir)
+    logger.info("Building DataFile...")
+    data_file = DataFile(
+        overwrite, header=FILE_HEADER, column_names=FILE_COLUMNS, delimiter=FILE_DELIMITER,
+        output_dir=measurement_dir)
 
-    # Build Polarimeter
+    logger.info("Building Polarimeter...")
     polarimeter = Polarimeter(adc, analyzer, hwp, data_file, wait=mc_wait)
 
-    # Start polarimeter measurement
+    logger.info("Starting measurement...")
     polarimeter.start(samples, chunk_size=chunk_size, reps=reps)

@@ -42,6 +42,6 @@ def test_methods(motion_controller):
     motion_controller.set_display_resolution(axis=1, resolution=3)
 
     with pytest.raises(ESP301Error):
-        ESP301(ErrorSerialMock())
+        ESP301(ErrorSerialMock(), motors_on=True)
 
     motion_controller.close()
