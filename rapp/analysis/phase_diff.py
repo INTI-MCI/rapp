@@ -168,7 +168,7 @@ def phase_difference(
     logger.info("Detected phase difference (analyzer angles): {}".format(log_phi))
 
     if method in ['ODR', 'NLS', 'WNLS', 'DFT'] and (filename or show):
-        plot_phase_difference((xs, s1, s2, s1err, s2err, res), filename, show)
+        plot_phase_difference((xs, s1, s2, s1err, s2err, res), filename=filename, show=show)
 
     return (xs, s1, s2, s1err, s2err, res)
 
@@ -176,7 +176,7 @@ def phase_difference(
 def plot_phase_difference(phase_diff_result, work_dir=ct.WORK_DIR, filename=None, show=False):
     xs, s1, s2, s1err, s2err, res = phase_diff_result
 
-    output_folder = os.path.join(work_dir, ct.OUTPUT_FOLDER_PLOTS)
+    output_folder = os.path.join(ct.WORK_DIR, ct.OUTPUT_FOLDER_PLOTS)
     create_folder(output_folder)
 
     # Plot data and sinusoidal fits
