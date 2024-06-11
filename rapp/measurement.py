@@ -125,10 +125,6 @@ class Measurement:
         """Returns CHANNEL 1 data."""
         return self._data[COLUMN_CH1]
 
-    def ch2(self):
-        """Returns CHANNEL 2 data."""
-        return self._data[COLUMN_CH2]
-
     def norm_data(self):
         """Returns normalization data, if exists."""
         if COLUMN_CH2 in self._data:
@@ -212,6 +208,8 @@ class Measurement:
             norm = _data.agg({COLUMN_CH2: ['mean', 'std']})[COLUMN_CH2]['mean']
             s1 /= norm
             s2 /= norm
+            s1u /= norm
+            s2u /= norm
 
         return xs, s1, s2, s1u, s2u
 
