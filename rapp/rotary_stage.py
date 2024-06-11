@@ -82,7 +82,7 @@ class RotaryStage(Iterator):
 
     def reset(self):
         """Resets position of the stage."""
-        logger.info("Searching HOME for axis: {}".format(self._axis))
+        logger.info("{} - Searching HOME...".format(str(self)))
         self._index = 0
         self._motion_controller.reset_axis(axis=self._axis)
         logger.info("HOME found.")
