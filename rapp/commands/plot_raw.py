@@ -18,7 +18,7 @@ def add_to_subparsers(subparsers):
     p.add_argument('filepath', type=str, help=HELP_FILEPATH)
     p.add_argument('--no-ch0', action='store_true', help=HELP_NOCH0)
     p.add_argument('--no-ch1', action='store_true', help=HELP_NOCH1)
-    p.add_argument('--show', action='store_true', help=ct.HELP_SHOW)
+    p.add_argument('-s', '--show', action='store_true', help=ct.HELP_SHOW)
     p.add_argument('-v', '--verbose', action='store_true', help=ct.HELP_VERBOSE)
 
 

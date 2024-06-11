@@ -16,6 +16,7 @@ from rapp.data_file import DataFile
 from rapp.motion_controller import ESP301
 from rapp.rotary_stage import RotaryStage, RotaryStageError
 from rapp.utils import split_number_to_list
+from rapp.pm100 import PM100
 
 
 # Always truncate arrays when printing, without scientific notation.
@@ -29,6 +30,11 @@ ADC_LINUX_PORT = '/dev/ttyACM0'
 ADC_BAUDRATE = 57600
 ADC_TIMEOUT = 0.1
 ADC_WAIT = 2
+ADC_SAMPLE_RATE = 840
+
+THORLABS_PM100_VISA_LINUX = "USB0::4883::32889::P1000529::0::INSTR"
+THORLABS_PM100_VISA_WIN = 'USB0::0x1313::0x8079::P1000529::INSTR'
+THORLABS_PM100_TIME_PER_SAMPLE_MS = 3
 
 MOTION_CONTROLLER_PORT = "COM4"
 # MOTION_CONTROLLER_PORT = '/dev/ttyACM0'
@@ -46,6 +52,7 @@ def resolve_adc_port():
 
 FILE_DELIMITER = ","
 FILE_COLUMNS = ["ANGLE", "CH0", "CH1"]
+FILE_NORMALIZATION_COLUMN_NAME = "NORM"
 FILE_HEADER = (
     "#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#\n"
     "#~~~~~~~~~~~~~~ RAPP measurements | INTI ~~~~~~~~~~~~~~#\n"
@@ -63,14 +70,17 @@ class Polarimeter:
         data_file: handles the file writing.
         wait: time to wait before reconnecting after motion controller error.
     """
+
     def __init__(
         self,
-        adc: ADC, analyzer: RotaryStage, hwp: RotaryStage, data_file: DataFile, wait: int = 10
+        adc: ADC, analyzer: RotaryStage, hwp: RotaryStage, data_file: DataFile,
+        normalization_detector: PM100 = None, wait: int = 10
     ):
         self._adc = adc
         self._analyzer = analyzer
         self._hwp = hwp
         self._data_file = data_file
+        self._norm_det = normalization_detector
         self._wait = wait
 
     def start(self, samples, chunk_size: int = 0, reps: int = 1):
@@ -139,11 +149,22 @@ class Polarimeter:
             n_samples = split_number_to_list(num=samples, size=chunk_size)
 
         for samples in n_samples:
-            yield self._adc.acquire(samples, flush=True)
+            if self._norm_det is not None:
+                self._norm_det.set_average_count(self._amount_samples_pm100(samples))
+                self._norm_det.start_measurement()
+
+            acquired_samples = self._adc.acquire(samples, flush=True)
+            if self._norm_det is not None:
+                normalization_value = self._norm_det.fetch_measurement()
+                acquired_samples = [(*acq_s, normalization_value) for acq_s in acquired_samples]
+            yield acquired_samples
 
     def close(self):
         self._adc.close()
         self._analyzer.close()
+
+        if self._norm_det is not None:
+            self._norm_det.close()
 
     def _build_data_filename(self, rep, hwp_position=None):
         filename = "rep{}.csv".format(rep)
@@ -178,6 +199,11 @@ class Polarimeter:
         logger.warning("Removing unfinished file...")
         self._data_file.remove()
 
+    def _amount_samples_pm100(self, samples):
+        n_channels = int(self._adc._ch0) + int(self._adc._ch1)
+        delay_adc = samples * n_channels / ADC_SAMPLE_RATE
+        return int(delay_adc / THORLABS_PM100_TIME_PER_SAMPLE_MS * 1e3)
+
 
 def run(
     samples: int = 169,
@@ -192,6 +218,7 @@ def run(
     prefix: str = 'test',
     mock_esp: bool = False,
     mock_adc: bool = False,
+    mock_pm100: bool = False,
     overwrite: bool = False,
     hwp_cycles: float = 0,
     hwp_step: float = 45,
@@ -225,6 +252,18 @@ def run(
         ch1=not no_ch1,
         mock_serial=mock_adc)
 
+    # Search for Normalization Detector and build
+
+    if mock_pm100:
+        logger.warning("Using PM100 mock object.")
+        resource = "mock"
+    else:
+        resource = THORLABS_PM100_VISA_WIN if os.name == "nt" else THORLABS_PM100_VISA_LINUX
+        logger.info("Connecting to Thorlabs PM100.")
+    pm100 = PM100.build(resource)
+    if pm100 is None:
+        logger.info("PM100 not detected.")
+
     logger.info("Connecting Analyzer...")
     analyzer = RotaryStage(
         motion_controller, cycles, step, delay_position, velocity, axis=1, name='Analyzer')
@@ -234,12 +273,16 @@ def run(
         motion_controller, hwp_cycles, hwp_step, hwp_delay_position, axis=2, name='HalfWavePlate')
 
     logger.info("Building DataFile...")
+    if pm100 is not None:
+        FILE_COLUMNS.append(FILE_NORMALIZATION_COLUMN_NAME)
     data_file = DataFile(
         overwrite, header=FILE_HEADER, column_names=FILE_COLUMNS, delimiter=FILE_DELIMITER,
         output_dir=measurement_dir)
 
     logger.info("Building Polarimeter...")
-    polarimeter = Polarimeter(adc, analyzer, hwp, data_file, wait=mc_wait)
+    polarimeter = Polarimeter(
+        adc, analyzer, hwp, data_file, normalization_detector=pm100, wait=mc_wait
+    )
 
     logger.info("Starting measurement...")
     polarimeter.start(samples, chunk_size=chunk_size, reps=reps)

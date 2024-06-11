@@ -30,6 +30,12 @@ def plot_raw(
 
     s1 = np.array(measurement.ch0())
     s2 = np.array(measurement.ch1())
+    s3 = measurement.norm_data()
+
+    # s1_n = s1/np.max(s1)
+    # s3_n = s3/np.max(s3)
+    if s3 is not None:
+        logger.info(np.max(s3))
 
     logger.info("STD: {}".format(np.std(s1)))
 
@@ -43,9 +49,11 @@ def plot_raw(
     if not no_ch1:
         plot.add_data(s2, style='--', color='k', lw=1.5, label='CH1')
 
-    norm_data = measurement.norm_data()
-    if norm_data is not None:
-        plot.add_data(norm_data, style='.-', lw=1.5, label='NORM')
+    if s3 is not None:
+        s3_range = np.max(s3) - np.min(s3)
+        s3_factor = np.max(s1) / s3_range
+        plot.add_data((s3 - np.min(s3)) * s3_factor, style='.-', lw=1.5,
+                      label=f'NORM (range:{s3_range:.2E}), avg:{s3.mean():.2E}')
 
     # plot._ax.hist(s1, bins=4)
     # plot._ax.xaxis.set_major_locator(plt.MaxNLocator(5))

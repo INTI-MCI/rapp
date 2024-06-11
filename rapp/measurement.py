@@ -19,7 +19,6 @@ A1_NOISE = [2.742854497294973, 0.0002145422291402638]
 COLUMN_CH0 = 'CH0'
 COLUMN_CH1 = 'CH1'
 COLUMN_CH2 = 'NORM'
-
 COLUMN_ANGLE = 'ANGLE'
 ALLOWED_COLUMNS = [COLUMN_ANGLE, COLUMN_CH0, COLUMN_CH1, COLUMN_CH2]
 
@@ -130,7 +129,6 @@ class Measurement:
         """Returns normalization data, if exists."""
         if COLUMN_CH2 in self._data:
             return self._data[COLUMN_CH2]
-
         return None
 
     def swap_channels(self):
@@ -210,6 +208,8 @@ class Measurement:
             norm = _data.agg({COLUMN_CH2: ['mean', 'std']})[COLUMN_CH2]['mean']
             s1 /= norm
             s2 /= norm
+            s1u /= norm
+            s2u /= norm
 
         return xs, s1, s2, s1u, s2u
 
