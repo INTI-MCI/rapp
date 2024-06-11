@@ -21,6 +21,7 @@ HELP_CHUNK_SIZE = 'measure data in chunks of this size. If 0, no chunks (default
 HELP_PREFIX = 'prefix for the folder in which to write results (default: %(default)s).'
 HELP_TEST_ESP = 'use ESP mock object. (default: %(default)s).'
 HELP_TEST_ADC = 'use ADC mock object. (default: %(default)s).'
+HELP_TEST_PM100 = 'use PM100 mock object. (default: %(default)s).'
 HELP_OVERWRITE = 'whether to overwrite existing files without asking (default: %(default)s).'
 HELP_REPS = 'Number of repetitions (default: %(default)s).'
 HELP_WORKDIR = 'folder to use as working directory (default: %(default)s)'
@@ -46,6 +47,7 @@ def add_to_subparsers(subparsers):
     p.add_argument('--mc-wait', type=float, default=15, metavar='', help=HELP_MC_WAIT)
     p.add_argument('--prefix', type=str, default='test', metavar='', help=HELP_PREFIX)
     p.add_argument('--mock-esp', action='store_true', help=HELP_TEST_ESP)
+    p.add_argument('--mock-pm100', action='store_true', help=HELP_TEST_PM100)
     p.add_argument('--work-dir', type=str, metavar='', default=ct.WORK_DIR, help=HELP_WORKDIR)
     p.add_argument('-ow', '--overwrite', action='store_true', help=HELP_OVERWRITE)
 
