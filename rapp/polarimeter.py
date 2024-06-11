@@ -273,10 +273,10 @@ def run(
         motion_controller, hwp_cycles, hwp_step, hwp_delay_position, axis=2, name='HalfWavePlate')
 
     logger.info("Building DataFile...")
-    normalization_column = [] if pm100 is None else FILE_NORMALIZATION_COLUMN_NAME
-    file_columns = FILE_COLUMNS + normalization_column
+    if pm100 is not None:
+        FILE_COLUMNS.append(FILE_NORMALIZATION_COLUMN_NAME)
     data_file = DataFile(
-        overwrite, header=FILE_HEADER, column_names=file_columns, delimiter=FILE_DELIMITER,
+        overwrite, header=FILE_HEADER, column_names=FILE_COLUMNS, delimiter=FILE_DELIMITER,
         output_dir=measurement_dir)
 
     logger.info("Building Polarimeter...")
