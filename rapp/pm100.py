@@ -4,9 +4,13 @@ import time
 import pyvisa
 from ThorlabsPM100 import ThorlabsPM100
 
+<<<<<<< HEAD
 from rapp.mocks import ThorlabsPM100Mock
 
 logger = logging.getLogger(__name__)
+=======
+TOLERABLE_COMM_TIME = 0.05
+>>>>>>> ca19e83 (Add acceleration parameter in RotaryStage)
 
 
 class PM100Error(Exception):

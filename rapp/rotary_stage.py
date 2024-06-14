@@ -31,6 +31,7 @@ class RotaryStage(Iterator):
         step=45,
         delay_position=0,
         velocity=4,
+        acceleration=1,
         axis=1,
         name=''
     ):
@@ -39,6 +40,7 @@ class RotaryStage(Iterator):
         self.step = step
         self._delay_position = delay_position
         self._velocity = velocity
+        self._acceleration = acceleration
         self._axis = axis
 
         self._name = name
@@ -106,3 +108,5 @@ class RotaryStage(Iterator):
         logger.info("{} - Setting velocity to {} deg/s.".format(str(self), self._velocity))
         self._motion_controller.set_velocity(self._velocity, axis=self._axis)
         self._motion_controller.set_home_velocity(self._velocity, axis=self._axis)
+        logger.info("{} - Setting acceleration to {} deg/s**2.".format(str(self), self._acceleration))
+        self._motion_controller.set_acceleration(self._acceleration, axis=self._axis)
