@@ -11,9 +11,6 @@ from rapp.analysis.plot import Plot
 logger = logging.getLogger(__name__)
 
 
-logger = logging.getLogger(__name__)
-
-
 def plot_raw_from_file(filepath, work_dir=ct.WORK_DIR, **kwargs):
     measurement = Measurement.from_file(filepath)
 
@@ -32,13 +29,6 @@ def plot_raw(
     s2 = np.array(measurement.ch1())
     s3 = measurement.norm_data()
 
-    # s1_n = s1/np.max(s1)
-    # s3_n = s3/np.max(s3)
-    if s3 is not None:
-        logger.info(np.max(s3))
-
-    logger.info("STD: {}".format(np.std(s1)))
-
     plot = Plot(ylabel=ct.LABEL_VOLTAGE, xlabel=ct.LABEL_N_SAMPLE, folder=output_folder)
 
     plot.set_title(measurement.parameters_string())
@@ -52,8 +42,10 @@ def plot_raw(
     if s3 is not None:
         s3_range = np.max(s3) - np.min(s3)
         s3_factor = np.max(s1) / s3_range
-        plot.add_data((s3 - np.min(s3)) * s3_factor, style='.-', lw=1.5,
-                      label=f'NORM (range:{s3_range:.2E}), avg:{s3.mean():.2E}')
+        s3_normalized = s3 - np.min(s3) * s3_factor
+        s3_label = f'NORM \n range={s3_range:.2E}) \n avg={s3.mean():.2E}'
+
+        plot.add_data(s3_normalized, style='.-', lw=1.5, label=s3_label)
 
     # plot._ax.hist(s1, bins=4)
     # plot._ax.xaxis.set_major_locator(plt.MaxNLocator(5))
