@@ -52,8 +52,7 @@ def resolve_adc_port():
 
 
 FILE_DELIMITER = ","
-FILE_COLUMNS = ["ANGLE", "CH0", "CH1"]
-FILE_NORMALIZATION_COLUMN_NAME = "NORM"
+FILE_COLUMNS = ["ANGLE", "CH0", "CH1", "NORM"]
 FILE_HEADER = (
     "#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#\n"
     "#~~~~~~~~~~~~~~ RAPP measurements | INTI ~~~~~~~~~~~~~~#\n"
@@ -158,6 +157,7 @@ class Polarimeter:
             if self._norm_det is not None:
                 normalization_value = self._norm_det.fetch_measurement()
                 acquired_samples = [(*acq_s, normalization_value) for acq_s in acquired_samples]
+
             yield acquired_samples
 
     def close(self):
@@ -238,16 +238,18 @@ def run(
     metadata = locals().copy()
     del metadata['work_dir']
 
+    logger.info("Preparing output folder...")
     params = "cycles{}-step{}-samples{}".format(cycles, step, samples)
     measurement_name = f"{date.today()}-{prefix}-{params}"
     output_folder = Path(work_dir).joinpath(ct.OUTPUT_FOLDER_DATA)
     measurement_dir = output_folder.joinpath(measurement_name)
     os.makedirs(measurement_dir, exist_ok=True)
 
+    logger.info("Configuring log file handler...")
     log_filename = Path(output_folder).joinpath("{}.log".format(measurement_name))
     setup_log_file(log_filename)
 
-    logger.info("Writing metadata...")
+    logger.info("Writing measurement metadata...")
     metadata_file = measurement_dir.joinpath("metadata.json")
     with open(metadata_file, 'w') as f:
         json.dump(metadata, f, indent=4)
@@ -272,6 +274,7 @@ def run(
     else:
         resource = THORLABS_PM100_VISA_WIN if os.name == "nt" else THORLABS_PM100_VISA_LINUX
         logger.info("Connecting to Thorlabs PM100.")
+
     pm100 = PM100.build(resource)
     if pm100 is None:
         logger.info("PM100 not detected.")
@@ -285,8 +288,6 @@ def run(
         motion_controller, hwp_cycles, hwp_step, hwp_delay_position, axis=2, name='HalfWavePlate')
 
     logger.info("Building DataFile...")
-    if pm100 is not None:
-        FILE_COLUMNS.append(FILE_NORMALIZATION_COLUMN_NAME)
     data_file = DataFile(
         overwrite, header=FILE_HEADER, column_names=FILE_COLUMNS, delimiter=FILE_DELIMITER,
         output_dir=measurement_dir)
