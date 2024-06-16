@@ -13,3 +13,5 @@ workdir
 *.json
 *.svg
 *.png
+
+!docs/images/diagram.png

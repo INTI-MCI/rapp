@@ -43,7 +43,7 @@ class CLI:
             command.add_to_subparsers(self.subparsers)
 
     def _parse_args(self):
-        self.args, self.extra_args = self.parser.parse_known_args(args=self._args or ['--help'])
+        self.args = self.parser.parse_args(args=self._args or ['--help'])
 
         if self.args.verbose:
             logging.getLogger().setLevel(logging.DEBUG)

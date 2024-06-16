@@ -24,20 +24,18 @@ np.set_printoptions(threshold=0, edgeitems=5, suppress=True)
 logger = logging.getLogger(__name__)
 
 
-ADC_WIN_PORT = 'COM3'
-ADC_LINUX_PORT = '/dev/ttyACM0'
+ADC_PORT_WIN = 'COM3'
+ADC_PORT_LINUX = '/dev/ttyACM0'
 
 ADC_BAUDRATE = 57600
 ADC_TIMEOUT = 0.1
 ADC_WAIT = 2
-ADC_SAMPLE_RATE = 840
 
 THORLABS_PM100_VISA_LINUX = "USB0::4883::32889::P1000529::0::INSTR"
 THORLABS_PM100_VISA_WIN = 'USB0::0x1313::0x8079::P1000529::INSTR'
-THORLABS_PM100_TIME_PER_SAMPLE_MS = 3
 
-MOTION_CONTROLLER_PORT = "COM4"
-# MOTION_CONTROLLER_PORT = '/dev/ttyACM0'
+MOTION_CONTROLLER_PORT_WIN = "COM4"
+MOTION_CONTROLLER_PORT_LINUX = '/dev/ttyACM0'
 MOTION_CONTROLLER_BAUDRATE = 921600
 
 LOG_FILE_NAME = "rapp.log"
@@ -46,9 +44,16 @@ LOG_FILE_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 
 def resolve_adc_port():
     if sys.platform == 'linux':
-        return ADC_LINUX_PORT
+        return ADC_PORT_LINUX
 
-    return ADC_WIN_PORT
+    return ADC_PORT_WIN
+
+
+def resolve_pm100_resource():
+    if sys.platform == 'linux':
+        return THORLABS_PM100_VISA_LINUX
+
+    return THORLABS_PM100_VISA_WIN
 
 
 FILE_DELIMITER = ","
@@ -68,19 +73,20 @@ class Polarimeter:
         analyzer: rotating analyzer.
         hwp: rotating half wave plate.
         data_file: handles the file writing.
+        norm_det: normalization detector.
         wait: time to wait before reconnecting after motion controller error.
     """
 
     def __init__(
         self,
         adc: ADC, analyzer: RotaryStage, hwp: RotaryStage, data_file: DataFile,
-        normalization_detector: PM100 = None, wait: int = 10
+        norm_det: PM100 = None, wait: int = 10
     ):
         self._adc = adc
         self._analyzer = analyzer
         self._hwp = hwp
         self._data_file = data_file
-        self._norm_det = normalization_detector
+        self._norm_det = norm_det
         self._wait = wait
 
     def start(self, samples, chunk_size: int = 0, reps: int = 1):
@@ -97,6 +103,7 @@ class Polarimeter:
 
         analyzer_bar = True
         self._adc.progressbar = False  # We disable lower level progress bar.
+
         if len(self._analyzer) == 1:
             self._adc.progressbar = True
             analyzer_bar = False
@@ -150,10 +157,10 @@ class Polarimeter:
 
         for samples in n_samples:
             if self._norm_det is not None:
-                self._norm_det.set_average_count(self._amount_samples_pm100(samples))
                 self._norm_det.start_measurement()
 
             acquired_samples = self._adc.acquire(samples, flush=True)
+
             if self._norm_det is not None:
                 normalization_value = self._norm_det.fetch_measurement()
                 acquired_samples = [(*acq_s, normalization_value) for acq_s in acquired_samples]
@@ -200,11 +207,6 @@ class Polarimeter:
         logger.warning("Removing unfinished file...")
         self._data_file.remove()
 
-    def _amount_samples_pm100(self, samples):
-        n_channels = int(self._adc._ch0) + int(self._adc._ch1)
-        delay_adc = samples * n_channels / ADC_SAMPLE_RATE
-        return int(delay_adc / THORLABS_PM100_TIME_PER_SAMPLE_MS * 1e3)
-
 
 def setup_log_file(filepath):
     formatter = logging.Formatter(LOG_FILE_FORMAT)
@@ -232,6 +234,7 @@ def run(
     hwp_step: float = 45,
     hwp_delay_position: float = 5,
     mc_wait: float = 15,
+    disable_pm100: bool = True,
     work_dir: str = ct.WORK_DIR
 ):
 
@@ -256,8 +259,16 @@ def run(
 
     logger.info("Connecting to ESP Motion Controller...")
     motion_controller = ESP301.build(
-        MOTION_CONTROLLER_PORT, b=MOTION_CONTROLLER_BAUDRATE,
+        MOTION_CONTROLLER_PORT_WIN, b=MOTION_CONTROLLER_BAUDRATE,
         useaxes=[1, 2], mock_serial=mock_esp)
+
+    logger.info("Connecting Rotary Stage: Analyzer...")
+    analyzer = RotaryStage(
+        motion_controller, cycles, step, delay_position, velocity, axis=1, name='Analyzer')
+
+    logger.info("Connecting Rotary Stage: HalfWavePlate...")
+    hwp = RotaryStage(
+        motion_controller, hwp_cycles, hwp_step, hwp_delay_position, axis=2, name='HalfWavePlate')
 
     logger.info("Connecting to ADC...")
     adc = ADC.build(
@@ -266,26 +277,16 @@ def run(
         ch1=not no_ch1,
         mock_serial=mock_adc)
 
-    # Search for Normalization Detector and build
-
-    if mock_pm100:
-        logger.warning("Using PM100 mock object.")
-        resource = "mock"
+    pm100 = None
+    if disable_pm100:
+        logger.warning("Normalization detector disabled.")
     else:
-        resource = THORLABS_PM100_VISA_WIN if os.name == "nt" else THORLABS_PM100_VISA_LINUX
-        logger.info("Connecting to Thorlabs PM100.")
-
-    pm100 = PM100.build(resource)
-    if pm100 is None:
-        logger.info("PM100 not detected.")
-
-    logger.info("Connecting Analyzer...")
-    analyzer = RotaryStage(
-        motion_controller, cycles, step, delay_position, velocity, axis=1, name='Analyzer')
-
-    logger.info("Connecting HalfWavePlate...")
-    hwp = RotaryStage(
-        motion_controller, hwp_cycles, hwp_step, hwp_delay_position, axis=2, name='HalfWavePlate')
+        logger.info("Connecting to normalization detector (Thorlabs PM100)...")
+        pm100 = PM100.build(
+            resolve_pm100_resource(),
+            duration=PM100.average_count_from_duration(adc.measurement_time(samples)),
+            mock=mock_pm100
+        )
 
     logger.info("Building DataFile...")
     data_file = DataFile(
@@ -294,7 +295,7 @@ def run(
 
     logger.info("Building Polarimeter...")
     polarimeter = Polarimeter(
-        adc, analyzer, hwp, data_file, normalization_detector=pm100, wait=mc_wait
+        adc, analyzer, hwp, data_file, norm_det=pm100, wait=mc_wait
     )
 
     logger.info("Starting measurement...")

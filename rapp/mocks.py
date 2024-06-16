@@ -33,31 +33,29 @@ class SerialMock:
 
 
 class ThorlabsPM100Mock:
-    def __init__(self):
+    def __init__(self, delay=0):
         self.system = SystemPM100Mock()
         self.sense = SensePM100Mock()
         self.input = InputPM100Mock()
         self.configure = ConfigurePM100Mock()
-        self.getconfigure = 'POW'
-        self._read = 0
         self.initiate = InitiatePM100Mock()
-        self._fetch = 0
+        self.getconfigure = 'POW'
+        # self._read = 0
+        # self._fetch = 0
+
+        self._delay = delay
 
     @property
     def read(self):
-        time.sleep(self.get_delay_time())
         return random.gammavariate(alpha=1, beta=1)
 
     @property
     def fetch(self):
-        wait_time = self.get_delay_time() - (time.time() - self.initiate.start_time)
-        if wait_time > 0:
-            time.sleep(wait_time)
-        self._fetch = random.gammavariate(alpha=1, beta=1)
-        return self._fetch
+        time.sleep(self._delay)
+        return random.gammavariate(alpha=1, beta=1)
 
-    def get_delay_time(self):
-        return 3e-3 * self.sense.average.count
+    def close(self):
+        pass
 
 
 class SystemPM100Mock:
@@ -135,8 +133,5 @@ class ConfigureScalarPM100Mock:
 
 
 class InitiatePM100Mock:
-    def __init__(self):
-        self.start_time = time.time()
-
     def immediate(self):
-        self.start_time = time.time()
+        pass
