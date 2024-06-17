@@ -60,6 +60,8 @@ class ADC:
     TIMEOUT = 0.1
     WAIT = 2
 
+    SAMPLE_RATE = 840
+
     def __init__(self, serial, gain=GAIN_ONE, ch0=True, ch1=True, in_bytes=True, progressbar=True):
         self._serial = serial
         self._in_bytes = in_bytes
@@ -142,6 +144,14 @@ class ADC:
             logger.debug("({}, {}) = ({}, {})".format('CH0', 'CH1', ch0, ch1))
 
         return data
+
+    def active_channels(self):
+        """Returns number of active channels."""
+        return int(self._ch0) + int(self._ch1)
+
+    def measurement_time(self, samples):
+        """Returns the time (in seconds) a measurement will take for given number of samples."""
+        return samples * self.active_channels() / self.SAMPLE_RATE
 
     def close(self):
         self._serial.close()

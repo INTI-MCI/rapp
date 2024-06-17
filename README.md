@@ -4,6 +4,9 @@
   <a>
     <img alt="Coverage" src="https://codecov.io/gh/tomaslink/rapp/graph/badge.svg?token=DV6XJFKHYS">
   </a>
+  <a>
+    <img alt="Python versions" src="https://img.shields.io/badge/python-3.8%20%7C%203.9%20%7C%203.10%20%7C%203.11%20%7C%203.12-blue">
+  </a>
 </p>
 
 Tools for measuring the rotation angle of the plane of polarization (RAPP).
@@ -26,7 +29,7 @@ Tools for measuring the rotation angle of the plane of polarization (RAPP).
   of ***All-Russian Research Institute for Optical and Physical Measurements*** ([VNIIOFI]).
 
   <p align="center">
-    <img src="images/diagram.png" />
+    <img src="docs/images/diagram.png" />
   </p>
 
   In this setup,
