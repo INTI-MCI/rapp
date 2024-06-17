@@ -3,11 +3,12 @@ import sys
 import time
 import json
 import logging
+import warnings
+
 from pathlib import Path
 from datetime import date
 
 import numpy as np
-
 from rich.progress import track
 
 from rapp import constants as ct
@@ -16,12 +17,18 @@ from rapp.data_file import DataFile
 from rapp.motion_controller import ESP301
 from rapp.rotary_stage import RotaryStage, RotaryStageError
 from rapp.utils import split_number_to_list
-from rapp.pm100 import PM100
+from rapp.pm100 import PM100, PM100Error
 
 
 # Always truncate arrays when printing, without scientific notation.
 np.set_printoptions(threshold=0, edgeitems=5, suppress=True)
 logger = logging.getLogger(__name__)
+
+warnings.filterwarnings(
+    action='ignore',
+    category=UserWarning,
+    module='pyvisa_py'
+)
 
 
 ADC_PORT_WIN = 'COM3'
@@ -279,14 +286,17 @@ def run(
 
     pm100 = None
     if disable_pm100:
-        logger.warning("Normalization detector disabled.")
+        logger.warning("Thorlabs PM100 disabled.")
     else:
-        logger.info("Connecting to normalization detector (Thorlabs PM100)...")
-        pm100 = PM100.build(
-            resolve_pm100_resource(),
-            duration=PM100.average_count_from_duration(adc.measurement_time(samples)),
-            mock=mock_pm100
-        )
+        logger.info("Connecting to Thorlabs PM100...")
+        try:
+            pm100 = PM100.build(
+                resolve_pm100_resource(),
+                duration=PM100.average_count_from_duration(adc.measurement_time(samples)),
+                mock=mock_pm100
+            )
+        except PM100Error:
+            logger.warning("Thorlabs PM100 connection not found.")
 
     logger.info("Building DataFile...")
     data_file = DataFile(
