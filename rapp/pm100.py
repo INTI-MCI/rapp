@@ -50,10 +50,13 @@ class PM100:
             timeout: [ms].
             rm: visa resource manager to use.
             mock: if true, mocks the ThorlabsPM100 object.
+
+        Raises:
+            PM100Error: when the resource is not found.
         """
-        logger.warning("Using PM100 mock object.")
 
         if mock:
+            logger.warning("Using PM100 mock object.")
             detector = ThorlabsPM100Mock()
         else:
             if rm is None:
@@ -65,7 +68,7 @@ class PM100:
             inst = rm.open_resource(
                 resource,
                 timeout=timeout,
-                # write_termination="\n",
+                write_termination="\n",
                 read_termination="\n",
             )
 
