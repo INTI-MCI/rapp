@@ -35,12 +35,15 @@ setuptools.setup(
         ]
     },
     install_requires=[
-        'numpy<2',
-        'matplotlib<4',
-        'pandas<3',
-        'pyserial<4',
-        'scipy<2',
-        'uncertainties<4',
-        'rich<14'
+        'numpy~=1.22',
+        'matplotlib~=3.7',
+        'pandas~=1.5',
+        'pyserial~=3.5',
+        'PyVISA~=1.14',
+        'PyVISA-py~=0.7',
+        'rich~=13.7',
+        'scipy~=1.10',
+        'ThorlabsPM100~=1.2',
+        'uncertainties~=3.1',
     ]
 )

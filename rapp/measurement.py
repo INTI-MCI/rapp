@@ -127,8 +127,9 @@ class Measurement:
 
     def norm_data(self):
         """Returns normalization data, if exists."""
-        if COLUMN_CH2 in self._data:
+        if COLUMN_CH2 in self._data and not self._data[COLUMN_CH2].isnull().any():
             return self._data[COLUMN_CH2]
+
         return None
 
     def swap_channels(self):
@@ -177,7 +178,7 @@ class Measurement:
 
         return xs, s1, s2, s1_sigma, s2_sigma, res
 
-    def average_data(self, norm: bool):
+    def average_data(self, norm: bool = False):
         """Performs the average of the number of samples per angle.
             Returns the new signal points and their uncertainties.
         """

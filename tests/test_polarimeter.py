@@ -37,7 +37,7 @@ def test_main(tmp_path):
         hwp_delay_position=0,
         mock_esp=True,
         mock_adc=True,
-        mock_pm100=False,
+        mock_pm100=True,
         overwrite=True,
         work_dir=tmp_path,
     )
