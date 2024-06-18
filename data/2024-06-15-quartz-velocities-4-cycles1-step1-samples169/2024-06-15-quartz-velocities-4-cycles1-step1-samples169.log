@@ -1,0 +1,148 @@
+2024-06-15 13:35:53,040 - rapp.polarimeter - INFO - Writing metadata...
+2024-06-15 13:35:53,040 - rapp.polarimeter - INFO - Connecting to ESP Motion Controller...
+2024-06-15 13:35:53,160 - rapp.polarimeter - INFO - Connecting to ADC...
+2024-06-15 13:35:55,187 - rapp.polarimeter - INFO - Connecting to Thorlabs PM100.
+2024-06-15 13:35:55,540 - rapp.polarimeter - INFO - Connecting Analyzer...
+2024-06-15 13:35:55,550 - rapp.polarimeter - INFO - Connecting HalfWavePlate...
+2024-06-15 13:35:55,567 - rapp.polarimeter - INFO - Building DataFile...
+2024-06-15 13:35:55,567 - rapp.polarimeter - INFO - Building Polarimeter...
+2024-06-15 13:35:55,567 - rapp.polarimeter - INFO - Starting measurement...
+2024-06-15 13:35:55,567 - rapp.polarimeter - INFO - Samples to measure in each analyzer position: 169.
+2024-06-15 13:35:55,570 - rapp.polarimeter - INFO - Maximum chunk size: 500.
+2024-06-15 13:36:06,873 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 1/50
+2024-06-15 13:51:26,391 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 2/50
+2024-06-15 14:06:44,837 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 3/50
+2024-06-15 14:22:04,607 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 4/50
+2024-06-15 14:37:19,030 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 5/50
+2024-06-15 14:52:36,891 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 6/50
+2024-06-15 15:07:49,536 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 7/50
+2024-06-15 15:22:59,880 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 8/50
+2024-06-15 15:38:19,361 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 9/50
+2024-06-15 15:53:29,668 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 10/50
+2024-06-15 16:08:39,908 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 11/50
+2024-06-15 16:23:50,249 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 12/50
+2024-06-15 16:39:10,711 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 13/50
+2024-06-15 16:54:32,525 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 14/50
+2024-06-15 17:09:47,054 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 15/50
+2024-06-15 17:25:06,264 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 16/50
+2024-06-15 17:40:16,639 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 17/50
+2024-06-15 17:55:36,568 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 18/50
+2024-06-15 18:10:49,303 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 19/50
+2024-06-15 18:26:00,176 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 20/50
+2024-06-15 18:41:13,505 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 21/50
+2024-06-15 18:56:16,316 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 22/50
+2024-06-15 19:11:30,920 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 23/50
+2024-06-15 19:26:44,632 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 24/50
+2024-06-15 19:42:05,119 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 25/50
+2024-06-15 19:57:16,345 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 26/50
+2024-06-15 19:59:46,424 - rapp.polarimeter - WARNING - Motion Controller error: Found empty buffer trying to read serial data.
+2024-06-15 19:59:46,424 - rapp.polarimeter - WARNING - Waiting 15 seconds...
+2024-06-15 20:00:01,432 - rapp.polarimeter - WARNING - Reconnecting the Motion Controller...
+2024-06-15 20:00:01,539 - rapp.polarimeter - WARNING - Turning motors ON again...
+2024-06-15 20:00:01,559 - rapp.polarimeter - WARNING - Setting HWP position to 0
+2024-06-15 20:00:01,559 - rapp.polarimeter - WARNING - Removing unfinished file...
+2024-06-15 20:00:01,569 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 26/50
+2024-06-15 20:17:06,622 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 27/50
+2024-06-15 20:32:27,551 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 28/50
+2024-06-15 20:47:46,320 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 29/50
+2024-06-15 21:03:08,741 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 30/50
+2024-06-15 21:18:32,338 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 31/50
+2024-06-15 21:33:45,491 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 32/50
+2024-06-15 21:49:03,278 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 33/50
+2024-06-15 22:04:26,023 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 34/50
+2024-06-15 22:19:53,706 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 35/50
+2024-06-15 22:35:15,472 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 36/50
+2024-06-15 22:50:38,676 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 37/50
+2024-06-15 23:06:03,947 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 38/50
+2024-06-15 23:21:23,475 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 39/50
+2024-06-15 23:36:47,776 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 40/50
+2024-06-15 23:52:06,676 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 41/50
+2024-06-16 00:07:29,887 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 42/50
+2024-06-16 00:22:57,716 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 43/50
+2024-06-16 00:38:16,209 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 44/50
+2024-06-16 00:53:41,796 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 45/50
+2024-06-16 01:09:02,128 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 46/50
+2024-06-16 01:24:17,818 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 47/50
+2024-06-16 01:39:38,112 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 48/50
+2024-06-16 01:54:58,819 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 49/50
+2024-06-16 02:10:19,848 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 50/50
+2024-06-16 02:25:35,356 - rapp.polarimeter - INFO - Done!
+2024-06-16 02:25:35,356 - rapp.polarimeter - INFO - Results in file: workdir\output-data\2024-06-15-quartz-velocities-4-cycles1-step1-samples169\hwp0-rep50.csv
+2024-06-16 02:25:35,356 - rapp.polarimeter - INFO - Total of 1 failures with the Motion Controller.
+2024-06-16 02:25:35,386 - rapp.polarimeter - INFO - Writing metadata...
+2024-06-16 02:25:35,386 - rapp.polarimeter - INFO - Connecting to ESP Motion Controller...
+2024-06-16 02:25:35,496 - rapp.polarimeter - INFO - Connecting to ADC...
+2024-06-16 02:25:37,522 - rapp.polarimeter - INFO - Connecting to Thorlabs PM100.
+2024-06-16 02:25:37,867 - rapp.polarimeter - INFO - Connecting Analyzer...
+2024-06-16 02:25:37,887 - rapp.polarimeter - INFO - Connecting HalfWavePlate...
+2024-06-16 02:25:37,897 - rapp.polarimeter - INFO - Building DataFile...
+2024-06-16 02:25:37,897 - rapp.polarimeter - INFO - Building Polarimeter...
+2024-06-16 02:25:37,897 - rapp.polarimeter - INFO - Starting measurement...
+2024-06-16 02:25:37,897 - rapp.polarimeter - INFO - Samples to measure in each analyzer position: 169.
+2024-06-16 02:25:37,897 - rapp.polarimeter - INFO - Maximum chunk size: 500.
+2024-06-16 02:25:49,205 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 1/50
+2024-06-16 02:35:38,430 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 2/50
+2024-06-16 02:45:22,719 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 3/50
+2024-06-16 02:55:08,513 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 4/50
+2024-06-16 03:04:55,072 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 5/50
+2024-06-16 03:14:36,888 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 6/50
+2024-06-16 03:24:17,626 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 7/50
+2024-06-16 03:34:01,809 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 8/50
+2024-06-16 03:43:42,153 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 9/50
+2024-06-16 03:53:20,653 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 10/50
+2024-06-16 04:03:13,333 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 11/50
+2024-06-16 04:12:57,574 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 12/50
+2024-06-16 04:22:39,141 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 13/50
+2024-06-16 04:32:28,520 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 14/50
+2024-06-16 04:42:06,661 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 15/50
+2024-06-16 04:51:49,568 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 16/50
+2024-06-16 05:01:29,264 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 17/50
+2024-06-16 05:11:12,411 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 18/50
+2024-06-16 05:21:01,724 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 19/50
+2024-06-16 05:30:44,205 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 20/50
+2024-06-16 05:40:31,064 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 21/50
+2024-06-16 05:50:29,189 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 22/50
+2024-06-16 06:00:14,344 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 23/50
+2024-06-16 06:10:07,745 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 24/50
+2024-06-16 06:19:57,210 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 25/50
+2024-06-16 06:29:50,040 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 26/50
+2024-06-16 06:39:43,727 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 27/50
+2024-06-16 06:49:35,278 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 28/50
+2024-06-16 06:59:24,556 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 29/50
+2024-06-16 07:09:10,024 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 30/50
+2024-06-16 07:18:56,924 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 31/50
+2024-06-16 07:28:51,537 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 32/50
+2024-06-16 07:38:48,584 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 33/50
+2024-06-16 07:48:45,263 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 34/50
+2024-06-16 07:58:39,130 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 35/50
+2024-06-16 08:08:35,293 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 36/50
+2024-06-16 08:18:28,091 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 37/50
+2024-06-16 08:28:30,493 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 38/50
+2024-06-16 08:38:26,336 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 39/50
+2024-06-16 08:48:20,432 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 40/50
+2024-06-16 08:58:18,863 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 41/50
+2024-06-16 09:08:10,662 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 42/50
+2024-06-16 09:17:58,683 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 43/50
+2024-06-16 09:27:48,526 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 44/50
+2024-06-16 09:37:44,320 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 45/50
+2024-06-16 09:47:34,891 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 46/50
+2024-06-16 09:57:24,788 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 47/50
+2024-06-16 10:07:15,434 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 48/50
+2024-06-16 10:17:05,273 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 49/50
+2024-06-16 10:27:02,023 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 50/50
+2024-06-16 10:36:55,708 - rapp.polarimeter - INFO - Done!
+2024-06-16 10:36:55,718 - rapp.polarimeter - INFO - Results in file: workdir\output-data\2024-06-16-quartz-velocities-5-cycles1-step1-samples169\hwp0-rep50.csv
+2024-06-16 10:36:55,718 - rapp.polarimeter - INFO - Total of 0 failures with the Motion Controller.
+2024-06-16 10:36:55,738 - rapp.polarimeter - INFO - Writing metadata...
+2024-06-16 10:36:55,738 - rapp.polarimeter - INFO - Connecting to ESP Motion Controller...
+2024-06-16 10:36:55,858 - rapp.polarimeter - INFO - Connecting to ADC...
+2024-06-16 10:36:57,884 - rapp.polarimeter - INFO - Connecting to Thorlabs PM100.
+2024-06-16 10:36:58,228 - rapp.polarimeter - INFO - Connecting Analyzer...
+2024-06-16 10:36:58,238 - rapp.polarimeter - INFO - Connecting HalfWavePlate...
+2024-06-16 10:36:58,248 - rapp.polarimeter - INFO - Building DataFile...
+2024-06-16 10:36:58,248 - rapp.polarimeter - INFO - Building Polarimeter...
+2024-06-16 10:36:58,248 - rapp.polarimeter - INFO - Starting measurement...
+2024-06-16 10:36:58,248 - rapp.polarimeter - INFO - Samples to measure in each analyzer position: 169.
+2024-06-16 10:36:58,258 - rapp.polarimeter - INFO - Maximum chunk size: 500.
+2024-06-16 10:37:09,551 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 1/50
+2024-06-16 10:44:22,355 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 2/50
