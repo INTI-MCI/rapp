@@ -21,23 +21,24 @@ def setup_logger():
 
 def main():
     setup_logger()
-    e1 = dict(cycles=1, step=1, samples=169, reps=20)
-    e2 = dict(cycles=3, step=1, samples=169, reps=20)
-    e3 = dict(cycles=1, step=0.5, samples=169, reps=50)
-    e4 = dict(cycles=1, step=1, samples=1218, reps=20)
-    e5 = dict(cycles=2, step=2, samples=1218, reps=50)
-    experimentos = [e1, e4]
+    e1 = dict(cycles=1, step=1, samples=169, reps=50, acceleration=0.5)
+    e2 = dict(cycles=1, step=1, samples=169, reps=50, acceleration=4)
+    e3 = dict(cycles=1, step=1, samples=169, reps=50, acceleration=12)
+    e4 = dict(cycles=1, step=1, samples=169, reps=50, velocity=0.5)
+    e5 = dict(cycles=1, step=1, samples=169, reps=50, velocity=1)
+    e6 = dict(cycles=1, step=1, samples=169, reps=50, velocity=2)
+    experimentos = [e1, e2, e3, e4, e5, e6]
 
-    # time.sleep(30 * 60)
-
+    time.sleep(5400)
+    name = "quartz-velocities" 
     for i, exp in enumerate(experimentos, 1):
         logger.info("EXPERIMENTO {}: {}".format(i, exp))
         try:
-            main_polarimeter(prefix='full-quartz-{}'.format(i), **exp)
+            main_polarimeter(prefix='{}-{}'.format(name, i), **exp)
         except ESP301Error as e:
             logger.warning(f"Found error: {e}. Retrying...")
             time.sleep(30)
-            main_polarimeter(prefix='full-quartz-{}'.format(i), **exp)
+            main_polarimeter(prefix='{}-{}'.format(name, i), **exp)
 
 
 if __name__ == '__main__':
