@@ -214,14 +214,6 @@ class Polarimeter:
         logger.warning("Removing unfinished file...")
         self._data_file.remove()
 
-<<<<<<< HEAD
-=======
-    def _amount_samples_pm100(self, samples):
-        n_channels = int(self._adc._ch0) + int(self._adc._ch1)
-        delay_adc = samples * n_channels / ADC_SAMPLE_RATE
-        return int(0.9*delay_adc / THORLABS_PM100_TIME_PER_SAMPLE_MS * 1e3)
-
->>>>>>> ca19e83 (Add acceleration parameter in RotaryStage)
 
 def setup_log_file(filepath):
     formatter = logging.Formatter(LOG_FILE_FORMAT)
@@ -238,6 +230,7 @@ def run(
     delay_position: float = 0,
     velocity: float = 4,
     acceleration: float = 1,
+    deceleration: float = 1,
     chunk_size: int = 500,
     no_ch0: bool = False,
     no_ch1: bool = False,
@@ -293,7 +286,6 @@ def run(
     if disable_pm100:
         logger.warning("Thorlabs PM100 disabled.")
     else:
-<<<<<<< HEAD
         logger.info("Connecting to Thorlabs PM100...")
         try:
             pm100 = PM100.build(
@@ -303,21 +295,6 @@ def run(
             )
         except PM100Error:
             logger.warning("Thorlabs PM100 connection not found.")
-=======
-        resource = THORLABS_PM100_VISA_WIN if os.name == "nt" else THORLABS_PM100_VISA_LINUX
-        logger.info("Connecting to Thorlabs PM100.")
-    pm100 = PM100.build(resource)
-    if pm100 is None:
-        logger.info("PM100 not detected.")
-
-    logger.info("Connecting Analyzer...")
-    analyzer = RotaryStage(
-        motion_controller, cycles, step, delay_position, velocity, acceleration, axis=1, name='Analyzer')
-
-    logger.info("Connecting HalfWavePlate...")
-    hwp = RotaryStage(
-        motion_controller, hwp_cycles, hwp_step, hwp_delay_position, axis=2, name='HalfWavePlate')
->>>>>>> ca19e83 (Add acceleration parameter in RotaryStage)
 
     logger.info("Building DataFile...")
     data_file = DataFile(
