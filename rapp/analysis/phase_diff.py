@@ -17,18 +17,14 @@ logger = logging.getLogger(__name__)
 
 COVERAGE_FACTOR = 3
 
-TABLE_COLUMNS = [
-    "CYCLES", "STEP", "SAMPLES", "REPS",
-    "CH0 MEAN", "CH0 STD", "CH1 MEAN", "CH1 STD", "DIFF MEAN", "DIFF STD", "DIFF STD STD"
-]
-
 
 def sine(xs, a, phi, c):
     return a * np.sin(4 * xs + phi) + c
 
 
 def phase_difference_from_folder(
-    folder, method, norm=False, show=False, fill_none=False, appended_measurements=None
+    folder, method, norm=False, fill_none=False, appended_measurements=None,
+    plot=False, show=False
 ):
     logger.info("Calculating phase difference for {}...".format(folder))
 
@@ -117,69 +113,66 @@ def phase_difference_from_folder(
         std_std
     ]
 
-    logger.info("ROW FOR TABLE: ")
-    print(TABLE_COLUMNS)
-    print(*row, sep='\t')
+    if plot:
+        output_folder = os.path.join(ct.WORK_DIR, ct.OUTPUT_FOLDER_PLOTS)
+        f, axs = plt.subplots(
+            1, 3,
+            figsize=(12, 4),
+            # subplot_kw=dict(box_aspect=1),
+            sharey=False,
+            sharex=True
+        )
 
-    # PLOTS
-    output_folder = os.path.join(ct.WORK_DIR, ct.OUTPUT_FOLDER_PLOTS)
+        axs[0].plot(phi1, '.-', color='k', label='STD = {}°'.format(round_to_n(std_phi1, 2)))
+        axs[0].set_title("CH0")
+        axs[0].set_ylabel("Fase intrínseca (°)")
+        axs[0].set_xlabel("Nro de repetición")
+        axs[0].legend()
 
-    f, axs = plt.subplots(
-        1, 3,
-        figsize=(12, 4),
-        # subplot_kw=dict(box_aspect=1),
-        sharey=False,
-        sharex=True
-    )
+        axs[1].plot(phi2, '.-', color='k', label='STD = {}°'.format(round_to_n(std_phi2, 2)))
+        axs[1].set_ylabel("Fase intrínseca (°)")
+        axs[1].set_xlabel("Nro de repetición")
+        axs[1].set_title("CH1")
 
-    axs[0].plot(phi1, '.-', color='k', label='STD = {}°'.format(round_to_n(std_phi1, 2)))
-    axs[0].set_title("CH0")
-    axs[0].set_ylabel("Fase intrínseca (°)")
-    axs[0].set_xlabel("Nro de repetición")
-    axs[0].legend()
+        axs[2].plot(phase_diffs, '.-', color='k')
+        axs[2].set_ylabel("Diferencia de fase (°)")
+        axs[2].set_xlabel("Nro de repetición")
+        axs[2].set_title("DIFF")
 
-    axs[1].plot(phi2, '.-', color='k', label='STD = {}°'.format(round_to_n(std_phi2, 2)))
-    axs[1].set_ylabel("Fase intrínseca (°)")
-    axs[1].set_xlabel("Nro de repetición")
-    axs[1].set_title("CH1")
+        f.tight_layout()
 
-    axs[2].plot(phase_diffs, '.-', color='k')
-    axs[2].set_ylabel("Diferencia de fase (°)")
-    axs[2].set_xlabel("Nro de repetición")
-    axs[2].set_title("DIFF")
+        filename = os.path.join(output_folder, "difference-vs-time.png")
+        f.savefig(fname=filename)
 
-    f.tight_layout()
+        counts, edges = np.histogram(phase_diffs, density=True)
+        centers = (edges + np.diff(edges)[0] / 2)[:-1]
 
-    filename = os.path.join(output_folder, "difference-vs-time.png")
-    f.savefig(fname=filename)
-
-    counts, edges = np.histogram(phase_diffs, density=True)
-    centers = (edges + np.diff(edges)[0] / 2)[:-1]
-
-    plot = Plot(ylabel="Cuentas", xlabel="Diferencia de fase", folder=output_folder)
-    plot._ax.bar(
-        centers, counts,
-        width=np.diff(edges), color='silver', alpha=0.8, lw=1, edgecolor='k',
-        label='Diferencia de fase'
-    )
-    plot.save(filename="phase-difference-histogram.png")
-    plot.close()
-
-    """
-    errors = abs(phase_diffs - np.mean(phase_diffs))
-    plot = Plot(ylabel="Error (°)", xlabel="Incertidumbre (°)", folder=output_folder)
-    plot.add_data(uncertainties, errors, color='k', alpha=0.7)
-    plot.save(filename="errors-vs-uncertainties.png")
-    plot.close()
-
-    if mses:
-        plot = Plot(ylabel="Error (°)", xlabel="MSE (°)", folder=output_folder)
-        plot.add_data(mses, errors, color='k', alpha=0.7)
-        plot.save(filename="errors-vs-mse.png")
+        plot = Plot(ylabel="Cuentas", xlabel="Diferencia de fase", folder=output_folder)
+        plot._ax.bar(
+            centers, counts,
+            width=np.diff(edges), color='silver', alpha=0.8, lw=1, edgecolor='k',
+            label='Diferencia de fase'
+        )
+        plot.save(filename="phase-difference-histogram.png")
         plot.close()
-    """
-    if show:
-        plot.show()
+
+        """
+        errors = abs(phase_diffs - np.mean(phase_diffs))
+        plot = Plot(ylabel="Error (°)", xlabel="Incertidumbre (°)", folder=output_folder)
+        plot.add_data(uncertainties, errors, color='k', alpha=0.7)
+        plot.save(filename="errors-vs-uncertainties.png")
+        plot.close()
+
+        if mses:
+            plot = Plot(ylabel="Error (°)", xlabel="MSE (°)", folder=output_folder)
+            plot.add_data(mses, errors, color='k', alpha=0.7)
+            plot.save(filename="errors-vs-mse.png")
+            plot.close()
+        """
+        if show:
+            plot.show()
+
+    return row
 
 
 def phase_difference_from_file(filepath, method, norm=False, fill_none=False, show=False):
