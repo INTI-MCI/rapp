@@ -106,9 +106,9 @@ def DFT(s1, s2, xs=None, period=2*np.pi):
     coef2 = S2[np.argmax(np.abs(S2))]
 
     phase1 = np.arctan(np.real(coef1) / np.imag(coef1)) * -1
-    phase2 = np.arctan(np.real(coef2) / np.imag(coef2)) * -1
-
     phase_diff = np.angle(coef2 / coef1)
+
+    phase2 = phase1 + phase_diff
 
     logger.debug("φ1 = {}°, {}rad".format(np.rad2deg(phase1), phase1))
     logger.debug("φ2 = {}°, {}rad".format(np.rad2deg(phase2), phase2))
