@@ -6,7 +6,7 @@ import logging
 import warnings
 
 from pathlib import Path
-from datetime import date
+from datetime import date, timedelta
 
 import numpy as np
 from rich.progress import track
@@ -16,7 +16,7 @@ from rapp.adc import ADC
 from rapp.data_file import DataFile
 from rapp.motion_controller import ESP301
 from rapp.rotary_stage import RotaryStage, RotaryStageError
-from rapp.utils import split_number_to_list
+from rapp.utils import split_number_to_list, timing
 from rapp.pm100 import PM100, PM100Error
 
 
@@ -245,8 +245,9 @@ def run(
     work_dir: str = ct.WORK_DIR
 ):
 
-    metadata = locals().copy()
-    del metadata['work_dir']
+    input_parameters = locals().copy()
+    del input_parameters['work_dir']
+    metadata = dict(input_parameters=input_parameters)
 
     logger.info("Preparing output folder...")
     params = "cycles{}-step{}-samples{}".format(cycles, step, samples)
@@ -258,11 +259,6 @@ def run(
     logger.info("Configuring log file handler...")
     log_filename = Path(output_folder).joinpath("{}.log".format(measurement_name))
     setup_log_file(log_filename)
-
-    logger.info("Writing measurement metadata...")
-    metadata_file = measurement_dir.joinpath("metadata.json")
-    with open(metadata_file, 'w') as f:
-        json.dump(metadata, f, indent=4)
 
     logger.info("Connecting to ESP Motion Controller...")
     motion_controller = ESP301.build(
@@ -309,4 +305,10 @@ def run(
     )
 
     logger.info("Starting measurement...")
-    polarimeter.start(samples, chunk_size=chunk_size, reps=reps)
+    _, elapsed_time = timing(polarimeter.start)(samples, chunk_size=chunk_size, reps=reps)
+    metadata['duration'] = str(timedelta(seconds=elapsed_time)).split(".")[0]
+
+    logger.info("Writing measurement metadata...")
+    metadata_file = measurement_dir.joinpath("metadata.json")
+    with open(metadata_file, 'w') as f:
+        json.dump(metadata, f, indent=4)
