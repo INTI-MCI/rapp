@@ -113,7 +113,7 @@ def phase_difference_from_folder(
         std_std
     ]
 
-    if plot:
+    if plot or show:
         output_folder = os.path.join(ct.WORK_DIR, ct.OUTPUT_FOLDER_PLOTS)
         f, axs = plt.subplots(
             1, 3,
