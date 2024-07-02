@@ -84,7 +84,10 @@ class Measurement:
         return cls(data, **parse_input_parameters_from_filepath(filepath))
 
     @classmethod
-    def simulate(cls, angle, cycles=1, step=1, a0_noise=A0_NOISE, a1_noise=A1_NOISE, **kwargs):
+    def simulate(
+        cls, angle, cycles=1, step=1,
+        a0_noise=A0_NOISE, a1_noise=A1_NOISE, a0_k=0, a1_k=0, **kwargs
+    ):
         """Instantiates a Measurement with simulated data.
 
         Args:
@@ -92,6 +95,8 @@ class Measurement:
             cycles: number of cycles of the analyzer.
             a0_noise: (mu, sigma) of additive white Gaussian noise of channel 0.
             a1_noise: (mu, sigma) of additive white Gaussian noise of channel 1.
+            a0_k: amount of distortion to add in channel 0.
+            a1_k: amount of distortion to add in channel 1.
             **kwargs: any other keyword argument to be passed 'harmonic' function.
 
         Returns:
@@ -102,9 +107,11 @@ class Measurement:
 
         fc = int(180 / step)  # Half cycle (180°) of the analyzer is one full cycle of the signal.
 
-        xs, s1 = signal.harmonic(cycles=cycles, fc=fc, noise=a0_noise, all_positive=True, **kwargs)
+        xs, s1 = signal.harmonic(
+            cycles=cycles, fc=fc, noise=a0_noise, k=a0_k, all_positive=True, **kwargs)
+
         _, s2 = signal.harmonic(
-            phi=phi, cycles=cycles, fc=fc, noise=a1_noise, all_positive=True, **kwargs)
+            phi=phi, cycles=cycles, fc=fc, noise=a1_noise, k=a1_k, all_positive=True, **kwargs)
 
         # We divide xs by 2 because one cycle of the analyzer contains two cycles of the signal.
         xs = np.rad2deg(xs) / 2

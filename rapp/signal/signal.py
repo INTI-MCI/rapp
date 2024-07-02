@@ -14,7 +14,8 @@ def harmonic(
     noise: tuple = None,
     bits: int = 16,
     max_v: float = 4,
-    all_positive: bool = False
+    all_positive: bool = False,
+    k: int = 0
 ) -> tuple:
     """Generates a one-dimensional discrete harmonic signal.
         Allows to add noise and voltage quantization.
@@ -29,6 +30,7 @@ def harmonic(
         bits: number of bits for quantization. If None, doesn't quantize the signal.
         max_v: maximum value of ADC scale [0, max_v] (in Volts).
         all_positive: if true, shifts the signal to the positive axis.
+        k: amount of distortion to add.
 
     Returns:
         The signal as an (xs, ys) tuple.
@@ -53,11 +55,20 @@ def harmonic(
 
     signal = signal + additive_noise
 
-    if all_positive:
-        signal = signal + A
-
     if bits is not None:
         signal = quantize(signal, max_v=max_v, bits=bits)
+
+    if k >= 1:
+        raise ValueError("distortion level k must be between 0 and 1.")
+
+    if k > 0:
+        negative = signal < 0
+        signal[negative] = (1 / k) * np.arctan(k * signal[negative])
+        positive = signal >= 0
+        signal[positive] = signal[positive] + k * signal[positive] ** 2
+
+    if all_positive:
+        signal = signal + A
 
     return xs, signal
 
