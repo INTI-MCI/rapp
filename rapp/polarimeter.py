@@ -269,7 +269,16 @@ def run(
 
     logger.info("Connecting Rotary Stage: Analyzer...")
     analyzer = RotaryStage(
-        motion_controller, cycles, step, delay_position, velocity, acceleration, deceleration, axis=1, name='Analyzer')
+        motion_controller,
+        cycles,
+        step,
+        delay_position,
+        velocity,
+        acceleration,
+        deceleration,
+        axis=1,
+        name='Analyzer'
+    )
 
     logger.info("Connecting Rotary Stage: HalfWavePlate...")
     hwp = RotaryStage(

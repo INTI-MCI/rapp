@@ -64,9 +64,9 @@ def add_to_subparsers(subparsers):
     g.add_argument('--cycles', type=float, default=0, help=HELP_CYCLES)
     g.add_argument('--step', type=float, default=45, help=HELP_STEP)
     g.add_argument('--delay-position', type=float, default=0, metavar='', help=HELP_DELAY_POSITION)
-    g.add_argument('--velocity', type=float, default=2.5, metavar='', help=HELP_VELOCITY)
-    g.add_argument('--acceleration', type=float, default=6.5, metavar='', help=HELP_ACCELERATION)
-    g.add_argument('--deceleration', type=float, default=4.5, metavar='', help=HELP_DECELERATION)
+    g.add_argument('--velocity', type=float, default=4, metavar='', help=HELP_VELOCITY)
+    g.add_argument('--acceleration', type=float, default=1, metavar='', help=HELP_ACCELERATION)
+    g.add_argument('--deceleration', type=float, default=1, metavar='', help=HELP_DECELERATION)
 
     g = p.add_argument_group('Half Wate Plate')
     g.add_argument('--hwp-cycles', type=float, default=0, metavar='', help=HELP_HWP_CYCLES)
