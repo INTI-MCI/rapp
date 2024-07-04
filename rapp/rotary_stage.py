@@ -31,8 +31,8 @@ class RotaryStage(Iterator):
         step=45,
         delay_position=0,
         velocity=4,
-        acceleration=1,
-        deceleration=1,
+        acceleration=4,
+        deceleration=4,
         axis=1,
         name=''
     ):
