@@ -110,7 +110,11 @@ class RotaryStage(Iterator):
         logger.info("{} - Setting velocity to {} deg/s.".format(str(self), self._velocity))
         self._motion_controller.set_velocity(self._velocity, axis=self._axis)
         self._motion_controller.set_home_velocity(self._velocity, axis=self._axis)
-        logger.info("{} - Setting acceleration to {} deg/s**2.".format(str(self), self._acceleration))
+
+        logger.info(
+            "{} - Setting acceleration to {} deg/s**2.".format(str(self), self._acceleration))
         self._motion_controller.set_acceleration(self._acceleration, axis=self._axis)
-        logger.info("{} - Setting deceleration to {} deg/s**2.".format(str(self), self._deceleration))
+
+        logger.info("{} - Setting deceleration to {} deg/s**2.".format(
+            str(self), self._deceleration))
         self._motion_controller.set_deceleration(self._deceleration, axis=self._axis)
