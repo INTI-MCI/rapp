@@ -14,6 +14,8 @@ HELP_CYCLES = 'n° of cycles to run (default: %(default)s).'
 HELP_STEP = 'step of the rotating analyzer (default: %(default)s). If cycles==0, step is ignored.'
 HELP_DELAY_POSITION = 'delay (in seconds) after changing analyzer position (default: %(default)s).'
 HELP_VELOCITY = 'velocity of the analyzer in deg/s (default: %(default)s).'
+HELP_ACCELERATION = 'acceleration of the analyzer in deg/s^2 (default: %(default)s).'
+HELP_DECELERATION = 'deceleration of the analyzer in deg/s^2 (default: %(default)s).'
 HELP_INIT_P = 'initial position of the analyzer in deg (default: %(default)s).'
 HELP_NOCH0 = 'excludes channel 0 from measurement (default: %(default)s).'
 HELP_NOCH1 = 'excludes channel 1 from measurement (default: %(default)s).'
@@ -63,6 +65,8 @@ def add_to_subparsers(subparsers):
     g.add_argument('--step', type=float, default=45, help=HELP_STEP)
     g.add_argument('--delay-position', type=float, default=0, metavar='', help=HELP_DELAY_POSITION)
     g.add_argument('--velocity', type=float, default=4, metavar='', help=HELP_VELOCITY)
+    g.add_argument('--acceleration', type=float, default=1, metavar='', help=HELP_ACCELERATION)
+    g.add_argument('--deceleration', type=float, default=1, metavar='', help=HELP_DECELERATION)
 
     g = p.add_argument_group('Half Wate Plate')
     g.add_argument('--hwp-cycles', type=float, default=0, metavar='', help=HELP_HWP_CYCLES)

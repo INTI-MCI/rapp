@@ -229,6 +229,8 @@ def run(
     reps: int = 1,
     delay_position: float = 0,
     velocity: float = 4,
+    acceleration: float = 1,
+    deceleration: float = 1,
     chunk_size: int = 500,
     no_ch0: bool = False,
     no_ch1: bool = False,
@@ -267,7 +269,16 @@ def run(
 
     logger.info("Connecting Rotary Stage: Analyzer...")
     analyzer = RotaryStage(
-        motion_controller, cycles, step, delay_position, velocity, axis=1, name='Analyzer')
+        motion_controller,
+        cycles,
+        step,
+        delay_position,
+        velocity,
+        acceleration,
+        deceleration,
+        axis=1,
+        name='Analyzer'
+    )
 
     logger.info("Connecting Rotary Stage: HalfWavePlate...")
     hwp = RotaryStage(
