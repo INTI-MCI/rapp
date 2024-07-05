@@ -10,11 +10,23 @@ from rapp.analysis.plot import Plot
 logger = logging.getLogger(__name__)
 
 
-METHODS = {  # (marker_style, line_style, reps)
-    'NLS': ('d', 'solid', None),
-    'DFT': ('-', 'solid', None),
-    # 'COSINE': ('s', 'solid', None),
-    # 'HILBERT': ('-', 'dotted', None)
+METHODS = {
+    'NLS': dict(
+        style='s',
+        ls='solid',
+        lw=1.5,
+        mfc=None,
+        mew=1,
+        color='k',
+    ),
+    'DFT': dict(
+        style='o',
+        ls='dotted',
+        lw=1.5,
+        mfc='None',
+        mew=1.5,
+        color='k',
+    ),
 }
 
 
@@ -24,7 +36,8 @@ TPL_FILENAME = "sim_error_vs_phase-reps-{}-cycles-{}-samples-{}-step-{}.svg"
 
 
 def run(
-    folder, angle=None, method=None, samples=5, step=1, reps=1, cycles=4, show=False, save=True
+    folder, angle=None, method=None, samples=5, step=1, reps=1, cycles=4, k=0,
+    show=False, save=True
 ):
     print("")
     logger.info("PHASE DIFFERENCE VS PHASE ANGLE")
@@ -45,9 +58,7 @@ def run(
                 samples=samples,
                 method=method,
                 allow_nan=True,
-                # a0_noise=None,
-                # a1_noise=None,
-                # bits=None
+                a0_k=k,
             )
 
             error = n_res.rmse()
@@ -58,9 +69,8 @@ def run(
     plot = Plot(
         ylabel=ct.LABEL_PHI_ERR, xlabel=ct.LABEL_ANGLE, ysci=True, xint=True, folder=folder)
 
-    for method, (ms, ls, _) in METHODS.items():
-        plot.add_data(
-            angles, errors[method], style=ms, ls=ls, lw=2, label=method)
+    for method, plot_config in METHODS.items():
+        plot.add_data(angles, errors[method], label=method, **plot_config)
 
     annotation = TPL_LABEL.format(cycles, samples, step, reps)
     plot._ax.text(0.65, 0.1, annotation, transform=plot._ax.transAxes)

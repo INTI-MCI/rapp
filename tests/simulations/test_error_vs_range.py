@@ -9,18 +9,17 @@ GAINS = {
 
 
 def test_run(tmp_path):
-    percentages, errors_per_maxv = error_vs_range.run(
+    percentages, errors_per_method = error_vs_range.run(
         angle=45,
         folder=tmp_path,
         step=1,
         samples=1,
         cycles=1,
         save=False,
-        gains=GAINS
     )
 
-    print(errors_per_maxv)
-    assert len(percentages) == 1
+    print(errors_per_method)
+    assert len(percentages) == 8
 
-    for errors in errors_per_maxv.values():
+    for errors in errors_per_method.values():
         assert errors[-1] < 5e-2
