@@ -11,7 +11,8 @@ TPL_FILENAME = "sim_phase_diff_fit-samples-{}-step-{}.png"
 
 def run(
     folder,
-    angle=22.5, method='NLS', samples=50, step=1, cycles=2, reps=None, show=False, save=True
+    angle=22.5, k=0, method='NLS', samples=50, step=1, cycles=2, reps=None, show=False,
+    save=True
 ):
     print("")
     logger.info("SIGNAL AND PHASE DIFFERENCE SIMULATION")
@@ -22,10 +23,11 @@ def run(
         step=step,
         angle=angle,
         samples=samples,
+        a0_k=k,
     )
 
     filename = None
     if save:
-        filename = 'sim-one-phase_diff.png'
+        filename = 'sim-one-phase_diff-k-{}.png'.format(k)
 
     phase_difference(measurement, method, filename, allow_nan=True, show=show)

@@ -15,6 +15,7 @@ HELP_NAME = 'names of the simulations to run.'
 HELP_METHOD = 'phase difference calculation method (default: %(default)s).'
 HELP_REPS = 'number of repetitions in each simulated iteration (default: %(default)s).'
 HELP_SAMPLES = 'n° of samples per angle.'
+HELP_DISTORTION = 'amount of distortion to add to CH0 (default: %(default)s).'
 HELP_STEP = 'motion step of the rotating analyzer (default: %(default)s).'
 
 
@@ -26,6 +27,7 @@ def add_to_subparsers(subparsers):
     p.add_argument('--samples', type=int, default=50, metavar='', help=HELP_SAMPLES)
     p.add_argument('--cycles', type=int, default=1, metavar='', help=HELP_CYCLES)
     p.add_argument('--step', type=float, default=1, metavar='', help=HELP_STEP)
+    p.add_argument('--k', type=float, default=0, metavar='', help=HELP_DISTORTION)
     p.add_argument('--reps', type=int, default=1, metavar='', help=HELP_REPS)
     p.add_argument('--show', action='store_true', help=ct.HELP_SHOW)
     p.add_argument('-v', '--verbose', action='store_true', help=ct.HELP_VERBOSE)
