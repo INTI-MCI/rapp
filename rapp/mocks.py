@@ -9,7 +9,7 @@ class SerialMock:
         self.delay = delay
 
     def readline(self):
-        return '{}'.format(self._random_value()).encode('utf-8')
+        return '{}'.format(0).encode('utf-8')
 
     def write(self, v):
         pass

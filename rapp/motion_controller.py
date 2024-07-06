@@ -145,11 +145,11 @@ class ESP301:
 
     def set_acceleration(self, acceleration, axis=None):
         axis = self._resolve_axis(axis)
-        self._serial.write("{0}CA{1:.4f};\r".format(axis, acceleration).encode())
+        self._serial.write("{0}AC{1:.4f}\r".format(axis, acceleration).encode())
 
     def set_deceleration(self, deceleration, axis=None):
         axis = self._resolve_axis(axis)
-        self._serial.write("{0}AG{1:.4f};\r".format(axis, deceleration).encode())
+        self._serial.write("{0}AG{1:.4f}\r".format(axis, deceleration).encode())
 
     def set_units(self, axis, unit=7):
         """Set axis displacement units.
