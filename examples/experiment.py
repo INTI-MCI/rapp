@@ -30,7 +30,7 @@ def main():
     experimentos = [e2]
 
     # time.sleep(5400)
-    name = "tanda-1-position-quartz-vel-3-acc-4-deacc-4-" 
+    name = "Position-3-quartz-vel-3-acc-4-deacc-4-" 
     for i, exp in enumerate(experimentos, 1):
         logger.info("EXPERIMENTO {}: {}".format(i, exp))
         try:

@@ -118,3 +118,5 @@ class RotaryStage(Iterator):
         logger.info("{} - Setting deceleration to {} deg/s**2.".format(
             str(self), self._deceleration))
         self._motion_controller.set_deceleration(self._deceleration, axis=self._axis)
+
+        self._motion_controller.check_errors()
