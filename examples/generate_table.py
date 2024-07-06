@@ -50,6 +50,7 @@ FOLDERS = [
     "2024-06-15-quartz-velocities-3-cycles1-step1-samples169",
     "2024-06-15-quartz-velocities-4-cycles1-step1-samples169",
     "2024-06-16-quartz-velocities-5-cycles1-step1-samples169",
+    "2024-06-25-quartz-vel-1-acc-0.5-deacc-0.5-1-cycles1-step1-samples169"
 ]
 
 
@@ -63,9 +64,6 @@ def setup_logger():
 
 
 def main():
-    # logger.info("ROW FOR TABLE: ")
-    # print(TABLE_COLUMNS)
-
     table_file = DataFile(column_names=COLUMN_NAMES, delimiter='\t')
     table_file.open("table.csv")
 
