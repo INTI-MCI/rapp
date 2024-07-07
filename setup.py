@@ -37,7 +37,7 @@ setuptools.setup(
     install_requires=[
         'numpy~=1.22',
         'matplotlib~=3.7',
-        'pandas~=1.5',
+        'pandas~=2.0',
         'pyserial~=3.5',
         'PyVISA~=1.14',
         'PyVISA-py~=0.7',

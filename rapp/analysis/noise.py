@@ -443,9 +443,8 @@ def plot_noise_with_laser_on(output_folder, show=False):
         scale, scale_u = round_to_n_with_uncertainty(popt[1], us[1], n=1, k=1)
         logger.info("A/f^α noise estimation: scale = {} ± {}".format(scale, scale_u))
 
-        label = "1/fᵅ (α = {:.2f} ± {:.2f})".format(alpha, alpha_u)
-
-        pink_y = pink_noise(xs[1:end], alpha, np.exp(popt[1]))[:end]
+        # label = "1/fᵅ (α = {:.2f} ± {:.2f})".format(alpha, alpha_u)
+        # pink_y = pink_noise(xs[1:end], alpha, np.exp(popt[1]))[:end]
 
         if i == 0:
             ax.set_ylabel(ct.LABEL_PSD)
@@ -453,7 +452,7 @@ def plot_noise_with_laser_on(output_folder, show=False):
         ax.set_xlabel(ct.LABEL_FREQUENCY)
         ax.set_title("Canal {}".format(i))
         ax.loglog(xs[1:N // 2], psd[1:N // 2], color='k')
-        ax.loglog(pink_x, pink_y, color='deeppink', lw=2, label=label)
+        # ax.loglog(pink_x, pink_y, color='deeppink', lw=2, label=label)
 
         line_frequencies = [50 * x for x in range(1, int(xs[N // 2] / 50))]
         for i, freq in enumerate(line_frequencies, 0):

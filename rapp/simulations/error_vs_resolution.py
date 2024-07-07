@@ -19,7 +19,8 @@ ARDUINO_BITS = 10
 
 
 def run(
-    folder, angle=22.5, method='NLS', samples=5, step=1, reps=1, cycles=4, show=False, save=True
+    folder, angle=22.5, method='NLS', samples=5, step=1, reps=1, cycles=4, k=0,
+    show=False, save=True
 ):
     print("")
     logger.info("PHASE DIFFERENCE VS RESOLUTION")
@@ -51,6 +52,7 @@ def run(
                 samples=samples,
                 allow_nan=True,
                 method=method,
+                a0_k=k
             )
 
             # RMSE

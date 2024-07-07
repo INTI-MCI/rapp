@@ -9,5 +9,6 @@ np.random.seed(1)
 def test_run(tmp_path):
     n_samples, errors = error_vs_samples.run(angle=45, folder=tmp_path, cycles=1, save=False)
 
-    for error in errors:
-        assert error < 5e-2
+    for method, m_errors in errors.items():
+        for e in m_errors:
+            assert e < 5e-2
