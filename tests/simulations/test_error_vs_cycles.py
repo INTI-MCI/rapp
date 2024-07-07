@@ -18,7 +18,7 @@ def test_run(tmp_path):
         save=False
     )
 
-    assert len(cycles) == 2
+    assert len(cycles) == 1
 
     for errors in errors_per_method.values():
         for error in errors:
