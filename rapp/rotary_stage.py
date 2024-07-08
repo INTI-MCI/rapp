@@ -1,7 +1,8 @@
 import time
 import math
 import logging
-from rapp.motion_controller import ESP301Error
+from rapp.motion_controller import ESP301Error, ESP301
+import rapp.constants as ct
 
 from collections.abc import Iterator
 import numpy as np
@@ -26,7 +27,7 @@ class RotaryStage(Iterator):
     """
     def __init__(
         self,
-        motion_controller,
+        motion_controller: ESP301,
         cycles=1,
         step=45,
         delay_position=0,
@@ -87,10 +88,17 @@ class RotaryStage(Iterator):
 
     def reset(self):
         """Resets position of the stage."""
-        logger.info("{} - Searching HOME...".format(str(self)))
+        self._motion_controller.set_acceleration(ct.ROTARY_HOME_ACCELERATION, axis=self._axis)
+        self._motion_controller.set_deceleration(ct.ROTARY_HOME_DECELERATION, axis=self._axis)
+        logger.info("{} - Searching HOME ".format(str(self))
+                    + "using velocity= {}  deg/s, ".format(ct.ROTARY_HOME_VELOCITY)
+                    + "acceleration= {} deg/s**2, ".format(ct.ROTARY_HOME_ACCELERATION)
+                    + "and deceleration= {}  deg/s**2...".format(ct.ROTARY_HOME_DECELERATION))
         self._index = 0
         self._motion_controller.reset_axis(axis=self._axis)
         logger.info("HOME found.")
+        self._motion_controller.set_acceleration(self._acceleration, axis=self._axis)
+        self._motion_controller.set_deceleration(self._deceleration, axis=self._axis)
 
     def reconnect(self):
         """Reconnects motion controller."""
@@ -110,7 +118,7 @@ class RotaryStage(Iterator):
 
         logger.info("{} - Setting velocity to {} deg/s.".format(str(self), self._velocity))
         self._motion_controller.set_velocity(self._velocity, axis=self._axis)
-        self._motion_controller.set_home_velocity(self._velocity, axis=self._axis)
+        self._motion_controller.set_home_velocity(ct.ROTARY_HOME_VELOCITY, axis=self._axis)
 
         logger.info(
             "{} - Setting acceleration to {} deg/s**2.".format(str(self), self._acceleration))
