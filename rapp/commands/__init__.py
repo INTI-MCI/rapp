@@ -3,7 +3,7 @@ from rapp.commands import optical_rotation
 from rapp.commands import phase_diff
 from rapp.commands import plot_raw
 from rapp.commands import polarimeter
-from rapp.commands import simulations
+from rapp.commands import simulation
 
 COMMANDS = {
     'analysis': analysis,
@@ -11,5 +11,5 @@ COMMANDS = {
     'phase_diff': phase_diff,
     'plot_raw': plot_raw,
     'polarimeter': polarimeter,
-    'sim': simulations,
+    'sim': simulation,
 }

@@ -19,8 +19,15 @@ ADC_MAXV = 4.096
 
 
 def run(
-    angle=None, folder=None, method=None, samples=None, step=None, reps=1, cycles=None,
-    show=False, save=True
+    folder,
+    angle=None,
+    method=None,
+    reps=1,
+    cycles=None,
+    step=None,
+    samples=None,
+    show=False,
+    save=True,
 ):
     print("")
     logger.info("PVALUE (GAUSSIAN-TEST) VS DYNAMIC RANGE")
@@ -43,17 +50,13 @@ def run(
         logger.info(TPL_LOG.format(round(A, 3), pvalue))
 
     plot = Plot(
-        ylabel="p-valor",
-        xlabel=ct.LABEL_DYNAMIC_RANGE_USE,
-        ysci=True,
-        xint=False,
-        folder=folder
+        ylabel="p-valor", xlabel=ct.LABEL_DYNAMIC_RANGE_USE, ysci=True, xint=False, folder=folder
     )
 
     label = TPL_LABEL.format(reps)
-    plot.add_data(xs, mean_pvalues, style='s-', color='k', lw=2)
-    plot._ax.axhline(y=0.05, ls='--', lw=2, label="pvalue=0.5")
-    plot.legend(loc='upper left', fontsize=12)
+    plot.add_data(xs, mean_pvalues, style="s-", color="k", lw=2)
+    plot._ax.axhline(y=0.05, ls="--", lw=2, label="pvalue=0.5")
+    plot.legend(loc="upper left", fontsize=12)
 
     plot._ax.text(0.05, 0.8, label, transform=plot._ax.transAxes)
 

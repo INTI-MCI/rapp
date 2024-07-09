@@ -1,0 +1,65 @@
+{
+    "error_vs_cycles": {
+        "angle": 22.5,
+        "cycles": 6,
+        "step": 1,
+        "samples": 169,
+        "reps": 200,
+        "k": 0,
+        "show": false,
+        "save": true
+    },
+    "error_vs_samples": {
+        "angle": 22.5,
+        "cycles": 1,
+        "step": 1,
+        "samples": 169,
+        "k": 0,
+        "reps": 300,
+        "show": false,
+        "save": true
+    },
+    "error_vs_step": {
+        "angle": 22.5,
+        "cycles": 1,
+        "samples": 169,
+        "steps": [0.001, 0.01, 0.1, 1, 2, 4],
+        "mreps": [1, 20, 50, 100, 200, 500],
+        "k": 0,
+        "show": false,
+        "save": true
+    },
+    "error_vs_range": {
+        "angle": 22.5,
+        "cycles": 1,
+        "step": 1,
+        "samples": 169,
+        "reps": 200,
+        "k": 0,
+        "show": false,
+        "save": true
+    },
+    "error_vs_resolution": {
+        "angle": 22.5,
+        "method": "DFT",
+        "cycles": 6,
+        "step": 1,
+        "samples": 169,
+        "reps": 100,
+        "k": 0,
+        "show": false,
+        "save": true
+    },
+    "error_vs_phase": {
+        "angle_range": [-90, 90],
+        "n_angles": 20,
+        "cycles": 1,
+        "step": 1,
+        "samples": 169,
+        "reps": 100,
+        "k": 0,
+        "show": false,
+        "save": true
+    }
+}
+
