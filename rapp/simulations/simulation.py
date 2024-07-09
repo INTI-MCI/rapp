@@ -4,7 +4,27 @@ from rapp.measurement import Measurement
 from rapp.utils import round_to_n
 
 
-DEFAULT_ANGLE = 22.5  # Phase difference in degrees.
+DEFAULT_ANGLE = 22.5  # angle between two planes of polarizaiton.
+FORMATS = ["png", "svg"]
+
+METHODS = {
+    "NLS": dict(
+        style="s",
+        ls="solid",
+        lw=1.5,
+        mfc=None,
+        mew=1,
+        color="k",
+    ),
+    "DFT": dict(
+        style="o",
+        ls="dotted",
+        lw=1.5,
+        mfc="None",
+        mew=1.5,
+        color="k",
+    ),
+}
 
 
 class SimulationResult:
@@ -22,7 +42,7 @@ class SimulationResult:
         return round_to_n(np.rad2deg(np.mean(self._us)), 2)
 
 
-def n_simulations(N=1, angle=DEFAULT_ANGLE, method='NLS', allow_nan=False, **kwargs):
+def n_simulations(N=1, angle=DEFAULT_ANGLE, method="NLS", allow_nan=False, **kwargs):
     """Performs N measurement simulations and calculates their phase difference.
 
     Args:
@@ -49,6 +69,7 @@ def n_simulations(N=1, angle=DEFAULT_ANGLE, method='NLS', allow_nan=False, **kwa
 def plot(res):
     """Just for debug. Refactor and reuse code for this."""
     import matplotlib.pyplot as plt
+
     plt.plot(res.fitx, res.fits1)
     plt.plot(res.fitx, res.fits2)
     plt.show()
