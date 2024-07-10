@@ -1,0 +1,26 @@
+{
+    "input_parameters": {
+        "samples": 169,
+        "cycles": 1,
+        "step": 1,
+        "reps": 10,
+        "delay_position": 0,
+        "velocity": 3,
+        "acceleration": 4,
+        "deceleration": 4,
+        "chunk_size": 500,
+        "no_ch0": false,
+        "no_ch1": false,
+        "prefix": "Position-1-quartz-vel-3-acc-4-deacc-4--1",
+        "mock_esp": false,
+        "mock_adc": false,
+        "mock_pm100": false,
+        "overwrite": false,
+        "hwp_cycles": 0,
+        "hwp_step": 45,
+        "hwp_delay_position": 5,
+        "mc_wait": 15,
+        "disable_pm100": true
+    },
+    "duration": "1:21:03"
+}
