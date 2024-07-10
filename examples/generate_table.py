@@ -1,6 +1,8 @@
 import os
+import sys
 import logging
 
+from pathlib import Path
 from rich.progress import track
 
 from rapp.analysis import phase_diff
@@ -50,7 +52,8 @@ FOLDERS = [
     "2024-06-15-quartz-velocities-3-cycles1-step1-samples169",
     "2024-06-15-quartz-velocities-4-cycles1-step1-samples169",
     "2024-06-16-quartz-velocities-5-cycles1-step1-samples169",
-    "2024-06-25-quartz-vel-1-acc-0.5-deacc-0.5-1-cycles1-step1-samples169"
+    "2024-06-25-quartz-vel-1-acc-0.5-deacc-0.5-1-cycles1-step1-samples169",
+    "2024-07-05-repeatability-vel3-cycles2-step0.1-samples169"
 ]
 
 
@@ -63,12 +66,20 @@ def setup_logger():
         logging.getLogger(lib).setLevel(logging.ERROR)
 
 
-def main():
+def main(folder: Path = None):
     table_file = DataFile(column_names=COLUMN_NAMES, delimiter='\t')
-    table_file.open("table.csv")
 
-    for folder in track(FOLDERS, description="Generating table..."):
-        folder = os.path.join("data", folder)
+    table_file.open("table-repeatability.csv")
+
+    folders = []
+
+    if folder is None:  # process all.
+        all_folders = [Path("data").joinpath(f) for f in FOLDERS]
+        folders.extend(all_folders)
+    else:
+        folders.append(Path(folder))
+
+    for folder in track(folders, description="Generating table rows..."):
         row_nls = phase_diff.phase_difference_from_folder(folder, method='NLS')
         row_dft = phase_diff.phase_difference_from_folder(folder, method='DFT')[4:]
         row = row_nls + row_dft
@@ -78,4 +89,4 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    main(*sys.argv[1:])
