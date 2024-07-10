@@ -1,11 +1,18 @@
 import os
 import sys
+import json
 import math
 import shutil
 import decimal
 
 from time import time
 from functools import wraps
+
+
+def json_load(path) -> dict:
+    """Opens JSON file."""
+    with open(path) as file:
+        return json.load(file)
 
 
 def create_folder(folder, overwrite=False):

@@ -10,7 +10,6 @@ workdir
 
 .coverage
 
-*.json
 *.svg
 *.png
 
