@@ -1,4 +1,3 @@
-import os
 import argparse
 from pathlib import Path
 
@@ -49,7 +48,7 @@ def add_to_subparsers(subparsers):
 
 
 def run(name=None, config_file=None, work_dir=ct.WORK_DIR, **kwargs):
-    output_folder = os.path.join(work_dir, ct.OUTPUT_FOLDER_PLOTS)
+    output_folder = Path(work_dir).joinpath(ct.OUTPUT_FOLDER_PLOTS, "simulations")
     create_folder(output_folder)
 
     if config_file is None and name is None:

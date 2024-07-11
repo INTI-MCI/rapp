@@ -216,7 +216,7 @@ def plot_phase_difference(phase_diff_result, work_dir=ct.WORK_DIR, filename=None
 
     # Plot data and sinusoidal fits
 
-    plot = Plot(ylabel=ct.LABEL_VOLTAGE, xlabel=ct.LABEL_DEGREE, folder=output_folder)
+    plot = Plot(ylabel=ct.LABEL_VOLTAGE, xlabel=ct.LABEL_ANGLE, folder=output_folder)
 
     markevery = int(len(xs) * 0.02)
 
@@ -307,7 +307,7 @@ def plot_phase_difference(phase_diff_result, work_dir=ct.WORK_DIR, filename=None
 
         residual_fity = residual(residual_fitx, *popt)
 
-        plot = Plot(ylabel=ct.LABEL_VOLTAGE, xlabel=ct.LABEL_DEGREE, folder=output_folder)
+        plot = Plot(ylabel=ct.LABEL_VOLTAGE, xlabel=ct.LABEL_ANGLE, folder=output_folder)
         plot.add_data(
             res.fitx,
             signal_diff_s1,

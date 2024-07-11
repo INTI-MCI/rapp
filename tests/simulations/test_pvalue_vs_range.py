@@ -3,7 +3,7 @@ import numpy as np
 from rapp.simulations import pvalue_vs_range
 
 
-np.random.seed(1)
+np.random.seed(0)
 
 
 def test_run(tmp_path):

@@ -2,19 +2,17 @@ import logging
 
 import numpy as np
 
+from rapp import adc
 from rapp import constants as ct
-from rapp.adc import GAINS, GAIN_ONE
-from rapp.simulations import simulation
 from rapp.analysis.plot import Plot
+from rapp.simulations import simulation
 
 
 logger = logging.getLogger(__name__)
 
-# np.random.seed(1)
-
 TPL_LOG = "A={}, φerr: {}."
-TPL_LABEL = "cycles={}\nsamples={}\nstep={}°\nreps={}"
-TPL_FILENAME = "sim_error_vs_range-reps-{}-cycles-{}-samples-{}-step-{}.{}"
+TPL_LABEL = "cycles={}\nstep={}°\nsamples={}\nreps={}"
+TPL_FILENAME = "sim_error_vs_range-reps-{}-cycles-{}-step-{}-samples-{}.{}"
 
 
 def run(
@@ -31,7 +29,7 @@ def run(
     print("")
     logger.info("PHASE DIFFERENCE VS MAX TENSION")
 
-    max_v, step_mV = GAINS[GAIN_ONE]
+    max_v, step_mV = adc.GAINS[adc.GAIN_ONE]
     v_step = step_mV * 2
     max_A = max_v / 2
     amplitudes = np.linspace(max_A - v_step * 8, max_A, num=8)
@@ -64,11 +62,7 @@ def run(
             logger.info(TPL_LOG.format(amplitude, "{:.2E}".format(error)))
 
     plot = Plot(
-        ylabel=ct.LABEL_PHI_ERR,
-        xlabel=ct.LABEL_DYNAMIC_RANGE_USE,
-        ysci=True,
-        xint=False,
-        folder=folder,
+        ylabel=ct.LABEL_PHI_ERR, xlabel=ct.LABEL_DYNAMIC_RANGE_USE, ysci=True, folder=folder
     )
 
     for method, plot_config in simulation.METHODS.items():
@@ -76,12 +70,13 @@ def run(
 
     plot.legend(loc="upper right", fontsize=12)
 
-    annotation = TPL_LABEL.format(cycles, samples, step, reps)
+    annotation = TPL_LABEL.format(cycles, step, samples, reps)
     plot._ax.text(0.25, 0.7, annotation, transform=plot._ax.transAxes)
+    plot._ax.ticklabel_format(style="sci", scilimits=(-4, -4), axis="y")
 
     if save:
         for format_ in simulation.FORMATS:
-            plot.save(filename=TPL_FILENAME.format(reps, cycles, samples, step, format_))
+            plot.save(filename=TPL_FILENAME.format(reps, cycles, step, samples, format_))
 
     if show:
         plot.show()

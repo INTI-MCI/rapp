@@ -10,8 +10,8 @@ from rapp.mocks import SerialMock
 
 logger = logging.getLogger(__name__)
 
-ADC_MAXV = 4.096
-ADC_BITS = 16
+MAXV = 4.096
+BITS = 16
 
 GAIN_TWOTHIRDS = 23
 GAIN_ONE = 1
