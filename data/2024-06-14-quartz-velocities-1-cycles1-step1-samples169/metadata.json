@@ -1,0 +1,21 @@
+{
+    "samples": 169,
+    "cycles": 1,
+    "step": 1,
+    "reps": 50,
+    "delay_position": 0,
+    "velocity": 4,
+    "acceleration": 0.5,
+    "chunk_size": 500,
+    "no_ch0": false,
+    "no_ch1": false,
+    "prefix": "quartz-velocities-1",
+    "mock_esp": false,
+    "mock_adc": false,
+    "mock_pm100": false,
+    "overwrite": false,
+    "hwp_cycles": 0,
+    "hwp_step": 45,
+    "hwp_delay_position": 5,
+    "mc_wait": 15
+}
