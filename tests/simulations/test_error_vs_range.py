@@ -1,7 +1,8 @@
+import numpy as np
 from rapp.simulations import error_vs_range
 
 
-# np.random.seed(1)
+np.random.seed(0)
 
 GAINS = {
     23: (6.144, 0.1875),
@@ -9,17 +10,9 @@ GAINS = {
 
 
 def test_run(tmp_path):
-    percentages, errors_per_method = error_vs_range.run(
-        angle=45,
-        folder=tmp_path,
-        step=1,
-        samples=1,
-        cycles=1,
-        save=False,
-    )
+    percentages, errors = error_vs_range.run(folder=tmp_path, samples=1, save=False)
 
-    print(errors_per_method)
     assert len(percentages) == 8
 
-    for errors in errors_per_method.values():
-        assert errors[-1] < 5e-2
+    for err in errors.values():
+        assert err[-1] < 5e-2

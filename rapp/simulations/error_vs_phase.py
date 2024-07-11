@@ -3,31 +3,32 @@ import logging
 import numpy as np
 import matplotlib.pyplot as plt
 
-from rapp import constants as ct
+from rapp import adc
 from rapp import measurement
-from rapp.simulations import simulation
+from rapp import constants as ct
 from rapp.analysis.plot import Plot
+from rapp.simulations import simulation
+
 
 logger = logging.getLogger(__name__)
 
-
 TPL_LOG = "angle={}°, φerr: {}."
-TPL_LABEL = "cycles={}\nstep={}°\nsamples={}\nnoise={}\nreps={}"
-TPL_FILENAME = "sim_error_vs_phase-reps-{}-cycles-{}-samples-{}-step-{}.svg"
+TPL_LABEL = "cycles={}\nstep={}°\nsamples={}\nreps={}"
+TPL_FILENAME = "sim_error_vs_phase-reps-{}-cycles-{}-step-{}-samples-{}.{}"
 
 
 def run(
     folder,
     angle_range=(-90, 90),
     n_angles=30,
-    cycles=4,
     method="DFT",
+    cycles=1,
     step=1,
     samples=5,
     reps=1,
-    max_v=4.096,
+    max_v=adc.MAXV,
     dynamic_range=0.7,
-    n_bits=[16, 24],
+    n_bits=(adc.BITS, 24),
     k=0,
     noise=True,
     show=False,
@@ -68,22 +69,22 @@ def run(
 
     plot = Plot(
         ylabel=ct.LABEL_PHI_ERR,
-        xlabel=ct.LABEL_ANGLE_PLANES,
+        xlabel=ct.LABEL_ANGLE_OR,
         ysci=True,
         yoom=-3,
-        xint=True,
+        # xint=True,
         folder=folder,
     )
 
     for bits, (method, plot_config) in zip(n_bits, simulation.METHODS.items()):
         plot.add_data(angles, errors[bits], label=f"bits={bits}", **plot_config)
 
-    # plot._ax.axhline(y=0, lw=2, ls="dashed")
-
-    annotation = TPL_LABEL.format(cycles, step, samples, noise, reps)
-    plot._ax.text(0.05, 0.65, annotation, transform=plot._ax.transAxes)
-
     plot.legend(loc="upper right", fontsize=13)
+
+    plot._ax.axhline(y=0, lw=1, ls="dashed")
+
+    annotation = TPL_LABEL.format(cycles, step, samples, reps)
+    plot._ax.text(0.05, 0.7, annotation, transform=plot._ax.transAxes)
     plot._ax.xaxis.set_major_locator(plt.MaxNLocator(5))
 
     max_value = max(max(x) for x in errors.values())
@@ -91,7 +92,7 @@ def run(
 
     if save:
         for format_ in simulation.FORMATS:
-            plot.save(filename=TPL_FILENAME.format(reps, cycles, samples, step, format_))
+            plot.save(filename=TPL_FILENAME.format(reps, cycles, step, samples, format_))
 
     if show:
         plot.show()

@@ -2,13 +2,13 @@ import logging
 
 import numpy as np
 
+from rapp import adc
 from rapp import constants as ct
-from rapp.adc import ADC_BITS, ADC_MAXV
-from rapp.simulations import simulation
 from rapp.analysis.plot import Plot
+from rapp.simulations import simulation
+
 
 logger = logging.getLogger(__name__)
-
 
 TPL_LOG = "cycles={}, φerr: {}."
 TPL_LABEL = "cycles={}\nstep={}°\nsamples={}\nreps={}"
@@ -22,7 +22,7 @@ def run(
     folder,
     angle=22.5,
     method="DFT",
-    cycles=4,
+    cycles=2,
     step=1,
     samples=5,
     reps=1,
@@ -34,12 +34,10 @@ def run(
     print("")
     logger.info("PHASE DIFFERENCE VS RESOLUTION")
 
-    cycles_list = np.arange(1, cycles + 1, step=1)
+    cycles_list = np.arange(0.5, cycles + 0.5, step=0.5)
 
-    BITS = [ARDUINO_BITS, ADC_BITS]
-    MAXV = [ARDUINO_MAXV, ADC_MAXV]
-    MS = ["o", "s"]
-    LS = ["dotted", "solid"]
+    BITS = [ARDUINO_BITS, adc.BITS]
+    MAXV = [ARDUINO_MAXV, adc.MAXV]
 
     errors_per_bits = {}
     for bits, maxv in zip(BITS, MAXV):
@@ -74,23 +72,14 @@ def run(
         ylabel=ct.LABEL_PHI_ERR, xlabel=ct.LABEL_N_CYCLES, ysci=True, xint=True, folder=folder
     )
 
-    for bits, ms, ls in zip(BITS, MS, LS):
-        plot.add_data(
-            cycles_list,
-            errors_per_bits[bits],
-            ms,
-            ls=ls,
-            lw=2,
-            mfc="None",
-            mew=2,
-            color="k",
-            label="bits={}.".format(bits),
-        )
+    for bits, (method, plot_config) in zip(BITS, simulation.METHODS.items()):
+        label = "bits={}.".format(bits)
+        plot.add_data(cycles_list, errors_per_bits[bits], label=label, **plot_config)
+
+    plot.legend(fontsize=12)
 
     annotation = TPL_LABEL.format(cycles, step, samples, reps)
-    plot._ax.text(0.05, 0.4, annotation, transform=plot._ax.transAxes)
-    plot._ax.set_yscale("log")
-    plot.legend(fontsize=12)
+    plot._ax.text(0.05, 0.3, annotation, transform=plot._ax.transAxes)
 
     if save:
         for format_ in simulation.FORMATS:

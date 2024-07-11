@@ -3,6 +3,7 @@ import numpy as np
 from rapp.measurement import Measurement
 from rapp.utils import round_to_n
 
+np.random.seed(0)
 
 DEFAULT_ANGLE = 22.5  # angle between two planes of polarizaiton.
 FORMATS = ["png", "svg"]
@@ -10,15 +11,15 @@ FORMATS = ["png", "svg"]
 METHODS = {
     "NLS": dict(
         style="s",
+        ms=4,
         ls="solid",
-        lw=1.5,
-        mfc=None,
+        lw=1,
         mew=1,
         color="k",
     ),
     "DFT": dict(
         style="o",
-        ls="dotted",
+        ls="dashed",
         lw=1.5,
         mfc="None",
         mew=1,

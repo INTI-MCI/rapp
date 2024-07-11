@@ -41,7 +41,7 @@ def run(
         for rep in range(reps):
             noise = A * np.random.normal(loc=0, scale=0.00032, size=40000)
             noise = noise + max(noise)
-            noise = signal.quantize(noise, max_v=max_v, bits=adc.ADC_BITS)
+            noise = signal.quantize(noise, max_v=max_v, bits=adc.BITS)
 
             pvalue = stats.normaltest(noise).pvalue
             pvalues.append(pvalue)
