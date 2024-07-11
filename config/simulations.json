@@ -58,6 +58,8 @@
         "samples": 169,
         "reps": 100,
         "k": 0,
+        "n_bits": [16, 24],
+        "noise": true,
         "show": false,
         "save": true
     }

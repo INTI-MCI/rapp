@@ -21,7 +21,7 @@ METHODS = {
         ls="dotted",
         lw=1.5,
         mfc="None",
-        mew=1.5,
+        mew=1,
         color="k",
     ),
 }
