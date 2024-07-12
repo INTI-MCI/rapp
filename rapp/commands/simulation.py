@@ -22,6 +22,8 @@ HELP_STEP = "motion step of the rotating analyzer."
 HELP_SAMPLES = "n° of samples per angle."
 HELP_DYNAMIC_RANGE = "percentage of dynamic range to simulate (between [0, 1])."
 HELP_MAX_V = "maximum voltage of dynamic range."
+HELP_NOISE = "if True, adds gaussian noise to simulated signals."
+HELP_BITS = "number of bits for signal quantization."
 HELP_DISTORTION = "amount of distortion to add to CH0."
 
 
@@ -39,6 +41,9 @@ def add_to_subparsers(subparsers):
     p.add_argument("--samples", type=int, metavar="", help=HELP_SAMPLES)
     p.add_argument("--dynamic-range", type=float, metavar="", help=HELP_DYNAMIC_RANGE)
     p.add_argument("--max-v", type=float, metavar="", help=HELP_MAX_V)
+    p.add_argument("--noise", action="store_true", help=HELP_NOISE)
+    p.add_argument("--bits", type=int, metavar="", help=HELP_BITS)
+
     p.add_argument("--k", type=float, metavar="", help=HELP_DISTORTION)
     p.add_argument("--show", action="store_true", help=ct.HELP_SHOW)
 
