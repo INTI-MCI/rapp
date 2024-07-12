@@ -7,19 +7,22 @@ from matplotlib import pyplot as plt
 
 from rapp.utils import create_folder
 
-plt.style.use('style.mplstyle')
+plt.style.use("style.mplstyle")
 
-FOLDER = 'output-plots'
+FOLDER = "output-plots"
 
 
 class Plot:
     """Encapsulates the creation of plots."""
-    def __init__(self, title='', ylabel=None, xlabel=None, ysci=False, xint=False, folder=FOLDER):
+
+    def __init__(
+        self, title="", ylabel=None, xlabel=None, ysci=False, yoom=0, xint=False, folder=FOLDER
+    ):
         self._fig, self._ax = plt.subplots(figsize=(4, 4))
         self._ax.set_title(title, size=12)
 
         if ysci:
-            self._ax.ticklabel_format(style='sci', scilimits=(0, 0), axis='y')
+            self._ax.ticklabel_format(style="sci", scilimits=(yoom, yoom), axis="y")
 
         if xint:
             self._ax.xaxis.set_major_locator(plt.MaxNLocator(integer=True))
@@ -30,7 +33,7 @@ class Plot:
 
         self._folder = folder
 
-    def add_data(self, xs, ys=None, style='o', ms=5, mew=0.5, xrad=False, **kwargs):
+    def add_data(self, xs, ys=None, style="o", ms=5, mew=0.5, xrad=False, **kwargs):
         """Adds data to the plot."""
 
         ax = self._ax
@@ -41,7 +44,7 @@ class Plot:
 
         if xrad:
             xs = xs / np.pi
-            ax.xaxis.set_major_formatter(tck.FormatStrFormatter('%g $\\pi$'))
+            ax.xaxis.set_major_formatter(tck.FormatStrFormatter("%g $\\pi$"))
             ax.xaxis.set_major_locator(tck.MultipleLocator(base=1.0))
 
         return ax.errorbar(xs, ys, fmt=style, ms=ms, mew=mew, **kwargs)
