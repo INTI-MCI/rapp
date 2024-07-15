@@ -21,16 +21,16 @@ def setup_logger():
 
 def main():
     setup_logger()
-    e1 = dict(cycles=3, step=0.25, samples=169, reps=1, velocity=3)
-    e2 = dict(cycles=1, step=1, samples=169, reps=10, velocity=3, acceleration=4, deceleration=4)
-    e3 = dict(cycles=1, step=1, samples=169, reps=50, acceleration=12)
+    e1 = dict(cycles=1.5, step=1, samples=676, reps=50)
+    e2 = dict(cycles=1.5, step=1.25, samples=845, reps=50)
+    e3 = dict(cycles=1.5, step=0.5, samples=338, reps=50)
     e4 = dict(cycles=1, step=1, samples=169, reps=50, velocity=0.5)
     e5 = dict(cycles=1, step=1, samples=169, reps=50, velocity=1)
     e6 = dict(cycles=1, step=1, samples=169, reps=50, velocity=2)
-    experimentos = [e2]
+    experimentos = [e1, e2, e3]
 
     # time.sleep(5400)
-    name = "Position-3-quartz-vel-3-acc-4-deacc-4-" 
+    name = "repeatability-quartz" 
     for i, exp in enumerate(experimentos, 1):
         logger.info("EXPERIMENTO {}: {}".format(i, exp))
         try:
