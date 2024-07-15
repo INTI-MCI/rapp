@@ -1,0 +1,85 @@
+2024-07-14 06:40:52,319 - rapp.polarimeter - INFO - Connecting to ESP Motion Controller...
+2024-07-14 06:40:52,429 - rapp.polarimeter - INFO - Connecting Rotary Stage: Analyzer...
+2024-07-14 06:40:52,449 - rapp.polarimeter - INFO - Connecting Rotary Stage: HalfWavePlate...
+2024-07-14 06:40:52,469 - rapp.polarimeter - INFO - Connecting to ADC...
+2024-07-14 06:40:54,496 - rapp.polarimeter - WARNING - Thorlabs PM100 disabled.
+2024-07-14 06:40:54,496 - rapp.polarimeter - INFO - Building DataFile...
+2024-07-14 06:40:54,496 - rapp.polarimeter - INFO - Building Polarimeter...
+2024-07-14 06:40:54,496 - rapp.polarimeter - INFO - Starting measurement...
+2024-07-14 06:40:54,496 - rapp.polarimeter - INFO - Samples to measure in each analyzer position: 338.
+2024-07-14 06:40:54,496 - rapp.polarimeter - INFO - Maximum chunk size: 500.
+2024-07-14 06:41:08,775 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 1/50
+2024-07-14 07:08:35,466 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 2/50
+2024-07-14 07:35:25,732 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 3/50
+2024-07-14 08:01:30,237 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 4/50
+2024-07-14 08:27:32,910 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 5/50
+2024-07-14 08:53:53,357 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 6/50
+2024-07-14 09:20:24,135 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 7/50
+2024-07-14 09:46:20,411 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 8/50
+2024-07-14 10:12:44,047 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 9/50
+2024-07-14 10:39:28,662 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 10/50
+2024-07-14 11:06:12,066 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 11/50
+2024-07-14 11:32:57,898 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 12/50
+2024-07-14 12:00:08,868 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 13/50
+2024-07-14 12:27:05,592 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 14/50
+2024-07-14 12:53:36,267 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 15/50
+2024-07-14 13:20:43,839 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 16/50
+2024-07-14 13:47:47,582 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 17/50
+2024-07-14 14:14:37,725 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 18/50
+2024-07-14 14:41:45,097 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 19/50
+2024-07-14 15:09:07,796 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 20/50
+2024-07-14 15:36:18,132 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 21/50
+2024-07-14 16:03:14,313 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 22/50
+2024-07-14 16:29:55,195 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 23/50
+2024-07-14 16:57:02,375 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 24/50
+2024-07-14 17:23:59,043 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 25/50
+2024-07-14 17:51:30,693 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 26/50
+2024-07-14 18:06:04,407 - rapp.polarimeter - WARNING - Motion Controller error: Found empty buffer trying to read serial data.
+2024-07-14 18:06:04,407 - rapp.polarimeter - WARNING - Waiting 15 seconds...
+2024-07-14 18:06:19,414 - rapp.polarimeter - WARNING - Reconnecting the Motion Controller...
+2024-07-14 18:06:19,536 - rapp.polarimeter - WARNING - Turning motors ON again...
+2024-07-14 18:06:19,576 - rapp.polarimeter - WARNING - Setting HWP position to 0
+2024-07-14 18:06:19,576 - rapp.polarimeter - WARNING - Removing unfinished file...
+2024-07-14 18:06:19,576 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 26/50
+2024-07-14 18:32:48,891 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 27/50
+2024-07-14 19:00:15,994 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 28/50
+2024-07-14 19:27:27,123 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 29/50
+2024-07-14 19:54:15,709 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 30/50
+2024-07-14 20:21:31,831 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 31/50
+2024-07-14 20:30:26,367 - rapp.polarimeter - WARNING - Motion Controller error: Found empty buffer trying to read serial data.
+2024-07-14 20:30:26,367 - rapp.polarimeter - WARNING - Waiting 15 seconds...
+2024-07-14 20:30:41,373 - rapp.polarimeter - WARNING - Reconnecting the Motion Controller...
+2024-07-14 20:30:41,481 - rapp.polarimeter - WARNING - Turning motors ON again...
+2024-07-14 20:30:41,511 - rapp.polarimeter - WARNING - Setting HWP position to 0
+2024-07-14 20:30:41,521 - rapp.polarimeter - WARNING - Removing unfinished file...
+2024-07-14 20:30:41,521 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 31/50
+2024-07-14 20:58:03,148 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 32/50
+2024-07-14 21:25:25,715 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 33/50
+2024-07-14 21:52:40,273 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 34/50
+2024-07-14 22:19:52,355 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 35/50
+2024-07-14 22:46:39,759 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 36/50
+2024-07-14 23:14:03,378 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 37/50
+2024-07-14 23:41:28,777 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 38/50
+2024-07-14 23:53:03,362 - rapp.polarimeter - WARNING - Motion Controller error: Found empty buffer trying to read serial data.
+2024-07-14 23:53:03,362 - rapp.polarimeter - WARNING - Waiting 15 seconds...
+2024-07-14 23:53:18,371 - rapp.polarimeter - WARNING - Reconnecting the Motion Controller...
+2024-07-14 23:53:18,490 - rapp.polarimeter - WARNING - Turning motors ON again...
+2024-07-14 23:53:18,530 - rapp.polarimeter - WARNING - Setting HWP position to 0
+2024-07-14 23:53:18,530 - rapp.polarimeter - WARNING - Removing unfinished file...
+2024-07-14 23:53:18,530 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 38/50
+2024-07-15 00:20:14,751 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 39/50
+2024-07-15 00:47:19,711 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 40/50
+2024-07-15 01:13:58,290 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 41/50
+2024-07-15 01:40:56,893 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 42/50
+2024-07-15 02:07:36,697 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 43/50
+2024-07-15 02:34:13,481 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 44/50
+2024-07-15 03:01:16,168 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 45/50
+2024-07-15 03:28:41,404 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 46/50
+2024-07-15 03:55:45,562 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 47/50
+2024-07-15 04:22:18,027 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 48/50
+2024-07-15 04:49:20,895 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 49/50
+2024-07-15 05:15:54,434 - rapp.polarimeter - INFO - HWP angle: 0°, repetition 50/50
+2024-07-15 05:42:33,294 - rapp.polarimeter - INFO - Done!
+2024-07-15 05:42:33,294 - rapp.polarimeter - INFO - Results in file: workdir\output-data\2024-07-14-repeatability-quartz-3-cycles1.5-step0.5-samples338\hwp0-rep50.csv
+2024-07-15 05:42:33,294 - rapp.polarimeter - INFO - Total of 3 failures with the Motion Controller.
+2024-07-15 05:42:33,324 - rapp.polarimeter - INFO - Writing measurement metadata...
