@@ -1,101 +1,68 @@
-import re
-import os
+import glob
 import logging
+from pathlib import Path
 
 import numpy as np
-from uncertainties import ufloat
 
-from rapp.measurement import Measurement, REGEX_NUMBER_AFTER_WORD
+from rapp.measurement import Measurement
 from rapp.utils import round_to_n
-
 
 logger = logging.getLogger(__name__)
 
 
-def optical_rotation(folder1, folder2, method='NLS', avg_or=False, hwp=False):
-    print("")
+def optical_rotation(folder1, folder2, method="DFT"):
     logger.debug("Folder without optical active sample measurements {}...".format(folder1))
     logger.debug("Folder with optical active sample measurements {}...".format(folder2))
 
-    initial_poisition = float(re.findall(REGEX_NUMBER_AFTER_WORD.format(word="hwp"), folder1)[0])
-    final_position = float(re.findall(REGEX_NUMBER_AFTER_WORD.format(word="hwp"), folder2)[0])
+    files_i = sorted(glob.glob(f"{folder1}/*.csv"))
+    files_f = sorted(glob.glob(f"{folder2}/*.csv"))
 
-    logger.debug("Initial position: {}°".format(initial_poisition))
-    logger.debug("Final position: {}°".format(final_position))
+    if not files_i:
+        raise ValueError("Empty folder!: {}".format(folder1))
 
-    expected_or = (final_position - initial_poisition) * (-1)
-
-    if hwp:
-        expected_or = expected_or * 2
-
-    logger.info("Expected optical rotation: {}°".format(expected_or))
-
-    files_i = sorted([os.path.join(folder1, x) for x in os.listdir(folder1)])
-    files_f = sorted([os.path.join(folder2, x) for x in os.listdir(folder2)])
+    if not files_f:
+        raise ValueError("Empty folder!: {}".format(folder2))
 
     phase_diff_i = []
     phase_diff_f = []
 
-    logger.info("Computing phase differences...")
+    logger.debug("Computing phase differences...")
     for k in range(len(files_f)):
+        logger.debug("Loading repetition {}".format(k + 1))
         measurement_i = Measurement.from_file(files_i[k])
         measurement_f = Measurement.from_file(files_f[k])
-        *head, res_i = measurement_i.phase_diff(method=method, fix_range=not hwp)
-        *head, res_f = measurement_f.phase_diff(method=method, fix_range=not hwp)
+        *head, res_i = measurement_i.phase_diff(method=method, fix_range=True)
+        *head, res_f = measurement_f.phase_diff(method=method, fix_range=True)
 
-        phase_diff_i.append(ufloat(res_i.value, res_i.u))
-        phase_diff_f.append(ufloat(res_f.value, res_f.u))
+        phase_diff_i.append(res_i.value)
+        phase_diff_f.append(res_f.value)
 
-    ors = []
-    if avg_or:
-        logger.info("Computing N optical rotations and taking average...")
+    optical_rotation = np.mean(phase_diff_f) - np.mean(phase_diff_i)
 
-        for k in range(len(files_f)):
-            rotation = phase_diff_f[k] - phase_diff_i[k]
-            logger.info("Optical rotation {}: {}°".format(k + 1, rotation))
-            ors.append(rotation)
-
-    else:
-        logger.info("Averaging N phase differences and computing one optical rotation...")
-        ors.append(np.mean(phase_diff_f) - np.mean(phase_diff_i))
-
-    res = np.mean(ors)
-
-    logger.info("Optical rotation measured: {}".format(res.n))
-    logger.info("Error: {}".format(round_to_n(abs(expected_or) - abs(res.n), 4)))
-
-    return res, ors
+    return optical_rotation
 
 
 def main():
-    hwp_datasets = [
-        # ('data/2023-12-22/hwp0/', 'data/2023-12-22/hwp4.5/'),
-        # ('data/2023-12-28/hwp0/', 'data/2023-12-28/hwp4.5/'),
-        # ('data/2023-12-29/hwp0/', 'data/2023-12-29/hwp4.5/'),
-        # ('data/2023-12-28/hwp0/', 'data/2023-12-28/hwp29/'),
-        ('data/2024-03-05-repeatability/hwp0', 'data/2024-03-05-repeatability/hwp9')
+    quartz_plate = {
+        "nominal_value": 9.8,
+        "measurements": [
+            (
+                "2024-07-04-tanda-1-no-quartz-vel-3-cycles1-step1-samples169/",
+                "2024-07-04-tanda-1-quartz-vel-3-cycles1-step1-samples169/",
+            ),
+            (
+                "2024-07-05-tanda-2-no-quartz-vel-3-cycles1-step1-samples169/",
+                "2024-07-04-tanda-2-quartz-vel-3-cycles1-step1-samples169/",
+            ),
+        ],
+    }
 
-    ]
+    nominal_value = quartz_plate["nominal_value"]
+    logger.info("Nominal value: {}".format(nominal_value))
 
-    all_rotations = []
-    for dataset in hwp_datasets:
-        _, rotations = optical_rotation(*dataset, avg_or=True, hwp=True)
-        all_rotations.extend(rotations)
-
-    print("")
-    all_rotations_u = [o.s for o in all_rotations]
-    all_rotations_values = [o.n for o in all_rotations]
-
-    # We assign as the OR measurement uncertainty, the maximum uncertainty obtained.
-    measurement_u = max(all_rotations_u)
-    logger.info("Measurement Uncertainty: {}°".format(measurement_u))
-
-    rotation_values = all_rotations_values
-    logger.debug("Values taken into account for repeatability: {}".format(rotation_values))
-
-    repeatability_u = np.std(np.abs(rotation_values))
-    logger.info(
-        "Repeatability Uncertainty ({} values): {}°".format(len(rotation_values), repeatability_u))
-
-    combined_u = np.sqrt(measurement_u ** 2 + repeatability_u ** 2)
-    logger.info("Combined Uncertainty (k=2): {}°". format(combined_u * 2))
+    for folder1, folder2 in quartz_plate["measurements"]:
+        folder1 = Path("data").joinpath(folder1)
+        folder2 = Path("data").joinpath(folder2)
+        rapp = optical_rotation(folder1, folder2)
+        error = round_to_n(abs(nominal_value - abs(rapp)), 4)
+        logger.info("(RAPP, error): ({}, {})".format(rapp, error))
