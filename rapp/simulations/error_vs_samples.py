@@ -2,15 +2,16 @@ import logging
 
 import numpy as np
 
+from rapp import adc
 from rapp import constants as ct
-from rapp.simulations import simulation
 from rapp.analysis.plot import Plot
+from rapp.simulations import simulation
 
 logger = logging.getLogger(__name__)
 
 TPL_LOG = "samples={}, φerr: {}."
 TPL_LABEL = "cycles={}\nstep={}°\nreps={}"
-TPL_FILENAME = "sim_error_vs_samples-reps-{}-cycles-{}-step-{}.png"
+TPL_FILENAME = "sim_error_vs_samples-reps-{}-cycles-{}-step-{}.{}"
 
 
 def run(
@@ -23,7 +24,7 @@ def run(
     cycles=1,
     k=0,
     dynamic_range=0.7,
-    max_v=4.096,
+    max_v=adc.MAXV,
     show=False,
     save=True,
 ):
@@ -58,20 +59,20 @@ def run(
 
             logger.info(TPL_LOG.format(samples, "{:.2E}".format(error)))
 
-    plot = Plot(
-        ylabel=ct.LABEL_PHI_ERR, xlabel=ct.SAMPLES_PER_ANGLE, ysci=True, xint=False, folder=folder
-    )
+    plot = Plot(ylabel=ct.LABEL_PHI_ERR, xlabel=ct.LABEL_N_SAMPLES, ysci=True, folder=folder)
 
     for method, plot_config in simulation.METHODS.items():
         plot.add_data(n_samples, errors[method], label=method, **plot_config)
 
-    annotation = TPL_LABEL.format(cycles, step, reps)
-    plot._ax.text(0.05, 0.05, annotation, transform=plot._ax.transAxes)
-
     plot.legend(fontsize=12)
 
+    annotation = TPL_LABEL.format(cycles, step, reps)
+    plot._ax.text(0.05, 0.05, annotation, transform=plot._ax.transAxes)
+    plot._ax.set_xticks(n_samples)
+
     if save:
-        plot.save(filename=TPL_FILENAME.format(reps, cycles, step))
+        for format_ in simulation.FORMATS:
+            plot.save(filename=TPL_FILENAME.format(reps, cycles, step, format_))
 
     if show:
         plot.show()
