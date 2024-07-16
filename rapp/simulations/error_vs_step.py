@@ -1,8 +1,9 @@
 import logging
 
+from rapp import adc
 from rapp import constants as ct
-from rapp.simulations import simulation
 from rapp.analysis.plot import Plot
+from rapp.simulations import simulation
 
 logger = logging.getLogger(__name__)
 
@@ -20,13 +21,13 @@ MAX_V = 4.096
 def run(
     folder,
     angle=22.5,
-    cycles=2,
+    cycles=1,
     samples=5,
     steps=STEPS,
     mreps=MREPS,
     reps=None,
     k=0,
-    max_v=4.096,
+    max_v=adc.MAXV,
     dynamic_range=0.7,
     show=False,
     save=True,
@@ -69,7 +70,9 @@ def run(
         plot.add_data(steps, errors[method], label=method, **plot_config)
 
     annotation = TPL_LABEL.format(cycles, samples)
-    plot._ax.text(0.05, 0.75, annotation, transform=plot._ax.transAxes)
+    plot._ax.text(0.05, 0.85, annotation, transform=plot._ax.transAxes)
+    plot._ax.ticklabel_format(style="sci", scilimits=(-4, -4), axis="y")
+    plot._ax.set_xticks(steps)
 
     plot._ax.set_xscale("log")
     plot.legend(loc="lower right", fontsize=12)

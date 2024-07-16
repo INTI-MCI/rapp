@@ -1,5 +1,6 @@
 import logging
 
+from rapp import adc
 from rapp.measurement import Measurement
 from rapp.analysis.phase_diff import phase_difference
 
@@ -17,7 +18,7 @@ def run(
     step=1,
     samples=50,
     dynamic_range=0.7,
-    max_v=4.096,
+    max_v=adc.MAXV,
     k=0,
     reps=None,
     show=False,

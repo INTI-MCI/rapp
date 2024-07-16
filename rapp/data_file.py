@@ -7,11 +7,11 @@ class DataFile:
     def __init__(
         self,
         overwrite: bool = False,
-        output_dir: str = 'data',
+        output_dir: str = "data",
         header: str = None,
         column_names: list = None,
         prefix: str = None,
-        delimiter: str = ','
+        delimiter: str = ",",
     ):
         self._overwrite = overwrite
         self._output_dir = output_dir
@@ -36,13 +36,13 @@ class DataFile:
 
         path = os.path.join(self._output_dir, filename)
 
-        mode = 'a'
+        mode = "a"
         if not os.path.exists(path) or self._do_overwrite():
-            mode = 'w'
+            mode = "w"
 
         self._file = open(path, mode=mode)
 
-        if mode == 'w':
+        if mode == "w":
             self._add_header()
             self._add_column_names()
 
@@ -67,7 +67,7 @@ class DataFile:
         self._file.close()
 
     def _do_overwrite(self):
-        if self._overwrite or input(self.MESSAGE_OVERWRITE) == 'y':
+        if self._overwrite or input(self.MESSAGE_OVERWRITE) == "y":
             return True
 
         return False
