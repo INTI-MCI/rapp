@@ -5,7 +5,6 @@ from pathlib import Path
 import numpy as np
 
 from rapp.measurement import Measurement
-from rapp.utils import round_to_n
 
 logger = logging.getLogger(__name__)
 
@@ -37,9 +36,11 @@ def optical_rotation(folder1, folder2, method="DFT"):
         phase_diff_i.append(res_i.value)
         phase_diff_f.append(res_f.value)
 
-    optical_rotation = np.mean(phase_diff_f) - np.mean(phase_diff_i)
+    phi1 = np.mean(phase_diff_f)
+    phi2 = np.mean(phase_diff_i)
+    optical_rotation = phi2 - phi1
 
-    return optical_rotation
+    return phi1, phi2, optical_rotation
 
 
 def main():
@@ -60,9 +61,10 @@ def main():
     nominal_value = quartz_plate["nominal_value"]
     logger.info("Nominal value: {}".format(nominal_value))
 
+    print("ϕ1 \t ϕ2 \t RAPP \t error")
     for folder1, folder2 in quartz_plate["measurements"]:
         folder1 = Path("data").joinpath(folder1)
         folder2 = Path("data").joinpath(folder2)
-        rapp = optical_rotation(folder1, folder2)
-        error = round_to_n(abs(nominal_value - abs(rapp)), 4)
-        logger.info("(RAPP, error): ({}, {})".format(rapp, error))
+        phi1, phi2, rapp = optical_rotation(folder1, folder2)
+        error = abs(nominal_value - abs(rapp))
+        print("{} \t {} \t {} \t {}".format(phi1, phi2, rapp, error))
