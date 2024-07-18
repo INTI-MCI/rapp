@@ -4,7 +4,7 @@ import logging
 import numpy as np
 
 from matplotlib import pyplot as plt
-from scipy.optimize import curve_fit
+from scipy.optimize import curve_fit  # noqa
 from scipy.special import gamma
 
 
@@ -15,7 +15,7 @@ from rapp.utils import create_folder, round_to_n
 
 logger = logging.getLogger(__name__)
 
-COVERAGE_FACTOR = 3
+FORMAT = "png"
 
 
 def sine(xs, a, phi, c):
@@ -95,6 +95,7 @@ def phase_difference_from_folder(
     n = len(phase_diffs)
     std_std = std_phase_diff * np.sqrt(1 - 2 / (n - 1) * (gamma(n / 2) / gamma((n - 1) / 2)) ** 2)
 
+    logger.info("Mean phase difference: {}".format(mean_phase_diff))
     logger.info("STD phase difference: {:.5f} ± {:.5f} (k=1)".format(std_phase_diff, std_std))
 
     reps = len(files)
@@ -124,25 +125,28 @@ def phase_difference_from_folder(
             sharex=True,
         )
 
-        axs[0].plot(phi1, ".-", color="k", label="STD = {}°".format(round_to_n(std_phi1, 2)))
+        axs[0].plot(phi1, "-", color="k", label="STD = {}°".format(round_to_n(std_phi1, 2)))
         axs[0].set_title("CH0")
         axs[0].set_ylabel("Fase intrínseca (°)")
         axs[0].set_xlabel("Nro de repetición")
         axs[0].legend()
 
-        axs[1].plot(phi2, ".-", color="k", label="STD = {}°".format(round_to_n(std_phi2, 2)))
+        axs[1].plot(phi2, "-", color="k", label="STD = {}°".format(round_to_n(std_phi2, 2)))
         axs[1].set_ylabel("Fase intrínseca (°)")
         axs[1].set_xlabel("Nro de repetición")
         axs[1].set_title("CH1")
+        axs[1].legend()
 
-        axs[2].plot(phase_diffs, ".-", color="k")
+        label_phase_diff = "STD = {}°".format(round_to_n(std_phase_diff, 2))
+        axs[2].plot(phase_diffs, ".-", color="k", label=label_phase_diff)
         axs[2].set_ylabel("Diferencia de fase (°)")
         axs[2].set_xlabel("Nro de repetición")
         axs[2].set_title("DIFF")
+        axs[2].legend()
 
         f.tight_layout()
 
-        filename = os.path.join(output_folder, "difference-vs-time.png")
+        filename = os.path.join(output_folder, "difference-vs-time.{}".format(FORMAT))
         f.savefig(fname=filename)
 
         counts, edges = np.histogram(phase_diffs, density=True)
@@ -159,7 +163,7 @@ def phase_difference_from_folder(
             edgecolor="k",
             label="Diferencia de fase",
         )
-        plot.save(filename="phase-difference-histogram.png")
+        plot.save(filename="phase-difference-histogram.{}".format(FORMAT))
         plot.close()
 
         """
@@ -181,13 +185,17 @@ def phase_difference_from_folder(
     return row
 
 
-def phase_difference_from_file(filepath, method, norm=False, fill_none=False, show=False):
+def phase_difference_from_file(
+    filepath, method, norm=False, fill_none=False, plot=False, show=False
+):
     logger.info("Calculating phase difference for {}...".format(filepath))
 
     measurement = Measurement.from_file(filepath, fill_none=fill_none)
     logger.info("Parameters: {}.".format(measurement.parameters_string()))
 
-    filename = "{}.svg".format(os.path.basename(filepath)[:-4])
+    filename = None
+    if plot or show:
+        filename = "{}.{}".format(os.path.basename(filepath)[:-4], FORMAT)
 
     phase_difference(measurement, method, filename=filename, show=show)
 
@@ -196,6 +204,9 @@ def phase_difference(
     measurement: Measurement, method, filename=None, norm=False, show=False, **kwargs
 ):
     xs, s1, s2, s1err, s2err, res = measurement.phase_diff(method=method, norm=norm, **kwargs)
+
+    logger.info("Minimum of CH0 signal: {}".format(min(s1)))
+    logger.info("Minimum of CH1 signal: {}".format(min(s2)))
 
     phase_diff, phase_diff_u = res.round_to_n(n=2, k=1)
 
@@ -249,16 +260,16 @@ def plot_phase_difference(phase_diff_result, work_dir=ct.WORK_DIR, filename=None
     right_legend = []
 
     if res.fits1 is not None:
-        relatove_error = np.sqrt(np.sum((res.fits1 - s1) ** 2) / np.sum(s1**2))
-        logger.info("RMSE (relative) between CH0 data and Model: {}".format(relatove_error))
+        relative_error = np.sqrt(np.sum((res.fits1 - s1) ** 2) / np.sum(s1**2))
+        logger.info("RMSE (relative) between CH0 data and Model: {}".format(relative_error))
 
         error = np.sqrt(np.sum((res.fits2 - s2) ** 2) / np.sum(s2**2))
         logger.info("RMSE (relative) between CH1 data and Model: {}".format(error))
 
         phase_diff, phase_diff_u = res.round_to_n(n=2, k=1)
-        label_phi = "φ=({} ± {})°".format(phase_diff, phase_diff_u)
+        label_fit = "NLS"
 
-        f1 = plot.add_data(res.fitx, res.fits1, style="-", color="k", lw=1, label=label_phi)
+        f1 = plot.add_data(res.fitx, res.fits1, style="-", color="k", lw=1, label=label_fit)
         plot.add_data(res.fitx, res.fits2, style="-", color="k", lw=1)
 
         signal_diff_s1 = s1 - res.fits1
@@ -274,7 +285,7 @@ def plot_phase_difference(phase_diff_result, work_dir=ct.WORK_DIR, filename=None
         plot._ax.add_artist(first_legend)
         plot._ax.legend(handles=right_legend, loc="upper right", frameon=False)
 
-        plot._ax.set_ylim(min(s1) - abs(max(s1) - min(s1)) * 0.2, max(s1) * 1.8)
+        plot._ax.set_ylim(min(s1) - abs(max(s1) - min(s1)) * 0.2, max(s1) * 1.6)
 
         if filename is not None:
             plot.save(filename)
@@ -295,47 +306,39 @@ def plot_phase_difference(phase_diff_result, work_dir=ct.WORK_DIR, filename=None
         def residual(xs, A, k1, k2, c):
             return A * f1(k1) * f2(xs, -phi) * f3(xs, k2, -phi) + c
 
-        p0 = [0.03, 0, 0, 0]
+        # p0 = [0.03, 0, 0, 0]
 
-        xs_rad = np.deg2rad(res.fitx)
-        popt, pcov = curve_fit(
-            residual, xs_rad, signal_diff_s1, sigma=s1err, absolute_sigma=True, p0=p0
-        )
+        # xs_rad = np.deg2rad(res.fitx)
+        # popt, pcov = curve_fit(
+        #     residual, xs_rad, signal_diff_s1, sigma=s1err, absolute_sigma=True, p0=p0
+        # )
 
-        residual_fitx = xs_rad
-        residual_fitx_deg = np.rad2deg(residual_fitx)
+        # residual_fitx = xs_rad
+        # residual_fitx_deg = np.rad2deg(residual_fitx)
 
-        residual_fity = residual(residual_fitx, *popt)
+        # residual_fity = residual(residual_fitx, *popt)
 
-        plot = Plot(ylabel=ct.LABEL_VOLTAGE, xlabel=ct.LABEL_ANGLE, folder=output_folder)
-        plot.add_data(
-            res.fitx,
-            signal_diff_s1,
-            style="o",
-            color="k",
-            mfc="None",
-            markevery=3,
-            lw=1,
-            label="Diff CH0",
-        )
-        plot.add_data(res.fitx, signal_diff_s2, style="-", lw=1, label="Diff CH1")
+        plot = Plot(
+            ylabel=ct.LABEL_VOLTAGE, xlabel=ct.LABEL_ANGLE,
+            ysci=True, yoom=-2, folder=output_folder)
 
-        plot.add_data(
-            residual_fitx_deg, residual_fity, style="-", color="k", lw=1, label="Ajuste Diff CH0"
-        )
+        plot.add_data(res.fitx, signal_diff_s1, style=".-", lw=1.5, color="k", label="CH0 diff")
+        plot.add_data(res.fitx, signal_diff_s2, style=".-", lw=1.5, label="CH1 diff")
+
+        # plot.add_data(
+        #    residual_fitx_deg, residual_fity, style="-", color="k", lw=1, label="Ajuste Diff CH0"
+        # )
 
         plt.legend(loc="upper left", frameon=False)
 
         if filename is not None:
-            plot.save(filename="{}-residual.svg".format(filename[:-4]))
+            plot.save(filename="{}-residual.{}".format(filename[:-4], FORMAT))
 
-        plot._ax.set_ylim(
-            np.min([signal_diff_s1, signal_diff_s2]),
-            np.max([signal_diff_s1, signal_diff_s2]) * 1.5,
-        )
+        minimum = np.min([signal_diff_s1, signal_diff_s2])
+        plot._ax.set_ylim(minimum - abs(minimum) * 0.1, 0.06)
 
         # Plot different components of residual model
-
+        """
         f, axs = plt.subplots(4, 1, figsize=(8, 5), sharex=True)
         y0 = f1(popt[1])
         y1 = f2(residual_fitx, popt[3])
@@ -353,8 +356,8 @@ def plot_phase_difference(phase_diff_result, work_dir=ct.WORK_DIR, filename=None
         error = np.sqrt(
             np.sum((residual_fity - signal_diff_s1) ** 2) / np.sum(signal_diff_s1**2)
         )
+        """
         logger.info("RMSE (relative) between CH0 residual and Model: {}".format(error))
-
     if show:
         plot.show()
 

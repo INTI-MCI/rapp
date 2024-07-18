@@ -12,6 +12,7 @@ HELP_APPEND = 'number of appended measurements for analysis.'
 HELP_NORM = 'whether to normalize channels by drift measurements.'
 EXAMPLE = "rapp phase_diff data/sine-range4V-632nm-cycles2-step1.0-samples50.txt"
 EPILOG = "Example: {}".format(EXAMPLE)
+HELP_PLOT = "if true, renders plots and saved them."
 
 
 def add_to_subparsers(subparsers):
@@ -23,6 +24,7 @@ def add_to_subparsers(subparsers):
     p.add_argument('-v', '--verbose', action='store_true', help=ct.HELP_VERBOSE)
     p.add_argument('--norm', action='store_true', help=HELP_NORM)
     p.add_argument('--show', action='store_true', help=ct.HELP_SHOW)
+    p.add_argument('--plot', action='store_true', help=HELP_PLOT)
 
 
 def run(filepath, appended_measurements=None, **kwargs):
