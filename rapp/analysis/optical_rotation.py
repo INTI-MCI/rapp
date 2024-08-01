@@ -36,8 +36,8 @@ def optical_rotation(folder1, folder2, method="DFT"):
         phase_diff_i.append(res_i.value)
         phase_diff_f.append(res_f.value)
 
-    phi1 = np.mean(phase_diff_f)
-    phi2 = np.mean(phase_diff_i)
+    phi1 = np.mean(phase_diff_i)
+    phi2 = np.mean(phase_diff_f)
     optical_rotation = phi2 - phi1
 
     return phi1, phi2, optical_rotation
