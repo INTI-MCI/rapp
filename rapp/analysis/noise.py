@@ -1,5 +1,6 @@
 import os
 import logging
+from pathlib import Path
 
 import numpy as np
 
@@ -65,6 +66,20 @@ FILE_PARAMS = {
             (330, WIDTH_10HZ), (360, WIDTH_10HZ), (380, WIDTH_10HZ)],
         "high_pass_freq": 2,
         "outliers": [-0.001, 0.001],
+        "bins": "quantized"
+    },
+    "2024-07-15-noise-quartz-1-cycles0-step45-samples760500/hwp68.937-rep1.csv": {
+        "sps": 845,
+        "band_stop_freq": [],
+        "high_pass_freq": None,
+        "outliers": None,
+        "bins": "quantized"
+    },
+    "2024-07-15-noise-quartz-2-cycles0-step45-samples760500/hwp68.937-rep1.csv": {
+        "sps": 845,
+        "band_stop_freq": [],
+        "high_pass_freq": None,
+        "outliers": None,
         "bins": "quantized"
     }
 }
@@ -153,7 +168,7 @@ def plot_histogram_and_pdf(data,  bins='quantized', prefix='', show=False):
 
         ax.plot(pdf_x, pdf_y, 'k', lw=2, label=fit_label)
         ax.legend(loc='upper left', fontsize=13, frameon=False)
-        ax.set_xlim(centers[0] - abs(centers[0]) * 0.5)
+        # ax.set_xlim(centers[0] - abs(centers[0]) * 0.5)
 
         ax.xaxis.set_major_locator(plt.MaxNLocator(3))
 
@@ -357,25 +372,27 @@ def plot_noise_with_laser_on(output_folder, show=False):
 
     # filename = "continuous-range4V-584nm-samples10000-sps59.csv"
     filename = "continuous-range4V-632nm-samples100000.csv"
+    # filename = "2024-07-15-noise-quartz-2-cycles0-step45-samples760500/hwp68.937-rep1.csv"
 
     filepath = os.path.join(ct.INPUT_DIR, filename)
 
     sps, bstop, hpass, outliers, bins = FILE_PARAMS[filename].values()
 
     measurement = Measurement.from_file(filepath)
-    data = measurement[1:]  # remove big outlier in ch0
-    base_output_fname = "{}".format(os.path.join(output_folder, filename[:-4]))
+    data = measurement.channel_data()[1:]  # remove big outlier in ch0
 
-    logger.info("Fitting raw data to 2-degree polynomial...")
+    base_output_fname = Path(output_folder).joinpath(Path(filepath).stem)
+
     f, axs = plt.subplots(1, 2, figsize=(8, 5), subplot_kw=dict(box_aspect=1), sharey=False)
     for i, ax in enumerate(axs):
-        channel_data = measurement.channel_data('CH{}'.format(i))[1:]
+        channel_data = data['CH{}'.format(i)].to_numpy()
 
         logger.info("mean CH{}: {}".format(i, np.mean(channel_data)))
         d = np.diff(np.unique(channel_data)).min()
         logger.info("Discretization step: {}".format(d))
 
         xs = np.arange(channel_data.size)
+        logger.info("Fitting CH{} raw data to 2-degree polynomial...".format(i))
         popt, pcov = curve_fit(poly_2, xs, channel_data)
 
         fitx = np.arange(min(xs), max(xs), step=0.01)
@@ -384,6 +401,7 @@ def plot_noise_with_laser_on(output_folder, show=False):
         me = 100
         slice_data = channel_data[0::me]
 
+        logger.info("Plotting CH{} raw data and fit...".format(i))
         ax.plot(
             channel_data, 'o', color='k', mfc='None', ms=4, markevery=me, alpha=0.6, label="Datos")
 
@@ -400,12 +418,11 @@ def plot_noise_with_laser_on(output_folder, show=False):
 
         ax.yaxis.set_major_formatter(plt.FormatStrFormatter('%.2f'))
         ax.yaxis.set_major_locator(plt.MaxNLocator(3))
-        # ax.ticklabel_format(style='sci', scilimits=(0, 0), axis='y')
         ax.xaxis.set_major_locator(plt.MaxNLocator(3))
 
     f.subplots_adjust(hspace=0)
     f.tight_layout()
-    f.savefig("{}-poly-fit".format(base_output_fname))
+    f.savefig("{}-poly-fit.png".format(base_output_fname))
 
     if show:
         plt.show()
@@ -419,7 +436,7 @@ def plot_noise_with_laser_on(output_folder, show=False):
     logger.info("Plotting FFT...")
     f, axs = plt.subplots(1, 2, figsize=(8, 5), subplot_kw=dict(box_aspect=1), sharey=False)
     for i, ax in enumerate(axs):
-        channel_data = data['CH{}'.format(i)]
+        channel_data = data['CH{}'.format(i)].to_numpy()
 
         psd = (2 * np.abs(np.fft.fft(channel_data)) ** 2) / (sps * len(channel_data))
 
@@ -468,17 +485,12 @@ def plot_noise_with_laser_on(output_folder, show=False):
 
     f.subplots_adjust(hspace=0)
     f.tight_layout()
-    f.savefig("{}-fft".format(base_output_fname))
-
-    if show:
-        plt.show()
-
-    plt.close()
+    f.savefig("{}-fft.png".format(base_output_fname))
 
     filtered = []
     f, axs = plt.subplots(1, 2, figsize=(8, 5), subplot_kw=dict(box_aspect=1), sharey=True)
     for i, ax in enumerate(axs):
-        channel_data = data['CH{}'.format(i)]
+        channel_data = data['CH{}'.format(i)].to_numpy()
 
         if i == 0:
             ax.set_ylabel(ct.LABEL_VOLTAGE)
@@ -515,12 +527,9 @@ def plot_noise_with_laser_on(output_folder, show=False):
 
     f.subplots_adjust(hspace=0)
     f.tight_layout()
-    f.savefig("{}-filtered-fft".format(base_output_fname))
+    f.savefig("{}-filtered-fft.png".format(base_output_fname))
 
-    if show:
-        plt.show()
-
-    plt.close()
+    plt.close(f)
 
     plot = Plot(ylabel=ct.LABEL_VOLTAGE, xlabel=ct.LABEL_N_SAMPLE, ysci=True, folder=output_folder)
     plot._ax.xaxis.set_major_locator(plt.MaxNLocator(3))
@@ -528,16 +537,11 @@ def plot_noise_with_laser_on(output_folder, show=False):
     for i, filtered_channel in enumerate(filtered, 0):
         plot.add_data(filtered_channel, style='-', label='Canal {}'.format(i))
 
-    height = max(abs(data.max()))
-    plot._ax.set_ylim(-height / 20, height / 20)
+    # height = max(abs(data.max()))
+    # plot._ax.set_ylim(-height / 20, height / 20)
     plot.legend(loc='upper right')
 
-    plot.save("{}-filtered-signal.png".format(filename[:-4]))
-
-    if show:
-        plt.show()
-
-    plt.close()
+    plot.save("{}-filtered-signal.png".format(Path(filepath).stem))
 
     data = np.array(filtered).T
     # data = data[['CH0', 'CH1']].to_numpy()
