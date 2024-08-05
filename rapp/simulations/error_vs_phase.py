@@ -85,8 +85,10 @@ def run(
 
     annotation = TPL_LABEL.format(cycles, step, samples, reps)
     plot._ax.text(0.05, 0.7, annotation, transform=plot._ax.transAxes)
-    plot._ax.xaxis.set_major_locator(plt.MaxNLocator(5))
+    yfmt = simulation.get_axis_formatter(power_limits=(-3, -3))
+    plot._ax.yaxis.set_major_formatter(yfmt)
 
+    plot._ax.xaxis.set_major_locator(plt.MaxNLocator(5))
     max_value = max(max(x) for x in errors.values())
     plot._ax.set_ylim(-1e-3, max_value + 0.005)
 

@@ -1,6 +1,7 @@
 import logging
 
 import numpy as np
+import matplotlib.pyplot as plt
 
 from rapp import adc
 from rapp import constants as ct
@@ -16,7 +17,7 @@ TPL_FILENAME = "sim_error_vs_samples-reps-{}-cycles-{}-step-{}.{}"
 
 def run(
     folder,
-    angle=22.5,
+    angle=None,
     method="NLS",
     samples=None,
     step=1,
@@ -34,6 +35,9 @@ def run(
     # n_samples that whose measurement time is integer multiple of the period of 50Hz.
     n_samples = (np.arange(10, 70, step=10) * (1 / 50) * 845).astype(int)
     amplitude = (max_v * dynamic_range) / 2
+
+    if angle is None:
+        angle = np.random.uniform(low=0, high=0.5, size=reps)
 
     errors = {}
     for method in simulation.METHODS:
@@ -68,6 +72,9 @@ def run(
 
     annotation = TPL_LABEL.format(cycles, step, reps)
     plot._ax.text(0.05, 0.05, annotation, transform=plot._ax.transAxes)
+    yfmt = simulation.get_axis_formatter(power_limits=(-3, -3))
+    plot._ax.yaxis.set_major_formatter(yfmt)
+    plot._ax.yaxis.set_major_locator(plt.MaxNLocator(2))
     plot._ax.set_xticks(n_samples)
 
     if save:
