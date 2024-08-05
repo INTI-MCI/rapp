@@ -17,7 +17,7 @@ TPL_FILENAME = "sim_error_vs_range-reps-{}-cycles-{}-step-{}-samples-{}.{}"
 
 def run(
     folder,
-    angle=22.5,
+    angle=None,
     cycles=1,
     step=1,
     samples=5,
@@ -30,10 +30,12 @@ def run(
     logger.info("PHASE DIFFERENCE VS MAX TENSION")
 
     max_v, step_mV = adc.GAINS[adc.GAIN_ONE]
-    v_step = step_mV * 2
-    max_A = max_v / 2
-    amplitudes = np.linspace(max_A - v_step * 8, max_A, num=8)
-    percentages = ((amplitudes * 2) / max_v) * 100
+    voltages = np.linspace(max_v * 0.25, max_v, num=6)
+    amplitudes = voltages / 2
+    percentages = (voltages / max_v) * 100
+
+    if angle is None:
+        angle = np.random.uniform(low=-90, high=90, size=reps)
 
     logger.info("MAX V={}".format(max_v))
 
@@ -72,7 +74,8 @@ def run(
 
     annotation = TPL_LABEL.format(cycles, step, samples, reps)
     plot._ax.text(0.25, 0.7, annotation, transform=plot._ax.transAxes)
-    plot._ax.ticklabel_format(style="sci", scilimits=(-4, -4), axis="y")
+    yfmt = simulation.get_axis_formatter(power_limits=(-3, -3))
+    plot._ax.yaxis.set_major_formatter(yfmt)
 
     if save:
         for format_ in simulation.FORMATS:

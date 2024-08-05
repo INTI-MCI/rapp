@@ -20,7 +20,7 @@ ARDUINO_BITS = 10
 
 def run(
     folder,
-    angle=22.5,
+    angle=None,
     method="DFT",
     cycles=2,
     step=1,
@@ -35,6 +35,9 @@ def run(
     logger.info("PHASE DIFFERENCE VS RESOLUTION")
 
     cycles_list = np.arange(0.5, cycles + 0.5, step=0.5)
+
+    if angle is None:
+        angle = np.random.uniform(low=0, high=0.5, size=reps)
 
     BITS = [ARDUINO_BITS, adc.BITS]
     MAXV = [ARDUINO_MAXV, adc.MAXV]
