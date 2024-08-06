@@ -10,7 +10,7 @@ from rapp.utils import round_to_n_with_uncertainty
 from rapp.signal.models import two_sines, two_sines_model
 
 
-PHASE_DIFFERENCE_METHODS = ['COSINE', 'HILBERT', 'WNLS', 'NLS', 'ODR', 'DFT']
+PHASE_DIFFERENCE_METHODS = ['COSINE', 'HILBERT', 'WNLS', 'NLS', 'ODR', 'DFT', 'XCORR']
 MIN_SIGMA_CURVE_FIT = 1e-3
 EXPONENT_WEIGHTS_WNLS = 2
 
@@ -83,13 +83,37 @@ def cosine_similarity(s1, s2, x=None, period=None):
     return np.arccos(np.dot(s1, s2) / (np.linalg.norm(s1) * np.linalg.norm(s2)))
 
 
-def get_index_for_periodization(xs, period):
+def cross_correlation_parabolic(signal1, signal2, x, period):
+    index, samples_per_period = get_index_for_periodization(x, period, full_output=True)
+    signal1 = signal1[:index]
+    signal2 = signal2[:index]
+
+    f1 = np.fft.fft(signal1)
+    f2 = np.fft.fft(signal2)
+    cross_power_spectrum = (f1 * np.conj(f2))
+    cross_corr = np.fft.ifft(cross_power_spectrum).real
+
+    max_index = np.argmax(cross_corr)
+    peak_lag = max_index if max_index < len(signal1) / 2 else max_index - len(signal1)
+
+    # Parabolic interpolation for sub-sample accuracy
+    if max_index > 0 and max_index < len(cross_corr) - 1:
+        y0, y1, y2 = cross_corr[max_index - 1], cross_corr[max_index], cross_corr[max_index + 1]
+        peak_lag += (y2 - y0) / (2 * (2 * y1 - y2 - y0))
+
+    return peak_lag / samples_per_period * 2 * np.pi
+
+
+def get_index_for_periodization(xs, period, full_output=False):
     step = xs[1] - xs[0]
     if xs[2] - xs[1] != step:
         raise ValueError("Non regular sampling of x.")
 
     n_periods = int((xs[-1] - xs[0] + step) // period)
 
+    if full_output:
+        samples_per_period = int(period / step)
+        return n_periods * samples_per_period, samples_per_period
     return n_periods * int(period / step)
 
 
@@ -275,4 +299,8 @@ def phase_difference(
 
     if method == 'COSINE':
         phase_diff = cosine_similarity(s1, s2, x=xs, period=2*np.pi)
-        return PhaseDifferenceResult(phase_diff, uncertainty=0)
+        return PhaseDifferenceResult(phase_diff, uncertainty=0, phi1=0, phi2=phase_diff)
+
+    if method == 'XCORR':
+        phase_diff = cross_correlation_parabolic(s1, s2, x=xs, period=2*np.pi)
+        return PhaseDifferenceResult(phase_diff, uncertainty=0, phi1=0, phi2=phase_diff)
