@@ -1,6 +1,7 @@
 import logging
 
 import numpy as np
+import matplotlib.pyplot as plt
 
 from rapp import adc
 from rapp import constants as ct
@@ -17,7 +18,7 @@ TPL_FILENAME = "sim_error_vs_cycles-reps-{}-step-{}-samples-{}.{}"
 
 def run(
     folder,
-    angle=22.5,
+    angle=None,
     samples=5,
     step=1,
     reps=1,
@@ -33,6 +34,11 @@ def run(
 
     cycles_list = np.arange(0.5, cycles + 0.5, step=0.5)
     amplitude = (max_v * dynamic_range) / 2
+
+    if angle is None:
+        angle = np.random.uniform(low=0, high=0.5, size=reps)
+
+    logger.info("Angles simulated: {}".format(angle))
 
     errors = {}
     for method in simulation.METHODS:
@@ -69,7 +75,9 @@ def run(
 
     annotation = TPL_LABEL.format(step, samples, reps)
     plot._ax.text(0.05, 0.05, annotation, transform=plot._ax.transAxes)
-    plot._ax.ticklabel_format(style="sci", scilimits=(-4, -4), axis="y")
+    yfmt = simulation.get_axis_formatter(power_limits=(-3, -3))
+    plot._ax.yaxis.set_major_formatter(yfmt)
+    plot._ax.yaxis.set_major_locator(plt.MaxNLocator(2))
 
     if save:
         for format_ in simulation.FORMATS:
