@@ -1,4 +1,7 @@
 import logging
+from fractions import Fraction
+
+import numpy as np
 
 from rapp import adc
 from rapp import constants as ct
@@ -12,15 +15,15 @@ TPL_LOG = "step={}, reps={}, φerr: {}, mean u: {}."
 TPL_LABEL = "cycles={}\nsamples={}"
 TPL_FILENAME = "sim_error_vs_step--cycles-{}-samples-{}.{}"
 
-STEPS = [0.001, 0.01, 0.1, 1, 2, 4]
-MREPS = [1, 20, 50, 100, 200, 500]
+STEPS = [0.1, 0.5, 1, 1.5, 2, 2.5]
+MREPS = [10, 20, 50, 100, 200, 500]
 
 MAX_V = 4.096
 
 
 def run(
     folder,
-    angle=22.5,
+    angle=None,
     cycles=1,
     samples=5,
     steps=STEPS,
@@ -36,6 +39,9 @@ def run(
     logger.info("PHASE DIFFERENCE VS STEP")
 
     amplitude = (max_v * dynamic_range) / 2
+
+    if angle is None:
+        angle = np.random.uniform(low=0, high=0.5, size=reps)
 
     if reps is not None:
         mreps = [reps for _ in steps]
@@ -70,11 +76,14 @@ def run(
         plot.add_data(steps, errors[method], label=method, **plot_config)
 
     annotation = TPL_LABEL.format(cycles, samples)
-    plot._ax.text(0.05, 0.85, annotation, transform=plot._ax.transAxes)
-    plot._ax.ticklabel_format(style="sci", scilimits=(-4, -4), axis="y")
-    plot._ax.set_xticks(steps)
+    xticks = np.array([str(Fraction(s).limit_denominator()) for s in steps])
+    yfmt = simulation.get_axis_formatter(power_limits=(-3, -3))
 
-    plot._ax.set_xscale("log")
+    plot._ax.text(0.05, 0.85, annotation, transform=plot._ax.transAxes)
+    plot._ax.yaxis.set_major_formatter(yfmt)
+    plot._ax.set_xscale("log", base=2)
+    plot._ax.set_xticks(steps, xticks)
+
     plot.legend(loc="lower right", fontsize=12)
 
     if save:
