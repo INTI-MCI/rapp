@@ -109,11 +109,6 @@ def poly_2(x, A, B, C):
     return A * x**2 + B * x + C
 
 
-def detrend_poly(data, func):
-    popt, pcov = curve_fit(func, np.arange(data.size), data)
-    return data - func(np.arange(data.size), *popt)
-
-
 def plot_histogram_and_pdf(data,  bins='quantized', prefix='', show=False):
     """Plots a histogram and PDF for 2-channel data."""
     f, axs = plt.subplots(
@@ -382,76 +377,39 @@ def plot_noise_with_laser_on(output_folder, show=False):
     data = measurement.channel_data()[1:]  # remove big outlier in ch0
 
     base_output_fname = Path(output_folder).joinpath(Path(filepath).stem)
+    original_data = data.copy()
 
-    f, axs = plt.subplots(1, 2, figsize=(8, 5), subplot_kw=dict(box_aspect=1), sharey=False)
-    for i, ax in enumerate(axs):
-        channel_data = data['CH{}'.format(i)].to_numpy()
+    poly_fit = {}
+    logger.info("Fitting raw signals...")
+    for ch in Measurement.channel_names():
+        channel_data = data[ch].to_numpy()
 
-        logger.info("mean CH{}: {}".format(i, np.mean(channel_data)))
+        logger.info("{} mean: {}".format(ch, np.mean(channel_data)))
         d = np.diff(np.unique(channel_data)).min()
         logger.info("Discretization step: {}".format(d))
 
         xs = np.arange(channel_data.size)
-        logger.info("Fitting CH{} raw data to 2-degree polynomial...".format(i))
+        logger.info("Fitting {} raw data to 2-degree polynomial...".format(ch))
         popt, pcov = curve_fit(poly_2, xs, channel_data)
 
-        fitx = np.arange(min(xs), max(xs), step=0.01)
-        fity = poly_2(fitx, *popt)
-
-        me = 100
-        slice_data = channel_data[0::me]
-
-        logger.info("Plotting CH{} raw data and fit...".format(i))
-        ax.plot(
-            channel_data, 'o', color='k', mfc='None', ms=4, markevery=me, alpha=0.6, label="Datos")
-
-        ax.plot(fitx, fity, '-', lw=2, label="Ajuste polinomial")
-        ax.set_ylim(min(slice_data), max(slice_data))
-        ax.legend(loc='lower left', frameon=False, fontsize=12)
-
-        if i == 0:
-            ax.set_ylabel(ct.LABEL_VOLTAGE)
-
-        ax.set_xlabel(ct.LABEL_N_SAMPLE)
-
-        ax.set_title('Canal {}'.format(i))
-
-        ax.yaxis.set_major_formatter(plt.FormatStrFormatter('%.2f'))
-        ax.yaxis.set_major_locator(plt.MaxNLocator(3))
-        ax.xaxis.set_major_locator(plt.MaxNLocator(3))
-
-    f.subplots_adjust(hspace=0)
-    f.tight_layout()
-    f.savefig("{}-poly-fit.png".format(base_output_fname))
-
-    # if show:
-    #    plt.show()
-
-    plt.close(f)
+        poly_fit[ch] = (popt, pcov)
 
     logger.info("Removing 2-degree polynomial from raw data...")
     for ch in Measurement.channel_names():
-        data[ch] = detrend_poly(data[ch], poly_2)
+        popt, pcov = poly_fit[ch]
+        data[ch] = data[ch] - poly_2(np.arange(data[ch].size), *popt)
 
-    densities = {}
     logger.info("Computing PSDs...")
-    f, axs = plt.subplots(1, 2, figsize=(8, 5), subplot_kw=dict(box_aspect=1), sharey=False)
-    for i, ax in enumerate(axs):
-        channel_data = data['CH{}'.format(i)].to_numpy()
-
-        # psd = (2 * np.abs(np.fft.fft(channel_data)) ** 2) / (sps * len(channel_data))
+    densities = {}
+    for ch in Measurement.channel_names():
+        channel_data = data[ch].to_numpy()
         # freq, psd = signal.periodogram(channel_data, fs=sps)
-        densities['CH{}'.format(i)] = signal.welch(channel_data, fs=sps, nperseg=1024)
+        densities[ch] = signal.welch(channel_data, fs=sps, nperseg=1024)
 
-    filtered = []
-    f, axs = plt.subplots(1, 2, figsize=(8, 5), subplot_kw=dict(box_aspect=1), sharey=True)
-    for i, ax in enumerate(axs):
-        channel_data = data['CH{}'.format(i)].to_numpy()
-
-        if i == 0:
-            ax.set_ylabel(ct.LABEL_VOLTAGE)
-
-        ax.set_xlabel(ct.LABEL_FREQUENCY)
+    logger.info("Filtering signals...")
+    filtered_data = []
+    for ch in Measurement.channel_names():
+        channel_data = data[ch].to_numpy()
 
         if bstop is not None:
             logger.info("Filtering bandstop: {} Hz".format([i[0] for i in bstop]))
@@ -472,26 +430,64 @@ def plot_noise_with_laser_on(output_folder, show=False):
         res = stats.normaltest(channel_data)
         logger.info("Gaussian Test. p-value: {}".format(res.pvalue))
 
-        filtered.append(channel_data)
-
-        freq, psd = signal.welch(channel_data, fs=sps, nperseg=1024)
-
-        # ax.loglog(freq, psd, color='k')
-        ax.plot(freq, psd, color='k')
-
-    f.subplots_adjust(hspace=0)
-    f.tight_layout()
-    f.savefig("{}-filtered-fft.png".format(base_output_fname))
-
-    plt.close(f)
+        filtered_data.append(channel_data)
 
     filtered_densities = {}
     logger.info("Computing filtered PSDs...")
     for i, channel in enumerate(Measurement.channel_names()):
-        filtered_densities[channel] = signal.welch(filtered[i], fs=sps, nperseg=1024)
+        filtered_densities[channel] = signal.welch(filtered_data[i], fs=sps, nperseg=1024)
 
+    before_after_poly_fit = [original_data, data]
+    for i, channel in enumerate(Measurement.channel_names()):
+        logger.info("Plotting {} raw data and fit...".format(channel))
+        f, axs = plt.subplots(1, 2, figsize=(8, 5), subplot_kw=dict(box_aspect=1), sharey=False)
+        for j, _data in enumerate(before_after_poly_fit):
+
+            if j == 0:
+                me = 200
+                axs[j].set_title(f"{channel} Con deriva")
+                axs[j].set_ylabel(ct.LABEL_VOLTAGE)
+            else:
+                me = 50
+                axs[j].set_title(f"{channel} Sin deriva")
+
+            axs[j].set_xlabel(ct.LABEL_N_SAMPLE)
+
+            channel_data = _data[ch]
+            slice_data = channel_data[0::me]
+
+            axs[j].plot(
+                channel_data, 'o',
+                color='k', mfc='None', ms=4, markevery=me, alpha=0.5, label="Datos")
+
+            if j == 0:
+                popt, pcov = poly_fit[ch]
+                fitx = np.arange(min(xs), max(xs), step=0.01)
+                fity = poly_2(fitx, *popt)
+                axs[j].plot(fitx, fity, '-', lw=2, label="Ajuste polinomial")
+                # axs[j].set_ylim(min(slice_data), max(slice_data))
+
+            axs[j].yaxis.set_major_formatter(plt.FormatStrFormatter('%.3f'))
+            axs[j].xaxis.set_major_locator(plt.MaxNLocator(3))
+
+            if j == 0:
+                axs[j].set_ylim(min(slice_data), max(slice_data))
+                axs[j].legend(loc='lower left', frameon=False, fontsize=12)
+
+            else:
+                axs[j].set_ylim(-0.004, 0.004)
+                axs[j].yaxis.set_major_locator(plt.MaxNLocator(3))
+                axs[j].legend(loc='upper right', frameon=False, fontsize=12)
+
+        f.subplots_adjust(hspace=0)
+        f.tight_layout()
+        f.savefig("{}-drift-poly-fit-CH{}.png".format(base_output_fname, i))
+
+        if show:
+            plt.show()
+
+    logger.info("Plotting PSDs...")
     before_after_psd = [densities, filtered_densities]
-
     for i, channel in enumerate(Measurement.channel_names()):
         f, axs = plt.subplots(1, 2, figsize=(8, 5), subplot_kw=dict(box_aspect=1), sharey=True)
         for j, psd in enumerate(before_after_psd):
@@ -503,7 +499,7 @@ def plot_noise_with_laser_on(output_folder, show=False):
             axs[j].set_ylabel(ct.LABEL_PSD)
             axs[j].set_xlabel(ct.LABEL_FREQUENCY)
             axs[j].loglog(*psd[channel], color='k')
-            # axs[j].plot(*psd[channel], color='k')
+            # axs[j].plot(*psd[channel], color='k')  # Linear.
 
             line_freqs = [50 * x for x in range(1, 8)]
             for k, line_freq in enumerate(line_freqs, 0):
@@ -523,28 +519,22 @@ def plot_noise_with_laser_on(output_folder, show=False):
         f.tight_layout()
         f.savefig("{}-filtered-fft-CH{}.png".format(base_output_fname, i))
 
-        if show:
-            plt.show()
-
         plt.close(f)
 
-    logger.info("Plotting filtered signal...")
+    logger.info("Plotting filtered signals...")
     plot = Plot(ylabel=ct.LABEL_VOLTAGE, xlabel=ct.LABEL_N_SAMPLE, ysci=True, folder=output_folder)
-    plot._ax.xaxis.set_major_locator(plt.MaxNLocator(3))
-
-    for i, filtered_channel in enumerate(filtered, 0):
+    for i, filtered_channel in enumerate(filtered_data, 0):
         plot.add_data(filtered_channel, style='-', label='Canal {}'.format(i))
 
+    plot._ax.xaxis.set_major_locator(plt.MaxNLocator(3))
     plot.legend(loc='upper right')
-    plot.save("{}-filtered-signal.png".format(Path(filepath).stem))
-
-    data = np.array(filtered).T
-    plot_histogram_and_pdf(data, bins=bins, prefix=base_output_fname, show=show)
-
-    if show:
-        plot.show()
+    plot.save("{}-filtered-signals.png".format(Path(filepath).stem))
 
     plot.close()
+
+    data = np.array(filtered_data).T
+    plot_histogram_and_pdf(data, bins=bins, prefix=base_output_fname, show=show)
+    plt.close()
 
 
 def plot_noise_with_signal(show=False):
