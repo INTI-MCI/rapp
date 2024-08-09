@@ -223,7 +223,7 @@ class Measurement:
 
     @staticmethod
     def channel_names():
-        return [COLUMN_CH0, COLUMN_CH0]
+        return [COLUMN_CH0, COLUMN_CH1]
 
     @staticmethod
     def trim_signals_for_periodization(x, s1, s2, period):
