@@ -5,6 +5,7 @@ from pathlib import Path
 import numpy as np
 
 from matplotlib import pyplot as plt
+from matplotlib.ticker import ScalarFormatter
 
 from scipy import signal
 from scipy import stats
@@ -65,7 +66,7 @@ FILE_PARAMS = {
             (260, WIDTH_10HZ), (270, WIDTH_10HZ), (310, WIDTH_10HZ), (320, WIDTH_10HZ),
             (330, WIDTH_10HZ), (360, WIDTH_10HZ), (380, WIDTH_10HZ)],
         "high_pass_freq": 2,
-        "outliers": [-0.001, 0.001],
+        "outliers": [-0.01, 0.01],
         "bins": "quantized"
     },
     "2024-07-15-noise-quartz-1-cycles0-step45-samples760500/hwp68.937-rep1.csv": {
@@ -488,7 +489,7 @@ def plot_noise_with_laser_on(output_folder, show=False):
 
     logger.info("Plotting PSDs...")
     before_after_psd = [densities, filtered_densities]
-    for i, channel in enumerate(Measurement.channel_names()):
+    for channel in Measurement.channel_names():
         f, axs = plt.subplots(1, 2, figsize=(8, 5), subplot_kw=dict(box_aspect=1), sharey=True)
         for j, psd in enumerate(before_after_psd):
             if j == 0:
@@ -517,7 +518,7 @@ def plot_noise_with_laser_on(output_folder, show=False):
 
         f.subplots_adjust(hspace=0)
         f.tight_layout()
-        f.savefig("{}-filtered-fft-CH{}.png".format(base_output_fname, i))
+        f.savefig("{}-filtered-fft-{}.png".format(base_output_fname, channel))
 
         plt.close(f)
 
@@ -530,6 +531,9 @@ def plot_noise_with_laser_on(output_folder, show=False):
     plot.legend(loc='upper right')
     plot.save("{}-filtered-signals.png".format(Path(filepath).stem))
 
+    if show:
+        plot.show()
+
     plot.close()
 
     data = np.array(filtered_data).T
@@ -537,7 +541,13 @@ def plot_noise_with_laser_on(output_folder, show=False):
     plt.close()
 
 
-def plot_noise_with_signal(show=False):
+class CustomFormatter(ScalarFormatter):
+    # Override '_set_format' with your own
+    def _set_format(self):
+        self.format = '%.1f'
+
+
+def plot_noise_with_signal(output_folder, show=False):
     print("")
     logger.info("ANALYZING NOISE WITH LASER ON...")
 
@@ -546,20 +556,35 @@ def plot_noise_with_signal(show=False):
     # filename = "2024-04-13-simple-setup-0s-delay/" \
     #            "min-setup2-2-hwp0-cycles1-step1-samples169-rep2.csv"
 
-    filepath = os.path.join(ct.INPUT_DIR, filename)
+    filepath = Path(ct.INPUT_DIR).joinpath(filename)
+    base_output_fname = Path(output_folder).joinpath(filepath.stem)
 
-    measurement = Measurement.from_file(filepath)
+    measurement = Measurement.from_file(filepath.as_posix())
+    xs, s1, s2, s1u, s2u = measurement.average_data()
 
     logger.info("Show standard deviation as a function of intensity.")
     f, axs = plt.subplots(1, 2, figsize=(8, 5), subplot_kw=dict(box_aspect=1), sharey=False)
 
-    xs, s1, s2, s1u, s2u = measurement.average_data()
+    custom_formatter = CustomFormatter()
 
-    axs[0].plot(xs, s1, 'o', color='k', mfc='None', ms=4, markevery=5, alpha=0.6, label="Datos")
-    axs[0].title.set_text('Averaged signal (1 sample per angle)')
+    s1_padding = max(s1) * 0.4
+    axs[0].set_xlabel(ct.LABEL_ANGLE)
+    axs[0].set_ylabel(ct.LABEL_VOLTAGE)
+    axs[0].plot(xs, s1, '-', color='k', lw=1.5, label="Media\n169 muestras por ángulo")
+    axs[0].set_ylim(bottom=min(s1) - s1_padding * 0.5, top=max(s1) + s1_padding)
+    axs[0].legend(loc="upper left", fontsize=13, frameon=False)
+    axs[0].yaxis.set_major_formatter(custom_formatter)
 
-    axs[1].plot(xs, s1u)
-    axs[1].title.set_text('Std (1 std value per angle)')
+    s1u_padding = max(s1u) * 0.15
+    axs[1].set_xlabel(ct.LABEL_ANGLE)
+    axs[1].plot(xs, s1u, color="k", label="Desviación estándar\n169 muestras por ángulo")
+    axs[1].set_ylim(bottom=min(s1u) - s1u_padding * 0.5, top=max(s1u) + s1u_padding)
+    axs[1].legend(loc="upper left", fontsize=13, frameon=False)
+    axs[1].yaxis.set_major_formatter(custom_formatter)
+
+    f.subplots_adjust(wspace=0.0005)
+    f.tight_layout()
+    f.savefig("{}-signal-and-std.png".format(base_output_fname))
 
     if show:
         plt.show()
