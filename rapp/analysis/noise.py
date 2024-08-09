@@ -60,7 +60,7 @@ FILE_PARAMS = {
     "continuous-range4V-632nm-samples100000.csv": {
         "sps": 847,  # This fits OK with line frequencies.
         "band_stop_freq": [
-            (50, 15)] + [(50 * x, 2) for x in range(2, 8)] + [
+            (52, 15)] + [(50 * x, 5) for x in range(2, 8)] + [
             (110, WIDTH_10HZ), (170, WIDTH_10HZ), (210, WIDTH_10HZ), (230, WIDTH_10HZ),
             (260, WIDTH_10HZ), (270, WIDTH_10HZ), (310, WIDTH_10HZ), (320, WIDTH_10HZ),
             (330, WIDTH_10HZ), (360, WIDTH_10HZ), (380, WIDTH_10HZ)],
@@ -220,7 +220,7 @@ def plot_noise_with_laser_off(output_folder, show=False):
     # if show:
     #    plt.show()
 
-    plt.close()
+    plt.close(f)
 
     logger.info("Plotting FFT...")
     f, axs = plt.subplots(1, 2, figsize=(8, 5), subplot_kw=dict(box_aspect=1), sharey=True)
@@ -283,7 +283,7 @@ def plot_noise_with_laser_off(output_folder, show=False):
     # if show:
     #    plt.show()
 
-    plt.close()
+    plt.close(f)
 
     filtered = []
     f, axs = plt.subplots(1, 2, figsize=(8, 5), subplot_kw=dict(box_aspect=1), sharey=True)
@@ -337,7 +337,7 @@ def plot_noise_with_laser_off(output_folder, show=False):
     # if show:
     #    plt.show()
 
-    plt.close()
+    plt.close(f)
 
     plot = Plot(ylabel=ct.LABEL_VOLTAGE, xlabel=ct.LABEL_N_SAMPLE, ysci=True, folder=output_folder)
 
@@ -424,68 +424,24 @@ def plot_noise_with_laser_on(output_folder, show=False):
     f.tight_layout()
     f.savefig("{}-poly-fit.png".format(base_output_fname))
 
-    if show:
-        plt.show()
+    # if show:
+    #    plt.show()
 
-    plt.close()
+    plt.close(f)
 
     logger.info("Removing 2-degree polynomial from raw data...")
     for ch in Measurement.channel_names():
         data[ch] = detrend_poly(data[ch], poly_2)
 
-    logger.info("Plotting FFT...")
+    densities = {}
+    logger.info("Computing PSDs...")
     f, axs = plt.subplots(1, 2, figsize=(8, 5), subplot_kw=dict(box_aspect=1), sharey=False)
     for i, ax in enumerate(axs):
         channel_data = data['CH{}'.format(i)].to_numpy()
 
-        psd = (2 * np.abs(np.fft.fft(channel_data)) ** 2) / (sps * len(channel_data))
-
-        xs = np.arange(0, len(psd))
-        xs = (xs / len(psd)) * sps
-        N = len(xs)
-
-        end = N // 2
-        end = np.where(xs < 10)[0][-1]  # 1/f noise only below 10 Hz
-
-        pink_x = xs[1:end]
-
-        popt, pcov = curve_fit(linear, np.log(pink_x), np.log(psd[1:end]))
-        # popt, pcov = curve_fit(pink_noise, pink_x, psd[1:end])
-
-        us = np.sqrt(np.diag(pcov))
-
-        alpha, alpha_u = round_to_n_with_uncertainty(popt[0], us[0], n=1, k=1)
-        logger.info("A/f^α noise estimation: α = {} ± {}".format(alpha, alpha_u))
-
-        scale, scale_u = round_to_n_with_uncertainty(popt[1], us[1], n=1, k=1)
-        logger.info("A/f^α noise estimation: scale = {} ± {}".format(scale, scale_u))
-
-        # label = "1/fᵅ (α = {:.2f} ± {:.2f})".format(alpha, alpha_u)
-        # pink_y = pink_noise(xs[1:end], alpha, np.exp(popt[1]))[:end]
-
-        if i == 0:
-            ax.set_ylabel(ct.LABEL_PSD)
-
-        ax.set_xlabel(ct.LABEL_FREQUENCY)
-        ax.set_title("Canal {}".format(i))
-        ax.loglog(xs[1:N // 2], psd[1:N // 2], color='k')
-        # ax.loglog(pink_x, pink_y, color='deeppink', lw=2, label=label)
-
-        line_frequencies = [50 * x for x in range(1, int(xs[N // 2] / 50))]
-        for i, freq in enumerate(line_frequencies, 0):
-            freq_label = None
-            if i == 0:
-                freq_label = "50 Hz y armónicos"
-            ax.axvline(x=freq, ls='--', lw=1, label=freq_label)
-
-        ax.legend(loc='lower left', frameon=False, fontsize=12)
-
-    for ax in axs.flat:
-        ax.label_outer()
-
-    f.subplots_adjust(hspace=0)
-    f.tight_layout()
-    f.savefig("{}-fft.png".format(base_output_fname))
+        # psd = (2 * np.abs(np.fft.fft(channel_data)) ** 2) / (sps * len(channel_data))
+        # freq, psd = signal.periodogram(channel_data, fs=sps)
+        densities['CH{}'.format(i)] = signal.welch(channel_data, fs=sps, nperseg=1024)
 
     filtered = []
     f, axs = plt.subplots(1, 2, figsize=(8, 5), subplot_kw=dict(box_aspect=1), sharey=True)
@@ -518,12 +474,10 @@ def plot_noise_with_laser_on(output_folder, show=False):
 
         filtered.append(channel_data)
 
-        psd = np.abs(np.fft.fft(channel_data)) ** 2
+        freq, psd = signal.welch(channel_data, fs=sps, nperseg=1024)
 
-        xs = np.arange(0, len(psd))
-        xs = (xs / len(psd)) * sps
-        N = len(xs)
-        ax.loglog(xs[:N // 2], psd[:N // 2], color='k')
+        # ax.loglog(freq, psd, color='k')
+        ax.plot(freq, psd, color='k')
 
     f.subplots_adjust(hspace=0)
     f.tight_layout()
@@ -531,27 +485,66 @@ def plot_noise_with_laser_on(output_folder, show=False):
 
     plt.close(f)
 
+    filtered_densities = {}
+    logger.info("Computing filtered PSDs...")
+    for i, channel in enumerate(Measurement.channel_names()):
+        filtered_densities[channel] = signal.welch(filtered[i], fs=sps, nperseg=1024)
+
+    before_after_psd = [densities, filtered_densities]
+
+    for i, channel in enumerate(Measurement.channel_names()):
+        f, axs = plt.subplots(1, 2, figsize=(8, 5), subplot_kw=dict(box_aspect=1), sharey=True)
+        for j, psd in enumerate(before_after_psd):
+            if j == 0:
+                axs[j].set_title(f"{channel} Sin filtro")
+            else:
+                axs[j].set_title(f"{channel} Con filtro")
+
+            axs[j].set_ylabel(ct.LABEL_PSD)
+            axs[j].set_xlabel(ct.LABEL_FREQUENCY)
+            axs[j].loglog(*psd[channel], color='k')
+            # axs[j].plot(*psd[channel], color='k')
+
+            line_freqs = [50 * x for x in range(1, 8)]
+            for k, line_freq in enumerate(line_freqs, 0):
+                freq_label = None
+                if k == 0:
+                    freq_label = "50 Hz y armónicos"
+
+                axs[j].axvline(x=line_freq, ls='--', lw=1, label=freq_label)
+
+            axs[j].legend(loc='lower left', frameon=False, fontsize=12)
+
+        # Hide x labels and tick labels for top plots and y ticks for right plots.
+        for ax in axs.flat:
+            ax.label_outer()
+
+        f.subplots_adjust(hspace=0)
+        f.tight_layout()
+        f.savefig("{}-filtered-fft-CH{}.png".format(base_output_fname, i))
+
+        if show:
+            plt.show()
+
+        plt.close(f)
+
+    logger.info("Plotting filtered signal...")
     plot = Plot(ylabel=ct.LABEL_VOLTAGE, xlabel=ct.LABEL_N_SAMPLE, ysci=True, folder=output_folder)
     plot._ax.xaxis.set_major_locator(plt.MaxNLocator(3))
 
     for i, filtered_channel in enumerate(filtered, 0):
         plot.add_data(filtered_channel, style='-', label='Canal {}'.format(i))
 
-    # height = max(abs(data.max()))
-    # plot._ax.set_ylim(-height / 20, height / 20)
     plot.legend(loc='upper right')
-
     plot.save("{}-filtered-signal.png".format(Path(filepath).stem))
 
     data = np.array(filtered).T
-    # data = data[['CH0', 'CH1']].to_numpy()
-
     plot_histogram_and_pdf(data, bins=bins, prefix=base_output_fname, show=show)
 
     if show:
-        plt.show()
+        plot.show()
 
-    plt.close()
+    plot.close()
 
 
 def plot_noise_with_signal(show=False):
