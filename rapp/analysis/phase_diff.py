@@ -45,7 +45,7 @@ def phase_difference_from_folder(
 
         # logger.info("Parameters: {}.".format(measurement.parameters_string()))
         if new_measurement:
-            res = phase_difference(measurement, method, norm=norm, show=False)
+            res = phase_difference(measurement, method, norm=norm, show=True)
             results.append(res)
 
     phase_diffs = []

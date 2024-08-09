@@ -7,7 +7,7 @@ from scipy.optimize import curve_fit
 from scipy.odr import ODR, Model, RealData
 
 from rapp.utils import round_to_n_with_uncertainty
-from rapp.signal.models import two_sines, two_sines_model
+from rapp.signal.models import two_sines, two_sines_model, two_sines_with_harmonics
 
 
 PHASE_DIFFERENCE_METHODS = ['COSINE', 'HILBERT', 'WNLS', 'NLS', 'ODR', 'DFT', 'XCORR']
@@ -149,7 +149,7 @@ def sine_fit(
 
     if method in ['NLS', 'WNLS']:
         popt, pcov = curve_fit(
-            two_sines, xs, ys,
+            two_sines_with_harmonics, xs, ys,
             p0=p0,
             sigma=y_sigma,
             absolute_sigma=abs_sigma,
@@ -157,7 +157,7 @@ def sine_fit(
         )
 
         us = np.sqrt(np.diag(pcov))
-        fity = two_sines(fitx, *popt)
+        fity = two_sines_with_harmonics(fitx, *popt)
 
         return popt, us, fitx, fity
 
@@ -202,7 +202,8 @@ def phase_difference(
     p0=None,
     allow_nan=False,
     abs_sigma=True,
-    fix_range=True
+    fix_range=True,
+    n_harmonics=1
 ) -> PhaseDifferenceResult:
     """Computes phase difference between two harmonic signals (xs, s1) and (xs, s2)."""
 
@@ -247,9 +248,17 @@ def phase_difference(
         phase_lower_bound = np.deg2rad(-180)
         phase_upper_bound = np.deg2rad(180)
 
+        lower_bounds = [0, 0, phase_lower_bound, phase_lower_bound, 0, 0]
+        upper_bounds = [np.inf, np.inf, phase_upper_bound, phase_upper_bound, np.inf, np.inf]
         bounds = (
-            [0, 0, phase_lower_bound, phase_lower_bound, 0, 0],
-            [np.inf, np.inf, phase_upper_bound, phase_upper_bound, np.inf, np.inf])
+            [element for element in lower_bounds for _ in range(n_harmonics)],
+            [element for element in upper_bounds for _ in range(n_harmonics)]
+        )
+
+        if p0 is None:
+            p0 = np.ones(6 * n_harmonics, dtype=np.float128)
+        elif len(p0) != 6 * n_harmonics:
+            raise ValueError("Wrong number of parameters.")
 
         popt, us, fitx, fity = sine_fit(
             x12, s12,
@@ -264,13 +273,13 @@ def phase_difference(
         fity1 = fity[:half]
         fity2 = fity[half:total]
 
-        phi1 = popt[2]
-        phi1_u = us[2]
+        phi1 = popt[2 * n_harmonics]
+        phi1_u = us[2 * n_harmonics]
 
         logger.debug("φ1 = ({} ± {})°".format(np.rad2deg(phi1), np.rad2deg(phi1_u)))
 
-        phase_diff = popt[3]
-        phase_diff_u = us[3]
+        phase_diff = popt[3 * n_harmonics]
+        phase_diff_u = us[3 * n_harmonics]
 
         # if abs(phase_diff) > np.pi and fix_range:
         #    phase_diff = (phase_diff % np.pi) * -1
