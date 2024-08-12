@@ -34,7 +34,7 @@ def main(name, show=False):
         noise.plot_noise_with_laser_on(output_folder, show=show)
 
     if name in ['all', 'noise_cos']:
-        noise.plot_noise_with_signal(show=show)
+        noise.plot_noise_with_signal(output_folder, show=show)
 
     if name in ['drift']:
         drift.plot_drift(output_folder, show=show)
