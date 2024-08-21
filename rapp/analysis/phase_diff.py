@@ -77,11 +77,15 @@ def phase_difference_from_folder(
                 logger.info(mse)
                 logger.info("Repetition: {}".format(i))
 
+    mean_phi1 = None
+    std_phi1 = None
     if len(phi1) > 0:
         std_phi1 = np.std(phi1)
         mean_phi1 = np.mean(phi1)
         logger.info("STD phase of CH0: {}".format(std_phi1))
 
+    mean_phi2 = None
+    std_phi2 = None
     if len(phi2) > 0:
         std_phi2 = np.std(phi2)
         mean_phi2 = np.mean(phi2)
