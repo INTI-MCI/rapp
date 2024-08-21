@@ -8,6 +8,7 @@ OUTPUT_FOLDER_DATA = "output-data"
 
 LABEL_ANGLE = "Ángulo del rotador [°]"
 LABEL_ANGLE_OR = "Ángulo de rotación óptica [°]"
+LABEL_PHASE_DIFF = "Diferencia de fase [°]"
 LABEL_STEP = "Paso del rotador [°]"
 LABEL_N_CYCLES = "N° de ciclos de rotador"
 LABEL_FREQUENCY = "Frecuencia [Hz]"

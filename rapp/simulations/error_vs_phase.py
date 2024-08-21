@@ -69,7 +69,7 @@ def run(
 
     plot = Plot(
         ylabel=ct.LABEL_PHI_ERR,
-        xlabel=ct.LABEL_ANGLE_OR,
+        xlabel=ct.LABEL_PHASE_DIFF,
         ysci=True,
         yoom=-3,
         # xint=True,
