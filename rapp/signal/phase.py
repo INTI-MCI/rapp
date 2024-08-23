@@ -3,14 +3,14 @@ import logging
 import numpy as np
 
 from scipy import signal
-from scipy.optimize import curve_fit
+from scipy.optimize import curve_fit, dual_annealing
 from scipy.odr import ODR, Model, RealData
 
 from rapp.utils import round_to_n_with_uncertainty
-from rapp.signal.models import two_sines, two_sines_model, two_sines_with_harmonics
+import rapp.signal.models as models
 
 
-PHASE_DIFFERENCE_METHODS = ['COSINE', 'HILBERT', 'WNLS', 'NLS', 'ODR', 'DFT', 'XCORR']
+PHASE_DIFFERENCE_METHODS = ['COSINE', 'HILBERT', 'WNLS', 'NLS', 'ODR', 'DFT', 'XCORR', 'ANNEAL']
 MIN_SIGMA_CURVE_FIT = 1e-3
 EXPONENT_WEIGHTS_WNLS = 2
 
@@ -148,8 +148,9 @@ def sine_fit(
     fitx = xs
 
     if method in ['NLS', 'WNLS']:
+        model = models.two_sines if len(p0) == 6 else models.two_sines_with_harmonics
         popt, pcov = curve_fit(
-            two_sines_with_harmonics, xs, ys,
+            model, xs, ys,
             p0=p0,
             sigma=y_sigma,
             absolute_sigma=abs_sigma,
@@ -157,21 +158,35 @@ def sine_fit(
         )
 
         us = np.sqrt(np.diag(pcov))
-        fity = two_sines_with_harmonics(fitx, *popt)
+        fity = model(fitx, *popt)
+
+        return popt, us, fitx, fity
+
+    if method == "ANNEAL":
+        bounds_ = [(bmin, bmax) for bmin, bmax in zip(bounds[0], bounds[1])]
+        res = dual_annealing(
+            models.two_sines_with_harmonics_objective, bounds=bounds_, args=(xs, ys, y_sigma),
+            maxiter=2000
+        )
+
+        popt = res.x
+
+        fity = models.two_sines_with_harmonics(fitx, *popt)
+        us = np.abs(res.jac)
 
         return popt, us, fitx, fity
 
     if method == 'ODR':
 
         data = RealData(xs, ys, sx=x_sigma, sy=y_sigma)
-        odr = ODR(data, Model(two_sines_model),  beta0=p0 or [1, 1, 0, 0, 0, 0])
+        odr = ODR(data, Model(models.two_sines_model),  beta0=p0 or [1, 1, 0, 0, 0, 0])
         odr.set_job(fit_type=2)
         output = odr.run()
 
         # cov_beta is the cov. matrix NOT scaled by the residual variance (whereas sd_beta is).
         # So cov_beta is equivalent to absolute_sigma=True.
         us = np.sqrt(np.diag(output.cov_beta))
-        fity = two_sines_model(output.beta, fitx)
+        fity = models.two_sines_model(output.beta, fitx)
 
         return output.beta, us, fitx, fity
 
@@ -218,7 +233,7 @@ def phase_difference(
         s2_sigma = np.ones(shape=len(s2_sigma))
         abs_sigma = False
 
-    if method in ['WNLS', 'NLS', 'ODR']:
+    if method in ['WNLS', 'NLS', 'ODR', 'ANNEAL']:
 
         s1_norm = np.linalg.norm(s1)
         s2_norm = np.linalg.norm(s2)
@@ -248,15 +263,18 @@ def phase_difference(
         phase_lower_bound = np.deg2rad(-180)
         phase_upper_bound = np.deg2rad(180)
 
+        max_amplitude1 = np.max(s1)
+        max_amplitude2 = np.max(s2)
         lower_bounds = [0, 0, phase_lower_bound, phase_lower_bound, 0, 0]
-        upper_bounds = [np.inf, np.inf, phase_upper_bound, phase_upper_bound, np.inf, np.inf]
+        upper_bounds = [max_amplitude1, max_amplitude2, phase_upper_bound, phase_upper_bound,
+                        max_amplitude1, max_amplitude2]
         bounds = (
             [element for element in lower_bounds for _ in range(n_harmonics)],
             [element for element in upper_bounds for _ in range(n_harmonics)]
         )
 
         if p0 is None:
-            p0 = np.ones(6 * n_harmonics, dtype=np.float128)
+            p0 = (np.array(bounds[0]) + np.array(bounds[1])) / 2.0
         elif len(p0) != 6 * n_harmonics:
             raise ValueError("Wrong number of parameters.")
 
