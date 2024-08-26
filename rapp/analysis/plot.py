@@ -1,11 +1,13 @@
 import os
-
+import logging
 import numpy as np
 
 import matplotlib.ticker as tck
 from matplotlib import pyplot as plt
 
 from rapp.utils import create_folder
+
+logger = logging.getLogger(__name__)
 
 plt.style.use("style.mplstyle")
 
@@ -81,7 +83,11 @@ class Plot:
         plt.close()
 
     def move(self, dxy_in_cm):
-        tk_window = self._fig_manager.window
-        x, y = tk_window.winfo_x(), tk_window.winfo_y()
-        dpi = self._fig.dpi
-        tk_window.geometry(f"+{x + int(dxy_in_cm[0] / 2.54 * dpi)}+{y + int(dxy_in_cm[1] / 2.54 * dpi)}")
+        try:
+            tk_window = self._fig_manager.window
+            x, y = tk_window.winfo_x(), tk_window.winfo_y()
+            dpi = self._fig.dpi
+            tk_window.geometry(f"+{x + int(dxy_in_cm[0] / 2.54 * dpi)}+"
+                               f"{y + int(dxy_in_cm[1] / 2.54 * dpi)}")
+        except AttributeError:
+            logger.debug("Impossible to move image.", exc_info=True)
