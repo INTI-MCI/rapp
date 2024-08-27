@@ -265,17 +265,17 @@ def phase_difference(
 
         max_amplitude1 = np.max(s1)
         max_amplitude2 = np.max(s2)
-        lower_bounds = [0, 0, phase_lower_bound, phase_lower_bound, 0, 0]
-        upper_bounds = [max_amplitude1, max_amplitude2, phase_upper_bound, phase_upper_bound,
-                        max_amplitude1, max_amplitude2]
+        lower_bounds = [0, 0, phase_lower_bound, phase_lower_bound]
+        upper_bounds = [max_amplitude1, max_amplitude2, phase_upper_bound, phase_upper_bound]
         bounds = (
-            [element for element in lower_bounds for _ in range(n_harmonics)],
-            [element for element in upper_bounds for _ in range(n_harmonics)]
+            [*[element for element in lower_bounds for _ in range(n_harmonics)], 0, 0],
+            [*[element for element in upper_bounds for _ in range(n_harmonics)], max_amplitude1,
+             max_amplitude2]
         )
 
         if p0 is None:
             p0 = (np.array(bounds[0]) + np.array(bounds[1])) / 2.0
-        elif len(p0) != 6 * n_harmonics:
+        elif len(p0) != 4 * n_harmonics + 2:
             raise ValueError("Wrong number of parameters.")
 
         popt, us, fitx, fity = sine_fit(
