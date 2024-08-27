@@ -23,7 +23,7 @@ def two_sines_model(P, x):
     return two_sines(x, *P)
 
 
-def two_distorted_sines(x12, A1s, A2s, phi1s, deltas, C1s, C2s):
+def two_distorted_sines(x12, A1s, A2s, phi1s, deltas, C1, C2):
     total = len(x12)
     half = total // 2
 
@@ -31,18 +31,21 @@ def two_distorted_sines(x12, A1s, A2s, phi1s, deltas, C1s, C2s):
     x2 = x12[half:total]
 
     s1, s2 = np.zeros_like(x1), np.zeros_like(x2)
-    for h, (A1, A2, phi1, delta, C1, C2) in enumerate(zip(A1s, A2s, phi1s, deltas, C1s, C2s)):
-        s1 = s1 + sine((h + 1) * x1, A1, phi1, C1)
-        s2 = s2 + sine((h + 1) * x2, A2, phi1 + delta, C2)
+    for h, (A1, A2, phi1, delta) in enumerate(zip(A1s, A2s, phi1s, deltas)):
+        s1 = s1 + sine((h + 1) * x1, A1, phi1, 0)
+        s2 = s2 + sine((h + 1) * x2, A2, phi1 + delta, 0)
+    s1 = s1 + C1
+    s2 = s2 + C2
 
     return np.hstack([s1, s2])
 
 
 def two_sines_with_harmonics(x, *p):
-    n_harmonics = int(len(p) / 6)
-    parts = [p[i*n_harmonics:(i+1)*n_harmonics] for i in range(6)]
-    A1s, A2s, phi1s, deltas, C1s, C2s = parts
-    return two_distorted_sines(x, A1s, A2s, phi1s, deltas, C1s, C2s)
+    n_harmonics = int((len(p) - 2) / 4)
+    parts = [p[i*n_harmonics:(i+1)*n_harmonics] for i in range(4)]
+    A1s, A2s, phi1s, deltas = parts
+    C1, C2 = p[-2:]
+    return two_distorted_sines(x, A1s, A2s, phi1s, deltas, C1, C2)
 
 
 def two_sines_with_harmonics_objective(p, *args):
