@@ -79,6 +79,17 @@
         "k": 0,
         "show": false,
         "save": true
+    },
+    "sim_analyzer_errors": {
+        "angle": null,
+        "cycles": 1,
+        "samples": 169,
+        "step": 1,
+        "reps": 100,
+        "dynamic_range": 0.7,
+        "k": 0,
+        "show": false,
+        "save": true
     }
 }
 
