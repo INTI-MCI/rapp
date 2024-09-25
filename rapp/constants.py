@@ -20,6 +20,8 @@ LABEL_VOLTAGE = "Tensión [V]"
 LABEL_DYNAMIC_RANGE_USE = "Uso del rango dinámico [%]"
 LABEL_RADIANS = "Fase [rad]"
 LABEL_PSD = "PSD [V² / Hz]"
+LABEL_MOTION_ACCURACY = "Exactitud del rotador (uniforme) [°]"
+LABEL_MOTION_REPEATABILITY = "Repetibilidad unidireccional (std, normal) [°]"
 
 ENCONDIG = "iso-8859-1"
 

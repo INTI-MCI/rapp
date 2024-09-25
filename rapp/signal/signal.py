@@ -47,7 +47,16 @@ def harmonic(
 
         return sigma
 
-    xs = np.linspace(0, 2 * np.pi * cycles, num=int(cycles * fc), endpoint=False)
+    n_angles = int(cycles * fc)
+    xs = np.linspace(0, 2 * np.pi * cycles, num=n_angles, endpoint=False)
+
+    if angle_accuracy:
+        xs = xs + np.random.uniform(-angle_accuracy, angle_accuracy, n_angles)
+
+    if angle_precision:
+        xs = xs + angle_precision * np.random.randn(n_angles)
+
+    # All samples are taken from the reached position
     xs = np.repeat(xs, samples)
 
     signal = A * np.sin(xs + phi)
