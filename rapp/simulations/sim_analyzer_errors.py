@@ -1,7 +1,6 @@
 import logging
 
 import numpy as np
-import matplotlib.pyplot as plt
 
 from rapp import adc
 from rapp import constants as ct
@@ -36,7 +35,8 @@ def run(
     logger.info("PHASE DIFFERENCE VARIATIONS DUE TO ANALYZER ERRORS")
 
     max_angle_precision_std = guaranteed_repeatability / 3      # Newport uses k = 3
-    max_angle_accuracy_std = guaranteed_accuracy / np.sqrt(12)  # Newport uses peak to peak deviation
+    # Newport uses peak to peak deviation
+    # max_angle_accuracy_std = guaranteed_accuracy / np.sqrt(12)
 
     angle_props_lists = [np.linspace(0, max_angle_precision_std, points_per_source),
                          np.linspace(0, guaranteed_accuracy, points_per_source)]
@@ -75,7 +75,9 @@ def run(
                 logger.info(TPL_LOG.format(cycles, "{:.2E}".format(error)))
 
     plot = Plot(
-        ylabel=ct.LABEL_MOTION_REPEATABILITY, xlabel=ct.LABEL_MOTION_ACCURACY, ysci=False, xint=False, folder=folder
+        nrows=points_per_source, ncols=points_per_source, ylabel=ct.LABEL_MOTION_REPEATABILITY,
+        xlabel=ct.LABEL_MOTION_ACCURACY, ysci=False,
+        xint=False, folder=folder
     )
 
     for method, plot_config in simulation.METHODS.items():
@@ -84,10 +86,9 @@ def run(
     plot.legend(loc="center right", fontsize=12)
 
     annotation = TPL_LABEL.format(step, samples, reps)
-    plot._ax.text(0.05, 0.05, annotation, transform=plot._ax.transAxes)
+    plot.the_ax.text(0.05, 0.05, annotation, transform=plot.the_ax.transAxes)
     yfmt = simulation.get_axis_formatter(power_limits=(-3, -3))
-    plot._ax.yaxis.set_major_formatter(yfmt)
-    plot._ax.yaxis.set_major_locator(plt.MaxNLocator(2))
+    plot.yaxis_set_major_formatter(yfmt)
 
     if save:
         for format_ in simulation.FORMATS:
