@@ -345,10 +345,10 @@ def plot_noise_with_laser_off(output_folder, show=False):
     for i, filtered_channel in enumerate(filtered, 0):
         plot.add_data(filtered_channel, style='-', label='Canal {}'.format(i))
 
-    plot._ax.xaxis.set_major_locator(plt.MaxNLocator(3))
+    plot.the_ax.xaxis.set_major_locator(plt.MaxNLocator(3))
     channel_data = measurement.channel_data()
     height = max(abs(channel_data.max()))
-    plot._ax.set_ylim(-height / 2, height / 2)
+    plot.the_ax.set_ylim(-height / 2, height / 2)
     plot.legend(loc='upper right')
 
     plot.save("{}-filtered-signal.png".format(filename[:-4]))
@@ -534,7 +534,7 @@ def plot_noise_with_laser_on(output_folder, show=False):
     for i, filtered_channel in enumerate(filtered, 0):
         plot.add_data(filtered_channel, style='-', label='Canal {}'.format(i))
 
-    plot._ax.xaxis.set_major_locator(plt.MaxNLocator(3))
+    plot.the_ax.xaxis.set_major_locator(plt.MaxNLocator(3))
     plot.legend(loc='upper right')
     plot.save("{}-filtered-signals.png".format(Path(filepath).stem))
 

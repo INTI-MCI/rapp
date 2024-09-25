@@ -73,9 +73,9 @@ def run(
     plot.legend(loc="upper right", fontsize=12)
 
     annotation = TPL_LABEL.format(cycles, step, samples, reps)
-    plot._ax.text(0.25, 0.7, annotation, transform=plot._ax.transAxes)
+    plot.the_ax.text(0.25, 0.7, annotation, transform=plot.the_ax.transAxes)
     yfmt = simulation.get_axis_formatter(power_limits=(-3, -3))
-    plot._ax.yaxis.set_major_formatter(yfmt)
+    plot.the_ax.yaxis.set_major_formatter(yfmt)
 
     if save:
         for format_ in simulation.FORMATS:

@@ -18,27 +18,62 @@ class Plot:
     """Encapsulates the creation of plots."""
 
     def __init__(
-        self, title="", ylabel=None, xlabel=None, ysci=False, yoom=0, xint=False, folder=FOLDER
+        self, nrows=1, ncols=1, title="", ylabel=None, xlabel=None, ysci=False, yoom=0, xint=False,
+        folder=FOLDER
     ):
-        self._fig, self._ax = plt.subplots(figsize=(4, 4))
-        self._ax.set_title(title, size=12)
+        self._nrows = nrows
+        self._ncols = ncols
+        self._fig, self._axs = plt.subplots(nrows, ncols, figsize=(4, 4), squeeze=False)
+        self.all_axs(lambda ax, t: ax.set_title(t, size=12), title)
 
         if ysci:
-            self._ax.ticklabel_format(style="sci", scilimits=(yoom, yoom), axis="y")
+            self.all_axs(
+                lambda ax: ax.ticklabel_format(style="sci", scilimits=(yoom, yoom), axis="y"))
 
         if xint:
-            self._ax.xaxis.set_major_locator(plt.MaxNLocator(integer=True))
+            self.all_axs(
+                lambda ax: ax.xaxis.set_major_locator(plt.MaxNLocator(integer=True)))
 
         if ylabel is not None:
-            self._ax.set_ylabel(ylabel)
-            self._ax.set_xlabel(xlabel)
+            self.all_axs(lambda ax, yl: ax.set_ylabel(yl), ylabel)
+            self.all_axs(lambda ax, xl: ax.set_xlabel(xl), xlabel)
 
         self._folder = folder
 
-    def add_data(self, xs, ys=None, style="o", ms=5, mew=0.5, xrad=False, **kwargs):
+    def all_axs(self, func_ax_data, data=None):
+        data = self.vet_var_for_axs(data)
+        output = np.full((self._nrows, self._ncols), None)
+
+        for kr in range(self._nrows):
+            for kc in range(self._ncols):
+                if data is None:
+                    output[kr, kc] = func_ax_data(self._axs[kr, kc])
+                else:
+                    output[kr, kc] = func_ax_data(self._axs[kr, kc], data[kr, kc])
+        return output
+
+    @property
+    def the_ax(self):
+        return self._axs[0, 0]
+
+    def vet_var_for_axs(self, var):
+        if var is None:
+            return var
+        if isinstance(var, list):
+            if len(var) == self._nrows and all(len(row) == self._ncols for row in var):
+                return var
+        elif isinstance(var, np.ndarray):
+            if var.shape == (self._nrows, self._ncols):
+                return var
+        elif isinstance(var, (str, int, float)):
+            return np.full((self._nrows, self._ncols), var)
+        raise ValueError("Not valid input or wrong dimensions (do not match subplot dimensions).")
+
+    def add_data(self, xs, ys=None, style="o", ms=5, mew=0.5, xrad=False, nrow=0, ncol=0,
+                 **kwargs):
         """Adds data to the plot."""
 
-        ax = self._ax
+        ax = self._axs[nrow, ncol]
 
         if ys is None:
             ys = xs
@@ -51,40 +86,51 @@ class Plot:
 
         return ax.errorbar(xs, ys, fmt=style, ms=ms, mew=mew, **kwargs)
 
-    def add_image(self, xys, im=None, **kwargs):
+    def add_image(self, xys, im=None, nrow=0, ncol=0, **kwargs):
         if im is None:
             im = xys
-            xys = [np.arange(1, im.shape[0] + 1, step=1),
-                   np.arange(1, im.shape[1] + 1, step=1)]
+            extent = None
+        else:
+            half_step_rows = (xys[1][1] - xys[1][0]) / 2
+            half_step_cols = (xys[0][1] - xys[0][0]) / 2
+            extent = (xys[0][0] - half_step_cols,
+                      xys[0][-1] + half_step_cols,
+                      xys[1][0] - half_step_rows,
+                      xys[1][-1] + half_step_rows)
 
-        return self._ax.imshow(im, **kwargs)
+        return self._axs[nrow, ncol].imshow(im, extent=extent, aspect='auto', **kwargs)
 
     def save(self, filename):
         """Saves the plot."""
         create_folder(self._folder)
         self._fig.savefig(os.path.join(self._folder, filename))
 
-    def legend(self, fontsize=11, frameon=False, **kwargs):
-        self._ax.legend(fontsize=fontsize, frameon=frameon, **kwargs)
+    def legend(self, fontsize=11, frameon=False, nrow=0, ncol=0, **kwargs):
+        self._axs[nrow, ncol].legend(fontsize=fontsize, frameon=frameon, **kwargs)
 
     def show(self):
         """Shows the plot."""
         plt.show()
 
-    def set_title(self, title):
-        self._ax.set_title(title, size=12)
+    def set_title(self, title, nrow=0, ncol=0):
+        self._axs[nrow, ncol].set_title(title, size=12)
+
+    def yaxis_set_major_formatter(self, yfmt):
+        self.all_axs(lambda ax: ax.yaxis.set_major_formatter(yfmt))
+        self.all_axs(lambda ax: ax.yaxis.set_major_locator(plt.MaxNLocator(2)))
 
     def clear(self):
         """Clears the plot."""
         plt.close()
-        title = self._ax.get_title()
-        xlabel = self._ax.get_xlabel()
-        ylabel = self._ax.get_ylabel()
+        titles = self.all_axs(lambda ax: ax.get_title())
+        xlabels = self.all_axs(lambda ax: ax.get_xlabel())
+        ylabels = self.all_axs(lambda ax: ax.get_ylabel())
 
-        self._fig, self._ax = plt.subplots()
-        self._ax.set_title(title)
-        self._ax.set_xlabel(xlabel)
-        self._ax.set_ylabel(ylabel)
+        self._fig, self._axs = plt.subplots(self._nrows, self._ncols, figsize=(4, 4),
+                                            squeeze=False)
+        self.all_axs(lambda ax, t: ax.set_title(t), titles)
+        self.all_axs(lambda ax, xl: ax.set_xlabel(xl), xlabels)
+        self.all_axs(lambda ax, yl: ax.set_ylabel(yl), ylabels)
 
     def close(self):
         plt.close()

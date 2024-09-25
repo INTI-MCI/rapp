@@ -160,7 +160,7 @@ def phase_difference_from_folder(
         centers = (edges + np.diff(edges)[0] / 2)[:-1]
 
         plot = Plot(ylabel="Cuentas", xlabel="Diferencia de fase", folder=output_folder)
-        plot._ax.bar(
+        plot.the_ax.bar(
             centers,
             counts,
             width=np.diff(edges),
@@ -237,7 +237,7 @@ def plot_phase_difference(phase_diff_result, work_dir=ct.WORK_DIR, filename=None
     plot = Plot(ylabel=ct.LABEL_VOLTAGE, xlabel=ct.LABEL_ANGLE, folder=output_folder)
 
     markevery = int(len(xs) * 0.02)
-    plot._ax.set_xlim(140, 360)
+    plot.the_ax.set_xlim(140, 360)
 
     d1 = plot.add_data(
         xs,
@@ -289,11 +289,11 @@ def plot_phase_difference(phase_diff_result, work_dir=ct.WORK_DIR, filename=None
         right_legend.extend([l1, l2])
         left_legend.append(f1)
 
-        first_legend = plot._ax.legend(handles=left_legend, loc="upper left", frameon=False)
-        plot._ax.add_artist(first_legend)
-        plot._ax.legend(handles=right_legend, loc="upper right", frameon=False)
+        first_legend = plot.the_ax.legend(handles=left_legend, loc="upper left", frameon=False)
+        plot.the_ax.add_artist(first_legend)
+        plot.the_ax.legend(handles=right_legend, loc="upper right", frameon=False)
 
-        plot._ax.set_ylim(min(s1) - abs(max(s1) - min(s1)) * 0.2, max(s1) * 1.05)
+        plot.the_ax.set_ylim(min(s1) - abs(max(s1) - min(s1)) * 0.2, max(s1) * 1.05)
 
         if filename is not None:
             plot.save(filename)
@@ -327,7 +327,7 @@ def plot_phase_difference(phase_diff_result, work_dir=ct.WORK_DIR, filename=None
             plot.save(filename="{}-residual.{}".format(filename[:-4], FORMAT))
 
         minimum = np.min([signal_diff_s1, signal_diff_s2])
-        plot._ax.set_ylim(minimum - abs(minimum) * 0.1, 0.06)
+        plot.the_ax.set_ylim(minimum - abs(minimum) * 0.1, 0.06)
         plot.move((0, 50))
 
     if show:

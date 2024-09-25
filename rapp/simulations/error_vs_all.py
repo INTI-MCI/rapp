@@ -72,11 +72,11 @@ def run(
         )
 
     annotation = TPL_LABEL.format(reps)
-    plot._ax.text(0.05, 0.05, annotation, transform=plot._ax.transAxes)
+    plot.the_ax.text(0.05, 0.05, annotation, transform=plot.the_ax.transAxes)
     yfmt = simulation.get_axis_formatter(power_limits=(-3, -3))
-    plot._ax.yaxis.set_major_formatter(yfmt)
-    plot._ax.set_xticks(cycles_list)
-    plot._ax.set_ylim(top=2.9e-3)
+    plot.the_ax.yaxis.set_major_formatter(yfmt)
+    plot.the_ax.set_xticks(cycles_list)
+    plot.the_ax.set_ylim(top=2.9e-3)
 
     plot.legend(loc="upper right", fontsize=12)
 

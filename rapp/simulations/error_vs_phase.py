@@ -81,16 +81,16 @@ def run(
 
     plot.legend(loc="upper right", fontsize=13)
 
-    plot._ax.axhline(y=0, lw=1, ls="dashed")
+    plot.the_ax.axhline(y=0, lw=1, ls="dashed")
 
     annotation = TPL_LABEL.format(cycles, step, samples, reps)
-    plot._ax.text(0.05, 0.7, annotation, transform=plot._ax.transAxes)
+    plot.the_ax.text(0.05, 0.7, annotation, transform=plot.the_ax.transAxes)
     yfmt = simulation.get_axis_formatter(power_limits=(-3, -3))
-    plot._ax.yaxis.set_major_formatter(yfmt)
+    plot.the_ax.yaxis.set_major_formatter(yfmt)
 
-    plot._ax.xaxis.set_major_locator(plt.MaxNLocator(5))
+    plot.the_ax.xaxis.set_major_locator(plt.MaxNLocator(5))
     max_value = max(max(x) for x in errors.values())
-    plot._ax.set_ylim(-1e-3, max_value + 0.005)
+    plot.the_ax.set_ylim(-1e-3, max_value + 0.005)
 
     if save:
         for format_ in simulation.FORMATS:
