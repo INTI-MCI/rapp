@@ -75,11 +75,11 @@ def run(
                 logger.info(TPL_LOG.format(cycles, "{:.2E}".format(error)))
 
     plot = Plot(
-        ylabel=ct.LABEL_PHI_ERR, xlabel=ct.LABEL_N_CYCLES, ysci=True, xint=True, folder=folder
+        ylabel=ct.LABEL_MOTION_REPEATABILITY, xlabel=ct.LABEL_MOTION_ACCURACY, ysci=False, xint=False, folder=folder
     )
 
     for method, plot_config in simulation.METHODS.items():
-        plot.add_data(angle_props_lists, errors[method], label=method, **plot_config)
+        plot.add_image(angle_props_lists, errors[method], label=method, **plot_config)
 
     plot.legend(loc="center right", fontsize=12)
 

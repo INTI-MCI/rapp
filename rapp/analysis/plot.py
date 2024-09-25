@@ -51,6 +51,14 @@ class Plot:
 
         return ax.errorbar(xs, ys, fmt=style, ms=ms, mew=mew, **kwargs)
 
+    def add_image(self, xys, im=None, **kwargs):
+        if im is None:
+            im = xys
+            xys = [np.arange(1, im.shape[0] + 1, step=1),
+                   np.arange(1, im.shape[1] + 1, step=1)]
+
+        return self._ax.imshow(im, **kwargs)
+
     def save(self, filename):
         """Saves the plot."""
         create_folder(self._folder)
