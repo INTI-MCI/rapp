@@ -81,10 +81,9 @@ def run(
         xint=False, folder=folder
     )
 
-    for method, _ in simulation.METHODS.items():
+    for k, (method, _) in enumerate(simulation.METHODS.items()):
         plot.add_image(angle_props_lists, errors[method], label=method)
-
-    plot.legend(loc="center right", fontsize=12)
+        plot.set_title(method, ncol=k)
 
     annotation = TPL_LABEL.format(cycles, step, samples, reps)
     fmt = simulation.get_axis_formatter(power_limits=(-2, 2))
