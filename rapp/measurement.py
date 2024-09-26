@@ -107,6 +107,11 @@ class Measurement:
 
         fc = int(180 / step)  # Half cycle (180°) of the analyzer is one full cycle of the signal.
 
+        if "angle_accuracy" in kwargs:
+            kwargs["angle_accuracy"] = np.deg2rad(kwargs["angle_accuracy"])
+        if "angle_precision" in kwargs:
+            kwargs["angle_precision"] = np.deg2rad(kwargs["angle_precision"])
+
         xs, s1 = signal.harmonic(
             cycles=cycles, fc=fc, noise=a0_noise, k=a0_k, all_positive=True, **kwargs)
 

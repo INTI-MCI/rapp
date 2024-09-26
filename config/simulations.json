@@ -86,10 +86,10 @@
         "samples": 169,
         "step": 1,
         "reps": 100,
-        "points_per_source": 2,
+        "points_per_source": 12,
         "dynamic_range": 0.7,
         "k": 0,
-        "show": false,
+        "show": true,
         "save": true
     }
 }

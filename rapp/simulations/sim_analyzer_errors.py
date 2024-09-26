@@ -10,9 +10,9 @@ from rapp.simulations import simulation
 
 logger = logging.getLogger(__name__)
 
-TPL_LOG = "cycles={}, φerr: {}."
-TPL_LABEL = "step={}°\nsamples={}\nreps={}"
-TPL_FILENAME = "sim_error_vs_cycles-reps-{}-step-{}-samples-{}.{}"
+TPL_LOG = "accuracy={:.3g}, precision={:.3g}, φerr: {}."
+TPL_LABEL = "cycles={}\nstep={}°\nsamples={}\nreps={}"
+TPL_FILENAME = "sim_analyzer_errors-reps-{}-step-{}-samples-{}-cycles{}.{}"
 
 
 def run(
@@ -72,27 +72,28 @@ def run(
                 error = n_res.rmse()
                 errors[method][k_p, k_a] = error
 
-                logger.info(TPL_LOG.format(cycles, "{:.2E}".format(error)))
+                logger.info(TPL_LOG.format(angle_accuracy, angle_precision,
+                                           "{:.2E}".format(error)))
 
     plot = Plot(
-        nrows=points_per_source, ncols=points_per_source, ylabel=ct.LABEL_MOTION_REPEATABILITY,
+        nrows=1, ncols=len(simulation.METHODS), ylabel=ct.LABEL_MOTION_REPEATABILITY,
         xlabel=ct.LABEL_MOTION_ACCURACY, ysci=False,
         xint=False, folder=folder
     )
 
-    for method, plot_config in simulation.METHODS.items():
-        plot.add_image(angle_props_lists, errors[method], label=method, **plot_config)
+    for method, _ in simulation.METHODS.items():
+        plot.add_image(angle_props_lists, errors[method], label=method)
 
     plot.legend(loc="center right", fontsize=12)
 
-    annotation = TPL_LABEL.format(step, samples, reps)
+    annotation = TPL_LABEL.format(cycles, step, samples, reps)
+    fmt = simulation.get_axis_formatter(power_limits=(-2, 2))
+    plot.set_formatter(fmt)
     plot.the_ax.text(0.05, 0.05, annotation, transform=plot.the_ax.transAxes)
-    yfmt = simulation.get_axis_formatter(power_limits=(-3, -3))
-    plot.yaxis_set_major_formatter(yfmt)
 
     if save:
         for format_ in simulation.FORMATS:
-            plot.save(filename=TPL_FILENAME.format(reps, step, samples, format_))
+            plot.save(filename=TPL_FILENAME.format(reps, step, samples, cycles, format_))
 
     if show:
         plot.show()

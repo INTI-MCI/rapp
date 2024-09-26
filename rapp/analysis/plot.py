@@ -21,6 +21,7 @@ class Plot:
         self, nrows=1, ncols=1, title="", ylabel=None, xlabel=None, ysci=False, yoom=0, xint=False,
         folder=FOLDER
     ):
+        self.current_subplot_flat = 0
         self._nrows = nrows
         self._ncols = ncols
         self._fig, self._axs = plt.subplots(nrows, ncols, figsize=(4, 4), squeeze=False)
@@ -86,7 +87,7 @@ class Plot:
 
         return ax.errorbar(xs, ys, fmt=style, ms=ms, mew=mew, **kwargs)
 
-    def add_image(self, xys, im=None, nrow=0, ncol=0, **kwargs):
+    def add_image(self, xys, im=None, subplot_rc=None, **kwargs):
         if im is None:
             im = xys
             extent = None
@@ -95,10 +96,18 @@ class Plot:
             half_step_cols = (xys[0][1] - xys[0][0]) / 2
             extent = (xys[0][0] - half_step_cols,
                       xys[0][-1] + half_step_cols,
-                      xys[1][0] - half_step_rows,
-                      xys[1][-1] + half_step_rows)
+                      xys[1][-1] + half_step_rows,
+                      xys[1][0] - half_step_rows)
+        if subplot_rc is None:
+            subplot_rc = np.unravel_index(self.current_subplot_flat, (self._nrows, self._ncols))
+        else:
+            self.current_subplot_flat = np.ravel_multi_index(subplot_rc,
+                                                             (self._nrows, self._ncols))
 
-        return self._axs[nrow, ncol].imshow(im, extent=extent, aspect='auto', **kwargs)
+        self.current_subplot_flat += 1
+        self.current_subplot_flat = self.current_subplot_flat % (self._nrows * self._ncols)
+
+        return self._axs[subplot_rc].imshow(im, extent=extent, aspect='auto', **kwargs)
 
     def save(self, filename):
         """Saves the plot."""
@@ -118,6 +127,10 @@ class Plot:
     def yaxis_set_major_formatter(self, yfmt):
         self.all_axs(lambda ax: ax.yaxis.set_major_formatter(yfmt))
         self.all_axs(lambda ax: ax.yaxis.set_major_locator(plt.MaxNLocator(2)))
+
+    def set_formatter(self, fmt):
+        self.all_axs(lambda ax: ax.xaxis.set_major_formatter(fmt))
+        self.all_axs(lambda ax: ax.yaxis.set_major_formatter(fmt))
 
     def clear(self):
         """Clears the plot."""
