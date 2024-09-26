@@ -19,12 +19,12 @@ class Plot:
 
     def __init__(
         self, nrows=1, ncols=1, title="", ylabel=None, xlabel=None, ysci=False, yoom=0, xint=False,
-        folder=FOLDER
+        folder=FOLDER, figsize=(4, 4)
     ):
         self.current_subplot_flat = 0
         self._nrows = nrows
         self._ncols = ncols
-        self._fig, self._axs = plt.subplots(nrows, ncols, figsize=(4, 4), squeeze=False)
+        self._fig, self._axs = plt.subplots(nrows, ncols, figsize=figsize, squeeze=False)
         self.all_axs(lambda ax, t: ax.set_title(t, size=12), title)
 
         if ysci:
@@ -87,17 +87,17 @@ class Plot:
 
         return ax.errorbar(xs, ys, fmt=style, ms=ms, mew=mew, **kwargs)
 
-    def add_image(self, xys, im=None, subplot_rc=None, **kwargs):
+    def add_image(self, rcs, im=None, subplot_rc=None, **kwargs):
         if im is None:
-            im = xys
+            im = rcs
             extent = None
         else:
-            half_step_rows = (xys[1][1] - xys[1][0]) / 2
-            half_step_cols = (xys[0][1] - xys[0][0]) / 2
-            extent = (xys[0][0] - half_step_cols,
-                      xys[0][-1] + half_step_cols,
-                      xys[1][-1] + half_step_rows,
-                      xys[1][0] - half_step_rows)
+            half_step_rows = (rcs[0][1] - rcs[0][0]) / 2
+            half_step_cols = (rcs[1][1] - rcs[1][0]) / 2
+            extent = (rcs[1][0] - half_step_cols,
+                      rcs[1][-1] + half_step_cols,
+                      rcs[0][-1] + half_step_rows,
+                      rcs[0][0] - half_step_rows)
         if subplot_rc is None:
             subplot_rc = np.unravel_index(self.current_subplot_flat, (self._nrows, self._ncols))
         else:

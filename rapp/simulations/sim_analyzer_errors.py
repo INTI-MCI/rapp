@@ -34,11 +34,7 @@ def run(
     print("")
     logger.info("PHASE DIFFERENCE VARIATIONS DUE TO ANALYZER ERRORS")
 
-    max_angle_precision_std = guaranteed_repeatability / 3      # Newport uses k = 3
-    # Newport uses peak to peak deviation
-    # max_angle_accuracy_std = guaranteed_accuracy / np.sqrt(12)
-
-    angle_props_lists = [np.linspace(0, max_angle_precision_std, points_per_source),
+    angle_props_lists = [np.linspace(0, guaranteed_repeatability, points_per_source),
                          np.linspace(0, guaranteed_accuracy, points_per_source)]
     amplitude = (max_v * dynamic_range) / 2
 
@@ -78,7 +74,7 @@ def run(
     plot = Plot(
         nrows=1, ncols=len(simulation.METHODS), ylabel=ct.LABEL_MOTION_REPEATABILITY,
         xlabel=ct.LABEL_MOTION_ACCURACY, ysci=False,
-        xint=False, folder=folder
+        xint=False, folder=folder, figsize=(20, 12)
     )
 
     for k, (method, _) in enumerate(simulation.METHODS.items()):
