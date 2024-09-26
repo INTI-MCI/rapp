@@ -1,6 +1,7 @@
 import logging
 
 import numpy as np
+from matplotlib.colors import Normalize
 
 from rapp import adc
 from rapp import constants as ct
@@ -77,9 +78,15 @@ def run(
         xint=False, folder=folder, figsize=(20, 12)
     )
 
+    vmin, vmax = 0, 0
+    for error in errors.values():
+        vmin = min(vmin, error.min())
+        vmax = max(vmax, error.max())
+    norm = Normalize(vmin, vmax)
     for k, (method, _) in enumerate(simulation.METHODS.items()):
-        plot.add_image(angle_props_lists, errors[method], label=method)
+        plot.add_image(angle_props_lists, errors[method], norm=norm)
         plot.set_title(method, ncol=k)
+    plot.add_shared_colorbar()
 
     annotation = TPL_LABEL.format(cycles, step, samples, reps)
     fmt = simulation.get_axis_formatter(power_limits=(-2, 2))

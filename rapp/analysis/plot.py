@@ -109,6 +109,9 @@ class Plot:
 
         return self._axs[subplot_rc].imshow(im, extent=extent, aspect='auto', **kwargs)
 
+    def add_shared_colorbar(self):
+        self._fig.colorbar(self._axs[0, 0].get_images()[0], ax=self._axs, orientation='vertical')
+
     def save(self, filename):
         """Saves the plot."""
         create_folder(self._folder)
