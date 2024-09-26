@@ -33,8 +33,9 @@ def harmonic(
         max_v: maximum value of ADC scale [0, max_v] (in Volts).
         all_positive: if true, shifts the signal to the positive axis.
         k: amount of distortion to add.
-        angle_accuracy: peak to peak deviation of requested angle positions. (radians)
-        angle_precision: standard deviation of angle around requested value. (radians)
+        Newport SR50 specs:
+            angle_accuracy: peak to peak deviation of requested angle positions. (radians)
+            angle_precision: deviation of angle around requested value (k=3). (radians)
 
     Returns:
         The signal as an (xs, ys) tuple.
@@ -56,7 +57,7 @@ def harmonic(
         xs_noisy = xs
 
     if angle_precision:
-        xs_noisy = xs_noisy + angle_precision * np.random.randn(n_angles)
+        xs_noisy = xs_noisy + angle_precision / 3 * np.random.randn(n_angles)
 
     # All samples are taken from the reached position
     xs_noisy = np.repeat(xs_noisy, samples)
