@@ -130,7 +130,8 @@ def phase_difference_from_folder(
             sharex=True,
         )
 
-        axs[0].plot(phi1, "-", color="k", label="STD = {}°".format(round_to_n(std_phi1, 2)))
+        label_phi1 = "N/D" if std_phi1 is None else "{}°".format(round_to_n(std_phi1, 2))
+        axs[0].plot(phi1, "-", color="k", label="STD = {}".format(label_phi1))
         axs[0].set_title("CH0")
         axs[0].set_ylabel("Fase intrínseca (°)")
         axs[0].set_xlabel("Nro de repetición")
@@ -202,7 +203,7 @@ def phase_difference_from_file(
     if plot or show:
         filename = "{}.{}".format(os.path.basename(filepath)[:-4], FORMAT)
 
-    phase_difference(measurement, method, filename=filename, show=show)
+    phase_difference(measurement, method, norm=norm, filename=filename, show=show, **kwargs)
 
 
 def phase_difference(

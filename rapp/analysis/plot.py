@@ -21,7 +21,6 @@ class Plot:
         self, title="", ylabel=None, xlabel=None, ysci=False, yoom=0, xint=False, folder=FOLDER
     ):
         self._fig, self._ax = plt.subplots(figsize=(4, 4))
-        self._fig_manager = plt.get_current_fig_manager()
         self._ax.set_title(title, size=12)
 
         if ysci:
@@ -84,7 +83,7 @@ class Plot:
 
     def move(self, dxy_in_cm):
         try:
-            tk_window = self._fig_manager.window
+            tk_window = self._fig.canvas.manager.window
             x, y = tk_window.winfo_x(), tk_window.winfo_y()
             dpi = self._fig.dpi
             tk_window.geometry(f"+{x + int(dxy_in_cm[0] / 2.54 * dpi)}+"
