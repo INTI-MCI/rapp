@@ -326,8 +326,8 @@ def phase_difference(
 
     if method == 'COSINE':
         phase_diff = cosine_similarity(s1, s2, x=xs, period=2*np.pi)
-        return PhaseDifferenceResult(phase_diff, uncertainty=0, phi2=phase_diff)
+        return PhaseDifferenceResult(phase_diff, uncertainty=0)
 
     if method == 'XCORR':
         phase_diff = cross_correlation_parabolic(s1, s2, x=xs, period=2*np.pi)
-        return PhaseDifferenceResult(phase_diff, uncertainty=0, phi2=phase_diff)
+        return PhaseDifferenceResult(phase_diff, uncertainty=0)

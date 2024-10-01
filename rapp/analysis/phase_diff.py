@@ -137,7 +137,8 @@ def phase_difference_from_folder(
         axs[0].set_xlabel("Nro de repetición")
         axs[0].legend()
 
-        axs[1].plot(phi2, "-", color="k", label="STD = {}°".format(round_to_n(std_phi2, 2)))
+        label_phi2 = "N/D" if std_phi2 is None else "{}°".format(round_to_n(std_phi2, 2))
+        axs[1].plot(phi2, "-", color="k", label="STD = {}".format(label_phi2))
         axs[1].set_ylabel("Fase intrínseca (°)")
         axs[1].set_xlabel("Nro de repetición")
         axs[1].set_title("CH1")
