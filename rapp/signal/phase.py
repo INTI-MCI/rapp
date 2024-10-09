@@ -3,14 +3,14 @@ import logging
 import numpy as np
 
 from scipy import signal
-from scipy.optimize import curve_fit
+from scipy.optimize import curve_fit, dual_annealing
 from scipy.odr import ODR, Model, RealData
 
 from rapp.utils import round_to_n_with_uncertainty
-from rapp.signal.models import two_sines, two_sines_model
+import rapp.signal.models as models
 
 
-PHASE_DIFFERENCE_METHODS = ['COSINE', 'HILBERT', 'WNLS', 'NLS', 'ODR', 'DFT']
+PHASE_DIFFERENCE_METHODS = ['COSINE', 'HILBERT', 'WNLS', 'NLS', 'ODR', 'DFT', 'XCORR', 'ANNEAL']
 MIN_SIGMA_CURVE_FIT = 1e-3
 EXPONENT_WEIGHTS_WNLS = 2
 
@@ -83,13 +83,37 @@ def cosine_similarity(s1, s2, x=None, period=None):
     return np.arccos(np.dot(s1, s2) / (np.linalg.norm(s1) * np.linalg.norm(s2)))
 
 
-def get_index_for_periodization(xs, period):
+def cross_correlation_parabolic(signal1, signal2, x, period):
+    index, samples_per_period = get_index_for_periodization(x, period, full_output=True)
+    signal1 = signal1[:index]
+    signal2 = signal2[:index]
+
+    f1 = np.fft.fft(signal1)
+    f2 = np.fft.fft(signal2)
+    cross_power_spectrum = (f1 * np.conj(f2))
+    cross_corr = np.fft.ifft(cross_power_spectrum).real
+
+    max_index = np.argmax(cross_corr)
+    peak_lag = max_index if max_index < len(signal1) / 2 else max_index - len(signal1)
+
+    # Parabolic interpolation for sub-sample accuracy
+    if max_index > 0 and max_index < len(cross_corr) - 1:
+        y0, y1, y2 = cross_corr[max_index - 1], cross_corr[max_index], cross_corr[max_index + 1]
+        peak_lag += (y2 - y0) / (2 * (2 * y1 - y2 - y0))
+
+    return peak_lag / samples_per_period * 2 * np.pi
+
+
+def get_index_for_periodization(xs, period, full_output=False):
     step = xs[1] - xs[0]
     if xs[2] - xs[1] != step:
         raise ValueError("Non regular sampling of x.")
 
     n_periods = int((xs[-1] - xs[0] + step) // period)
 
+    if full_output:
+        samples_per_period = int(period / step)
+        return n_periods * samples_per_period, samples_per_period
     return n_periods * int(period / step)
 
 
@@ -124,8 +148,9 @@ def sine_fit(
     fitx = xs
 
     if method in ['NLS', 'WNLS']:
+        model = models.two_sines if len(p0) == 6 else models.two_sines_with_harmonics
         popt, pcov = curve_fit(
-            two_sines, xs, ys,
+            model, xs, ys,
             p0=p0,
             sigma=y_sigma,
             absolute_sigma=abs_sigma,
@@ -133,21 +158,35 @@ def sine_fit(
         )
 
         us = np.sqrt(np.diag(pcov))
-        fity = two_sines(fitx, *popt)
+        fity = model(fitx, *popt)
+
+        return popt, us, fitx, fity
+
+    if method == "ANNEAL":
+        bounds_ = [(bmin, bmax) for bmin, bmax in zip(bounds[0], bounds[1])]
+        res = dual_annealing(
+            models.two_sines_with_harmonics_objective, bounds=bounds_, args=(xs, ys, y_sigma),
+            maxiter=2000
+        )
+
+        popt = res.x
+
+        fity = models.two_sines_with_harmonics(fitx, *popt)
+        us = np.abs(res.jac)
 
         return popt, us, fitx, fity
 
     if method == 'ODR':
 
         data = RealData(xs, ys, sx=x_sigma, sy=y_sigma)
-        odr = ODR(data, Model(two_sines_model),  beta0=p0 or [1, 1, 0, 0, 0, 0])
+        odr = ODR(data, Model(models.two_sines_model),  beta0=p0 or [1, 1, 0, 0, 0, 0])
         odr.set_job(fit_type=2)
         output = odr.run()
 
         # cov_beta is the cov. matrix NOT scaled by the residual variance (whereas sd_beta is).
         # So cov_beta is equivalent to absolute_sigma=True.
         us = np.sqrt(np.diag(output.cov_beta))
-        fity = two_sines_model(output.beta, fitx)
+        fity = models.two_sines_model(output.beta, fitx)
 
         return output.beta, us, fitx, fity
 
@@ -178,7 +217,8 @@ def phase_difference(
     p0=None,
     allow_nan=False,
     abs_sigma=True,
-    fix_range=True
+    fix_range=True,
+    n_harmonics=1
 ) -> PhaseDifferenceResult:
     """Computes phase difference between two harmonic signals (xs, s1) and (xs, s2)."""
 
@@ -193,7 +233,7 @@ def phase_difference(
         s2_sigma = np.ones(shape=len(s2_sigma))
         abs_sigma = False
 
-    if method in ['WNLS', 'NLS', 'ODR']:
+    if method in ['WNLS', 'NLS', 'ODR', 'ANNEAL']:
 
         s1_norm = np.linalg.norm(s1)
         s2_norm = np.linalg.norm(s2)
@@ -223,9 +263,20 @@ def phase_difference(
         phase_lower_bound = np.deg2rad(-180)
         phase_upper_bound = np.deg2rad(180)
 
+        max_amplitude1 = np.max(s1)
+        max_amplitude2 = np.max(s2)
+        lower_bounds = [0, 0, phase_lower_bound, phase_lower_bound]
+        upper_bounds = [max_amplitude1, max_amplitude2, phase_upper_bound, phase_upper_bound]
         bounds = (
-            [0, 0, phase_lower_bound, phase_lower_bound, 0, 0],
-            [np.inf, np.inf, phase_upper_bound, phase_upper_bound, np.inf, np.inf])
+            [*[element for element in lower_bounds for _ in range(n_harmonics)], 0, 0],
+            [*[element for element in upper_bounds for _ in range(n_harmonics)], max_amplitude1,
+             max_amplitude2]
+        )
+
+        if p0 is None:
+            p0 = (np.array(bounds[0]) + np.array(bounds[1])) / 2.0
+        elif len(p0) != 4 * n_harmonics + 2:
+            raise ValueError("Wrong number of parameters.")
 
         popt, us, fitx, fity = sine_fit(
             x12, s12,
@@ -240,13 +291,13 @@ def phase_difference(
         fity1 = fity[:half]
         fity2 = fity[half:total]
 
-        phi1 = popt[2]
-        phi1_u = us[2]
+        phi1 = popt[2 * n_harmonics]
+        phi1_u = us[2 * n_harmonics]
 
         logger.debug("φ1 = ({} ± {})°".format(np.rad2deg(phi1), np.rad2deg(phi1_u)))
 
-        phase_diff = popt[3]
-        phase_diff_u = us[3]
+        phase_diff = popt[3 * n_harmonics]
+        phase_diff_u = us[3 * n_harmonics]
 
         # if abs(phase_diff) > np.pi and fix_range:
         #    phase_diff = (phase_diff % np.pi) * -1
@@ -275,4 +326,8 @@ def phase_difference(
 
     if method == 'COSINE':
         phase_diff = cosine_similarity(s1, s2, x=xs, period=2*np.pi)
+        return PhaseDifferenceResult(phase_diff, uncertainty=0)
+
+    if method == 'XCORR':
+        phase_diff = cross_correlation_parabolic(s1, s2, x=xs, period=2*np.pi)
         return PhaseDifferenceResult(phase_diff, uncertainty=0)

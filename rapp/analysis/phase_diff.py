@@ -23,7 +23,8 @@ def sine(xs, a, phi, c):
 
 
 def phase_difference_from_folder(
-    folder, method, norm=False, fill_none=False, appended_measurements=None, plot=False, show=False
+    folder, method, norm=False, fill_none=False, appended_measurements=None, plot=False,
+    show=False, **kwargs
 ):
     logger.info("Calculating phase difference for {}...".format(folder))
 
@@ -45,7 +46,7 @@ def phase_difference_from_folder(
 
         # logger.info("Parameters: {}.".format(measurement.parameters_string()))
         if new_measurement:
-            res = phase_difference(measurement, method, norm=norm, show=False)
+            res = phase_difference(measurement, method, norm=norm, show=False, **kwargs)
             results.append(res)
 
     phase_diffs = []
@@ -129,13 +130,15 @@ def phase_difference_from_folder(
             sharex=True,
         )
 
-        axs[0].plot(phi1, "-", color="k", label="STD = {}°".format(round_to_n(std_phi1, 2)))
+        label_phi1 = "N/D" if std_phi1 is None else "{}°".format(round_to_n(std_phi1, 2))
+        axs[0].plot(phi1, "-", color="k", label="STD = {}".format(label_phi1))
         axs[0].set_title("CH0")
         axs[0].set_ylabel("Fase intrínseca (°)")
         axs[0].set_xlabel("Nro de repetición")
         axs[0].legend()
 
-        axs[1].plot(phi2, "-", color="k", label="STD = {}°".format(round_to_n(std_phi2, 2)))
+        label_phi2 = "N/D" if std_phi2 is None else "{}°".format(round_to_n(std_phi2, 2))
+        axs[1].plot(phi2, "-", color="k", label="STD = {}".format(label_phi2))
         axs[1].set_ylabel("Fase intrínseca (°)")
         axs[1].set_xlabel("Nro de repetición")
         axs[1].set_title("CH1")
@@ -190,7 +193,7 @@ def phase_difference_from_folder(
 
 
 def phase_difference_from_file(
-    filepath, method, norm=False, fill_none=False, plot=False, show=False
+    filepath, method, norm=False, fill_none=False, plot=False, show=False, **kwargs
 ):
     logger.info("Calculating phase difference for {}...".format(filepath))
 
@@ -201,7 +204,7 @@ def phase_difference_from_file(
     if plot or show:
         filename = "{}.{}".format(os.path.basename(filepath)[:-4], FORMAT)
 
-    phase_difference(measurement, method, filename=filename, show=show)
+    phase_difference(measurement, method, norm=norm, filename=filename, show=show, **kwargs)
 
 
 def phase_difference(
@@ -217,7 +220,7 @@ def phase_difference(
     log_phi = "{} (k=1).".format("φ=({} ± {})°".format(phase_diff, phase_diff_u))
     logger.info("Detected phase difference (analyzer angles): {}".format(log_phi))
 
-    if method in ["ODR", "NLS", "WNLS", "DFT"] and (filename or show):
+    if method in ["ODR", "NLS", "WNLS", "DFT", "ANNEAL"] and (filename or show):
         plot_phase_difference((xs, s1, s2, s1err, s2err, res), filename=filename, show=show)
 
     return (xs, s1, s2, s1err, s2err, res)
@@ -272,7 +275,7 @@ def plot_phase_difference(phase_diff_result, work_dir=ct.WORK_DIR, filename=None
         logger.info("RMSE (relative) between CH1 data and Model: {}".format(ch1_relative_error))
 
         phase_diff, phase_diff_u = res.round_to_n(n=2, k=1)
-        label_fit = "NLS"
+        label_fit = "Fitting method"
 
         f1 = plot.add_data(res.fitx, res.fits1, style="-", color="k", lw=1, label=label_fit)
         plot.add_data(res.fitx, res.fits2, style="-", color="k", lw=1)
@@ -325,6 +328,7 @@ def plot_phase_difference(phase_diff_result, work_dir=ct.WORK_DIR, filename=None
 
         minimum = np.min([signal_diff_s1, signal_diff_s2])
         plot._ax.set_ylim(minimum - abs(minimum) * 0.1, 0.06)
+        plot.move((0, 50))
 
     if show:
         plot.show()
