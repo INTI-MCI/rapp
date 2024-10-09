@@ -60,10 +60,15 @@ def two_diff_distorted_sines(x12, A1s, A2s, phi1s, deltas, C1, C2):
         s1 = s1 + sine((h + 1) * x1, A1, phi1, 0)
     s1 = s1 + C1
 
-    np.resize(phi1s, len(deltas))
-
-    for h, (A2, phi1, delta) in enumerate(zip(A2s, phi1s, deltas)):
-        s2 = s2 + sine((h + 1) * x2, A2, phi1 + delta, 0)
+    if len(phi1s) < len(deltas):
+        m = len(deltas) - len(phi1s)
+        phi1s = phi1s + m * (0,)
+        for h, (A2, phi1, delta) in enumerate(zip(A2s, phi1s, deltas)):
+            s2 = s2 + sine((h + 1) * x2, A2, phi1 + delta, 0)
+    else:
+        np.resize(phi1s, len(deltas))
+        for h, (A2, phi1, delta) in enumerate(zip(A2s, phi1s, deltas)):
+            s2 = s2 + sine((h + 1) * x2, A2, phi1 + delta, 0)
     s2 = s2 + C2
 
     return np.hstack([s1, s2])
@@ -72,11 +77,10 @@ def two_diff_distorted_sines(x12, A1s, A2s, phi1s, deltas, C1, C2):
 def two_sines_with_harmonics(x, n_harmonics_ch0, n_harmonics_ch1, *p):
     n_ch0 = int(n_harmonics_ch0)
     n_ch1 = int(n_harmonics_ch1)
-    n = n_ch0 + n_ch1
     A1s = p[0:n_ch0]
-    A2s = p[n:n+n_ch1]
-    phi1s = p[2*n:(2*n)+n_ch0]
-    deltas = p[3*n:(3*n)+n_ch1]
+    A2s = p[n_ch0:n_ch0+n_ch1]
+    phi1s = p[n_ch0+n_ch1:(2*n_ch0)+n_ch1]
+    deltas = p[(2*n_ch0)+n_ch1:2*(n_ch0+n_ch1)]
     C1, C2 = p[-2:]
     return two_diff_distorted_sines(x, A1s, A2s, phi1s, deltas, C1, C2)
 
@@ -90,4 +94,4 @@ def two_sines_with_harmonics_objective(p, *args):
     parts = [p[i*n_harmonics:(i+1)*n_harmonics] for i in range(6)]
     A1s, A2s, phi1s, deltas, C1s, C2s = parts
     y_model = two_distorted_sines(x, A1s, A2s, phi1s, deltas, C1s, C2s)
-    return np.sum(((y_model - y) / y_sigma) ** 2.0) / Np
+    return np.sum(((y_model - y) / y_sigma) ** 2.0)
