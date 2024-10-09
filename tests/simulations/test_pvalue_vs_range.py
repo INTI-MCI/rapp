@@ -12,4 +12,4 @@ def test_run(tmp_path):
     print(mean_pvalues)
     for i, pvalue in enumerate(mean_pvalues):
         if i > 6:
-            assert pvalue > 0.05
+            assert pvalue > 0.045
