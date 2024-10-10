@@ -143,12 +143,22 @@ def DFT(s1, s2, xs=None, period=2*np.pi):
 
 
 def sine_fit(
-    xs, ys, p0=None, x_sigma=None, y_sigma=None, abs_sigma=True, bounds=None, method='NLS'
+    xs, ys, p0=None, x_sigma=None, y_sigma=None, abs_sigma=True, bounds=None, method='NLS',
+        n_harmonics_ch0=None, n_harmonics_ch1=None,
 ):
     fitx = xs
 
     if method in ['NLS', 'WNLS']:
-        model = models.two_sines if len(p0) == 6 else models.two_sines_with_harmonics
+        def curve_fit_two_sines_with_harmonics(x, *p):
+            return models.two_sines_with_harmonics(x, n_harmonics_ch0, n_harmonics_ch1, *p)
+        if n_harmonics_ch0 == n_harmonics_ch1:
+            if len(p0) == 6:
+                model = models.two_sines
+            else:
+                model = models.two_sines_same_harmonics
+        else:
+            model = curve_fit_two_sines_with_harmonics
+
         popt, pcov = curve_fit(
             model, xs, ys,
             p0=p0,
@@ -218,7 +228,9 @@ def phase_difference(
     allow_nan=False,
     abs_sigma=True,
     fix_range=True,
-    n_harmonics=1
+    n_harmonics=1,
+    n_harmonics_ch0=0,
+    n_harmonics_ch1=0,
 ) -> PhaseDifferenceResult:
     """Computes phase difference between two harmonic signals (xs, s1) and (xs, s2)."""
 
@@ -265,8 +277,15 @@ def phase_difference(
 
         max_amplitude1 = np.max(s1)
         max_amplitude2 = np.max(s2)
-        lower_bounds = [0, 0, phase_lower_bound, phase_lower_bound]
-        upper_bounds = [max_amplitude1, max_amplitude2, phase_upper_bound, phase_upper_bound]
+        lower_bounds = [0, phase_lower_bound]
+        upper_bounds = [max(max_amplitude1, max_amplitude2), phase_upper_bound]
+
+        if n_harmonics_ch0 + n_harmonics_ch1 == 0:
+            n_harmonics_ch0 = n_harmonics
+            n_harmonics_ch1 = n_harmonics
+
+        n_harmonics = n_harmonics_ch0 + n_harmonics_ch1
+
         bounds = (
             [*[element for element in lower_bounds for _ in range(n_harmonics)], 0, 0],
             [*[element for element in upper_bounds for _ in range(n_harmonics)], max_amplitude1,
@@ -275,13 +294,13 @@ def phase_difference(
 
         if p0 is None:
             p0 = (np.array(bounds[0]) + np.array(bounds[1])) / 2.0
-        elif len(p0) != 4 * n_harmonics + 2:
+        elif len(p0) != 2 * n_harmonics_ch0 + 2 * n_harmonics_ch1 + 2:
             raise ValueError("Wrong number of parameters.")
 
         popt, us, fitx, fity = sine_fit(
             x12, s12,
             x_sigma=x_sigma, y_sigma=s12_sigma, method=method, p0=p0, abs_sigma=abs_sigma,
-            bounds=bounds
+            bounds=bounds, n_harmonics_ch0=n_harmonics_ch0, n_harmonics_ch1=n_harmonics_ch1,
         )
 
         total = len(fitx)
@@ -291,13 +310,13 @@ def phase_difference(
         fity1 = fity[:half]
         fity2 = fity[half:total]
 
-        phi1 = popt[2 * n_harmonics]
-        phi1_u = us[2 * n_harmonics]
+        phi1 = popt[n_harmonics]
+        phi1_u = us[n_harmonics]
 
         logger.debug("φ1 = ({} ± {})°".format(np.rad2deg(phi1), np.rad2deg(phi1_u)))
 
-        phase_diff = popt[3 * n_harmonics]
-        phase_diff_u = us[3 * n_harmonics]
+        phase_diff = popt[n_harmonics + n_harmonics_ch0]
+        phase_diff_u = us[n_harmonics + n_harmonics_ch0]
 
         # if abs(phase_diff) > np.pi and fix_range:
         #    phase_diff = (phase_diff % np.pi) * -1

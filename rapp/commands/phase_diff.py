@@ -7,6 +7,8 @@ HELP_PHASE_DIFF = 'Tool for calculating phase difference from single polarimeter
 
 HELP_METHOD = 'phase difference calculation method (default: %(default)s).'
 HELP_NHARMONICS = 'number of harmonics of the fitting model.'
+HELP_NHARMONICS_CH0 = 'number of harmonics of the fitting model in channel 0.'
+HELP_NHARMONICS_CH1 = 'number of harmonics of the fitting model in channel 1.'
 HELP_FILEPATH = 'file containing the measurements.'
 HELP_FILL_NONE = 'if true, fills a channel with None with data from the other channel.'
 HELP_APPEND = 'number of appended measurements for analysis.'
@@ -21,6 +23,8 @@ def add_to_subparsers(subparsers):
     p.add_argument('filepath', type=str, help=HELP_FILEPATH)
     p.add_argument('--method', type=str, default='NLS', help=HELP_METHOD)
     p.add_argument('-n', '--n_harmonics', type=int, default=1, help=HELP_NHARMONICS)
+    p.add_argument('-n-ch0', '--n_harmonics_ch0', type=int, default=0, help=HELP_NHARMONICS_CH0)
+    p.add_argument('-n-ch1', '--n_harmonics_ch1', type=int, default=0, help=HELP_NHARMONICS_CH1)
     p.add_argument('-a', '--appended_measurements', default=None, type=int, help=HELP_APPEND)
     p.add_argument('-f', '--fill_none', action='store_true', help=HELP_FILL_NONE)
     p.add_argument('-v', '--verbose', action='store_true', help=ct.HELP_VERBOSE)
