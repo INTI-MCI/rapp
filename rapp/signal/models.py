@@ -48,7 +48,7 @@ def two_sines_same_harmonics(x, *p):
     return two_distorted_sines(x, A1s, A2s, phi1s, deltas, C1, C2)
 
 
-def two_diff_distorted_sines(x12, A1s, A2s, phi1s, deltas, C1, C2):
+def two_diff_distorted_sines(x12, A1s: tuple, A2s: tuple, phi1s: tuple, deltas: tuple, C1, C2):
     total = len(x12)
     half = total // 2
 
@@ -63,12 +63,8 @@ def two_diff_distorted_sines(x12, A1s, A2s, phi1s, deltas, C1, C2):
     if len(phi1s) < len(deltas):
         m = len(deltas) - len(phi1s)
         phi1s = phi1s + m * (0,)
-        for h, (A2, phi1, delta) in enumerate(zip(A2s, phi1s, deltas)):
-            s2 = s2 + sine((h + 1) * x2, A2, phi1 + delta, 0)
-    else:
-        np.resize(phi1s, len(deltas))
-        for h, (A2, phi1, delta) in enumerate(zip(A2s, phi1s, deltas)):
-            s2 = s2 + sine((h + 1) * x2, A2, phi1 + delta, 0)
+    for h, (A2, phi1, delta) in enumerate(zip(A2s, phi1s, deltas)):
+        s2 = s2 + sine((h + 1) * x2, A2, phi1 + delta, 0)
     s2 = s2 + C2
 
     return np.hstack([s1, s2])
