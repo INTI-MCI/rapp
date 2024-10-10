@@ -289,7 +289,6 @@ def phase_difference(
             [*[element for element in upper_bounds for _ in range(n_harmonics)], max_amplitude1,
              max_amplitude2]
         )
-        print(bounds)
 
         if p0 is None:
             p0 = (np.array(bounds[0]) + np.array(bounds[1])) / 2.0
