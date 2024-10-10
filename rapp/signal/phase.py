@@ -149,13 +149,15 @@ def sine_fit(
     fitx = xs
 
     if method in ['NLS', 'WNLS']:
+        def curve_fit_two_sines_with_harmonics(x, *p):
+            return models.two_sines_with_harmonics(x, n_harmonics_ch0, n_harmonics_ch1, *p)
         if n_harmonics_ch0 == n_harmonics_ch1:
             if len(p0) == 6:
                 model = models.two_sines
             else:
                 model = models.two_sines_same_harmonics
         else:
-             model = lambda x, *p: models.two_sines_with_harmonics(x, n_harmonics_ch0, n_harmonics_ch1, *p)
+            model = curve_fit_two_sines_with_harmonics
 
         popt, pcov = curve_fit(
             model, xs, ys,
