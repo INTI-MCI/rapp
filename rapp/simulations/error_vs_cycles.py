@@ -1,7 +1,6 @@
 import logging
 
 import numpy as np
-import matplotlib.pyplot as plt
 
 from rapp import adc
 from rapp import constants as ct
