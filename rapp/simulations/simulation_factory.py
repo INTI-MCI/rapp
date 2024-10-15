@@ -9,6 +9,7 @@ from rapp.simulations import (
     one_phase_diff,
     pvalue_vs_range,
     simulation_steps,
+    sim_analyzer_errors
 )
 
 SIMULATIONS = {
@@ -22,6 +23,7 @@ SIMULATIONS = {
     "one_phase_diff": one_phase_diff,
     "pvalue_vs_range": pvalue_vs_range,
     "sim_steps": simulation_steps,
+    "sim_analyzer_errors": sim_analyzer_errors,
 }
 
 

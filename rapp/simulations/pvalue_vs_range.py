@@ -55,10 +55,10 @@ def run(
 
     label = TPL_LABEL.format(reps)
     plot.add_data(xs, mean_pvalues, style="s-", color="k", lw=2)
-    plot._ax.axhline(y=0.05, ls="--", lw=2, label="pvalue=0.5")
+    plot.the_ax.axhline(y=0.05, ls="--", lw=2, label="pvalue=0.5")
     plot.legend(loc="upper left", fontsize=12)
 
-    plot._ax.text(0.05, 0.8, label, transform=plot._ax.transAxes)
+    plot.the_ax.text(0.05, 0.8, label, transform=plot.the_ax.transAxes)
 
     if save:
         plot.save(filename=TPL_FILENAME.format(reps))

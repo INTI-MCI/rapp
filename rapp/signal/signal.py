@@ -15,7 +15,9 @@ def harmonic(
     bits: int = 16,
     max_v: float = 4,
     all_positive: bool = False,
-    k: int = 0
+    k: int = 0,
+    angle_accuracy: float = 0,
+    angle_precision: float = 0
 ) -> tuple:
     """Generates a one-dimensional discrete harmonic signal.
         Allows to add noise and voltage quantization.
@@ -31,6 +33,9 @@ def harmonic(
         max_v: maximum value of ADC scale [0, max_v] (in Volts).
         all_positive: if true, shifts the signal to the positive axis.
         k: amount of distortion to add.
+        Newport SR50 specs:
+            angle_accuracy: peak to peak deviation of requested angle positions. (radians)
+            angle_precision: deviation of angle around requested value (k=3). (radians)
 
     Returns:
         The signal as an (xs, ys) tuple.
@@ -43,10 +48,24 @@ def harmonic(
 
         return sigma
 
-    xs = np.linspace(0, 2 * np.pi * cycles, num=int(cycles * fc), endpoint=False)
+    n_angles = int(cycles * fc)
+    xs = np.linspace(0, 2 * np.pi * cycles, num=n_angles, endpoint=False)
+
+    if angle_accuracy:
+        unique, u_inv = np.unique(xs, return_inverse=True)
+        unique = unique + np.random.uniform(-angle_accuracy, angle_accuracy, len(unique))
+        xs_noisy = unique[u_inv]
+    else:
+        xs_noisy = xs
+
+    if angle_precision:
+        xs_noisy = xs_noisy + angle_precision / 3 * np.random.randn(n_angles)
+
+    # All samples are taken from the reached position
+    xs_noisy = np.repeat(xs_noisy, samples)
     xs = np.repeat(xs, samples)
 
-    signal = A * np.sin(xs + phi)
+    signal = A * np.sin(xs_noisy + phi)
 
     additive_noise = np.zeros(xs.size)
     if noise is not None:

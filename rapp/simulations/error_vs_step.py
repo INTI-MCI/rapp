@@ -79,10 +79,10 @@ def run(
     xticks = np.array([str(Fraction(s).limit_denominator()) for s in steps])
     yfmt = simulation.get_axis_formatter(power_limits=(-3, -3))
 
-    plot._ax.text(0.05, 0.85, annotation, transform=plot._ax.transAxes)
-    plot._ax.yaxis.set_major_formatter(yfmt)
-    plot._ax.set_xscale("log", base=2)
-    plot._ax.set_xticks(steps, xticks)
+    plot.the_ax.text(0.05, 0.85, annotation, transform=plot.the_ax.transAxes)
+    plot.the_ax.yaxis.set_major_formatter(yfmt)
+    plot.the_ax.set_xscale("log", base=2)
+    plot.the_ax.set_xticks(steps, xticks)
 
     plot.legend(loc="lower right", fontsize=12)
 

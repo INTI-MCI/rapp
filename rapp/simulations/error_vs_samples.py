@@ -1,7 +1,6 @@
 import logging
 
 import numpy as np
-import matplotlib.pyplot as plt
 
 from rapp import adc
 from rapp import constants as ct
@@ -71,11 +70,10 @@ def run(
     plot.legend(fontsize=12)
 
     annotation = TPL_LABEL.format(cycles, step, reps)
-    plot._ax.text(0.05, 0.05, annotation, transform=plot._ax.transAxes)
+    plot.the_ax.text(0.05, 0.05, annotation, transform=plot.the_ax.transAxes)
     yfmt = simulation.get_axis_formatter(power_limits=(-3, -3))
-    plot._ax.yaxis.set_major_formatter(yfmt)
-    plot._ax.yaxis.set_major_locator(plt.MaxNLocator(2))
-    plot._ax.set_xticks(n_samples)
+    plot.yaxis_set_major_formatter(yfmt)
+    plot.the_ax.set_xticks(n_samples)
 
     if save:
         for format_ in simulation.FORMATS:

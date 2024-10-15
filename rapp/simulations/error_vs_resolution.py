@@ -82,7 +82,7 @@ def run(
     plot.legend(fontsize=12)
 
     annotation = TPL_LABEL.format(cycles, step, samples, reps)
-    plot._ax.text(0.05, 0.3, annotation, transform=plot._ax.transAxes)
+    plot.the_ax.text(0.05, 0.3, annotation, transform=plot.the_ax.transAxes)
 
     if save:
         for format_ in simulation.FORMATS:
