@@ -52,7 +52,9 @@ def harmonic(
     xs = np.linspace(0, 2 * np.pi * cycles, num=n_angles, endpoint=False)
 
     if angle_accuracy:
-        xs_noisy = xs + np.random.uniform(-angle_accuracy, angle_accuracy, n_angles)
+        unique, u_inv = np.unique(xs, return_inverse=True)
+        unique = unique + np.random.uniform(-angle_accuracy, angle_accuracy, len(unique))
+        xs_noisy = unique[u_inv]
     else:
         xs_noisy = xs
 
