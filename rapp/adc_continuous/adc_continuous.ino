@@ -1,5 +1,7 @@
 #include <Wire.h>
 #include <Adafruit_ADS1X15.h>
+#include <OneWire.h>
+#include <DallasTemperature.h>
 
 Adafruit_ADS1115 ads;
 const unsigned short int SERIAL_BAUDRATE = 57600;

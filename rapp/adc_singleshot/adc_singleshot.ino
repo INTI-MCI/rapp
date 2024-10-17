@@ -1,12 +1,18 @@
 #include <Wire.h>
 #include <Adafruit_ADS1X15.h>
+#include <OneWire.h>
+#include <DallasTemperature.h>
 
 #define RATE_ADS1115_860SPS (0x00E0)
 
 Adafruit_ADS1115 ads;
+OneWire oneWireObjeto(pinDatosDQ);
+DallasTemperature sensorDS18B20(&oneWireObjeto);
 
 const float multiplier = 0.125F;
 const unsigned short int BAUDRATE = 57600;
+const int pinDatosDQ = 4;   // Pin donde se conecta el bus 1-Wire
+
 
 void setup(void) {
   Serial.begin(BAUDRATE);
