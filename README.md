@@ -28,10 +28,6 @@ Tools for measuring the rotation angle of the plane of polarization (RAPP).
     based on the research
   of ***All-Russian Research Institute for Optical and Physical Measurements*** ([VNIIOFI]).
 
-  <p align="center">
-    <img src="docs/images/diagram.png" />
-  </p>
-
   In this setup,
   > The problem of measuring the RAPP thus reduces
     to measuring the phase difference of two one-dimensional
@@ -42,11 +38,12 @@ for the post-processing of the output signals and phase difference computations.
 
 </div>
 
+
+> [!IMPORTANT]
+> **Disclaimer**: this projects is under an initial development phase. There is no formal release.
+  Code can contain serious bugs. 
+
 ## How To Contribute
-
-All binary files like images must be stored using GIT LFS (e.g. `git lfs track "*.png"`).
-
-0. Install Git LFS from [here](https://git-lfs.com).
 
 1. Clone the repository: 
 
@@ -74,78 +71,103 @@ pytest
 ```
 
 
-## Usage examples:
+## Usage
 
 rapp provides a command-line interface with different commands:
-
 ```bash
 (.venv) $ rapp
-usage: RAPP [-h] {polarimeter,phase_diff,or,analysis,sim} ...
+usage: RAPP [-h] [-v] {analysis,OR,phase_diff,plot_raw,polarimeter,sim} ...
 
 Tools for measuring the rotation angle of the plane of polarization (RAPP).
 
 positional arguments:
-  {polarimeter,phase_diff,or,analysis,sim}
-                        available commands
-    polarimeter         Tool for measuring signals with the polarimeter.
-    phase_diff          Tool for calculating phase difference from single polarimeter measurement.
-    or                  Tool for calculating optical rotation from initial phase and final phase measurements.
-    analysis            Tool for analyzing signals: noise, drift, etc.
-    sim                 Tool for making numerical simulations.
+  {analysis,OR,phase_diff,plot_raw,polarimeter,sim}
+                                                  available commands
+    analysis                                      Tool for analyzing signals: noise, drift, etc.
+    OR                                            Tool for calculating optical rotation from initial phase and final phase measurements.
+    phase_diff                                    Tool for calculating phase difference from single polarimeter measurement.
+    plot_raw                                      Tool for plotting raw measurements.
+    polarimeter                                   Tool for measuring signals with the polarimeter.
+    sim                                           Tool for making numerical simulations.
 
 options:
-  -h, --help            show this help message and exit
+  -h, --help                                      show this help message and exit
+  -v, --verbose                                   whether to run with DEBUG log level (default: False).
 ```
 
-The polarimeter command:
+### The polarimeter command
+
+This command allows to acquire harmonic signals from the experimental setup. 
+
 ```bash
 (.venv) $ rapp polarimeter -h
-usage: RAPP polarimeter [-h] --samples SAMPLES [--cycles CYCLES] [--step STEP] [--chunk-size] [--delay-position] [--velocity] [--init-position] [--hwp-cycles] [--hwp-step] [--hwp-delay] [--reps] [--no-ch0] [--no-ch1] [--prefix]
-                        [--mock-esp] [--mock-adc] [--plot] [-v] [-w]
+usage: RAPP polarimeter [-h] [--samples SAMPLES] [--chunk-size] [--reps] [--mc-wait] [--prefix] [--mock-esp] [--mock-pm100] [--disable-pm100] [--work-dir] [-ow] [--mock-adc] [--no-ch0]
+                        [--no-ch1] [--cycles CYCLES] [--step STEP] [--delay-position] [--velocity] [--acceleration] [--deceleration] [--hwp-cycles] [--hwp-step] [--hwp-delay-position]
 
 options:
-  -h, --help         show this help message and exit
-  --samples SAMPLES  n° of samples per angle.
-  --cycles CYCLES    n° of cycles to run (default: 0).
-  --step STEP        motion step of the rotating analyzer (default: 45).
-  --chunk-size       measure data in chunks of this size. If 0, no chunks (default: 500).
-  --delay-position   delay (in seconds) after changing analyzer position (default: 1).
-  --velocity         velocity of the analyzer in deg/s (default: 4).
-  --init-position    initial position of the analyzer in deg (default: None).
-  --hwp-cycles       n° of cycles of the HW plate (default: 0).
-  --hwp-step         motion step of the rotating HW plate (default: 45).
-  --hwp-delay        delay (in seconds) after changing HW plate position (default: 5).
-  --reps             Number of repetitions (default: 1).
-  --no-ch0           excludes channel 0 from measurement (default: False).
-  --no-ch1           excludes channel 1 from measurement (default: False).
-  --prefix           prefix for the filename in which to write results (default: None).
-  --mock-esp         use ESP mock object. (default: False).
-  --mock-adc         use ADC mock object. (default: False).
-  --plot             plot the results when the measurement is finished (default: False).
-  -v, --verbose      whether to run with DEBUG log level (default: False).
-  -w, --overwrite    whether to overwrite existing files without asking (default: False).
+  -h, --help             show this help message and exit
+  --samples SAMPLES      n° of samples per angle, default (169) gives 10 cycles of 50 Hz noise.
+  --chunk-size           measure data in chunks of this size. If 0, no chunks (default: 500).
+  --reps                 Number of repetitions (default: 1).
+  --mc-wait              time to wait (in seconds) before re-connecting the MC (default: 15).
+  --prefix               prefix for the folder in which to write results (default: test).
+  --mock-esp             use ESP mock object. (default: False).
+  --mock-pm100           use PM100 mock object. (default: False).
+  --disable-pm100        disables the PM100 normalization detector. (default: False).
+  --work-dir             folder to use as working directory (default: workdir)
+  -ow, --overwrite       whether to overwrite existing files without asking (default: False).
+
+ADC:
+  --mock-adc             use ADC mock object. (default: False).
+  --no-ch0               excludes channel 0 from measurement (default: False).
+  --no-ch1               excludes channel 1 from measurement (default: False).
+
+Analyzer:
+  --cycles CYCLES        n° of cycles to run (default: 0).
+  --step STEP            step of the rotating analyzer (default: 45). If cycles==0, step is ignored.
+  --delay-position       delay (in seconds) after changing analyzer position (default: 0).
+  --velocity             velocity of the analyzer in deg/s (default: 4).
+  --acceleration         acceleration of the analyzer in deg/s^2 (default: 1).
+  --deceleration         deceleration of the analyzer in deg/s^2 (default: 1).
+
+Half Wate Plate:
+  --hwp-cycles           n° of cycles of the HW plate (default: 0).
+  --hwp-step             motion step of the rotating HW plate (default: 45).
+  --hwp-delay-position   delay (in seconds) after changing HW plate position (default: 5).
 
 Example: rapp polarimeter --cycles 1 --step 30 --samples 10 --delay-position 0
+
 ```
 
-The sim command:
+### The sim command
+
+This command allows to perform simulations to analyze the performance of the phase difference calculation. 
+
 ```bash
 The sim command:
 (.venv) [tlink@tlink rapp]$ rapp sim -h
-usage: RAPP sim [-h] [--samples SAMPLES] [--step STEP] [--reps REPS] [--show] [-v] name
-
-positional arguments:
-  name               name of the simulation. One of ['all', 'error_vs_method', 'error_vs_step', 'error_vs_range', 'error_vs_samples', 'error_vs_res', 'signals_out_of_phase', 'sim_steps', 'noise_vs_range', 'phase_diff'].
+usage: RAPP sim [-h] [-c] [--name] [--reps] [--angle] [--method] [--cycles] [--step] [--samples] [--dynamic-range] [--max-v] [--noise] [--bits] [--k] [--show]
 
 options:
-  -h, --help         show this help message and exit
-  --samples SAMPLES  n° of samples per angle.
-  --step STEP        n° of samples per angle.
-  --reps REPS        number of repetitions in each simulated iteration (default: 1).
-  --show             whether to show the plot.
-  -v, --verbose      whether to run with DEBUG log level (default: False).
+  -h, --help           show this help message and exit
+  -c , --config-file   JSON config file to use (optional).
+  --name               name of the simulation to run.
 
-Example: rapp sim error_vs_samples --show
+simulation specific parameters:
+  --reps               number of repetitions in each simulated iteration.
+  --angle              phase difference calculation method.
+  --method             phase difference calculation method.
+  --cycles             n° of cycles (or maximum n° of cycles) to run.
+  --step               motion step of the rotating analyzer.
+  --samples            n° of samples per angle.
+  --dynamic-range      percentage of dynamic range to simulate (between [0, 1]).
+  --max-v              maximum voltage of dynamic range.
+  --noise              if True, adds gaussian noise to simulated signals.
+  --bits               number of bits for signal quantization.
+  --k                  amount of distortion to add to CH0.
+  --show               if true, show the plot.
+
+Example: rapp sim --name error_vs_samples --show
 ```
 
 
