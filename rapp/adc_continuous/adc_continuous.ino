@@ -6,6 +6,9 @@
 Adafruit_ADS1115 ads;
 const unsigned short int SERIAL_BAUDRATE = 57600;
 const bool ADS_READING_MODE_CONTINUOUS = true;
+const int pinDatosDQ = 4;   // Pin donde se conecta el bus 1-Wire
+OneWire oneWireObjeto(pinDatosDQ);
+DallasTemperature sensorDS18B20(&oneWireObjeto);
 
 // ADS_READING_DELAY: Time in miliseconds we need to wait so ADC goes out of suspension.
 // Otherwise we get repeated values at the beginning of each channel.
@@ -14,6 +17,8 @@ const byte ADS_READING_DELAY = 5;
 // ADS_CONTINUOUS_MODE_DELAY_MUS: Time we need to wait between each read.
 // 600 gives ~812 SPS when using serial_write_short(), 580 gives ~855 SPS when using println().
 const unsigned long ADS_CONTINUOUS_MODE_DELAY_MUS = 600;
+
+DeviceAddress sensorVaina = {0x28, 0xCF, 0x42, 0x76, 0xE0, 0x01, 0x3C, 0x70};
 
 void setup(void) {
     Serial.begin(SERIAL_BAUDRATE);
@@ -32,13 +37,15 @@ void setup(void) {
     // When we don't use terminator character, this helps to reduce the parseInt() delay.
     // Instead of setting this, for an optimal result is better to ALWAYS use terminator character.
     // Serial.setTimeout(10);
+    sensorDS18B20.begin();
+    sensorDS18B20.setResolution(12);
 }
 
 void serial_write_short(short data){
     uint8_t buffer[2];
     buffer[0] = data >> 8;
     buffer[1] = data & 0xFF;
-    Serial.write(buffer, 2);  
+    Serial.write(buffer, 2);
 }
 
 float read_n_samples_from_channel(unsigned long n_samples, byte channel){
@@ -60,6 +67,12 @@ float read_n_samples_from_channel(unsigned long n_samples, byte channel){
     float elapsedtime = (endtime - starttime) / 1000;
     
     return elapsedtime;
+}
+
+float read_temp(void){
+    sensorDS18B20.requestTemperatures();
+    float temp = sensorDS18B20.getTempC(sensorVaina);
+    return temp;
 }
 
 float read_n_samples(unsigned long n_samples, bool ch0, bool ch1){
@@ -112,9 +125,20 @@ void measure_SPS() {
     Serial.print("SAMPLES PER SECOND: ");
     Serial.println(sps);
 }
-
+void process_serial_input() {
+    if (Serial.available() > 0) {
+        String input_command = Serial.readStringUntil('\n');
+        if (input_command == "adc") {
+            float elapsedtime;
+            unsigned short n_channels;
+            parse_and_read_n_samples(&elapsedtime, &n_channels);
+        } else if (input_command == "temperature") {
+            read_temp();
+        }
+    }
+}
 void loop(void) {
-    if (Serial.available() > 0) {  // Wait to recieve a signal.
+    if (Serial.available() > 0) {  // Wait to receive a signal.
 
         // measure_SPS();
         float elapsedtime;
