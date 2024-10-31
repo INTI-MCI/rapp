@@ -24,12 +24,13 @@ void setup() {
     Serial.print(resolucionGlobal);
     Serial.println(" bits");
 
-    sensorDS18B20.requestTemperatures();
 }
 
 
 void loop() {
+    sensorDS18B20.requestTemperatures();
     Serial.print("Temperatura sensor 0: ");
     Serial.print(sensorDS18B20.getTempC(sensorVaina));
     Serial.println(" C");
+    delay(1000);
 }

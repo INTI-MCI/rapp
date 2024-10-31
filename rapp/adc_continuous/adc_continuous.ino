@@ -87,32 +87,52 @@ float read_n_samples(unsigned long n_samples, bool ch0, bool ch1){
     return elapsedtime;
 }
 
-unsigned long parse_and_read_n_samples(float *out_elapsedtime, unsigned short *out_n_channels) {
-    bool ch0 = parse_bool();
-    bool ch1 = parse_bool();
-    unsigned long n_samples = parse_int();
+unsigned long parse_and_read_n_samples(String command_args, float *out_elapsedtime, unsigned short *out_n_channels) {
+    bool ch0 = parse_bool(command_args);
+    bool ch1 = parse_bool(command_args);
+    unsigned long n_samples = parse_int(command_args);
     *out_elapsedtime = read_n_samples(n_samples, ch0, ch1);
     *out_n_channels = (unsigned short) ch0 + (unsigned short) ch1;
 
     return n_samples;
 }
 
-unsigned long parse_int() {
+unsigned long parse_int2() {
     unsigned long value = Serial.parseInt();
     Serial.read(); // Remove next char (terminator) from buffer.
     return value;
 }
 
-bool parse_bool() {
+bool parse_bool2() {
     bool value = Serial.parseInt();
     Serial.read(); // Remove next char (terminator) from buffer.
     return value;
 }
 
+bool parse_bool(String command_args) {
+  bool value = false;
+  int ind = command_args.indexOf(";");
+  String ch0 = command_args.substring(0, ind);
+  if (ch0.startsWith("1")) { // porque el formato del command es "{ch0};{ch1};{samples}s",
+   //donde ch0 y ch1 pueden ser 0 o 1 (adc.py línea 131) (las llaves no son un problema?)
+    value = true;
+  } else if (ch0.startsWith("0")) {
+    value = false;
+  }
+  command_args = command_args.substring(ind + 1);
+  return value;
+}
+
+unsigned long parse_int(String command_args) {
+  unsigned long value = command_args.substring(0, command_args.indexOf("s")).toInt();
+  return value;
+}
+
 void measure_SPS() {
     float elapsedtime;
     unsigned short n_channels;
-    unsigned long n_samples = parse_and_read_n_samples(&elapsedtime, &n_channels);
+    String command_args;
+    unsigned long n_samples = parse_and_read_n_samples(command_args, &elapsedtime, &n_channels);
     
     short sps = (n_samples * n_channels / elapsedtime);
 
@@ -128,22 +148,21 @@ void measure_SPS() {
 void process_serial_input() {
     if (Serial.available() > 0) {
         String input_command = Serial.readStringUntil('\n');
-        if (input_command == "adc") {
+        String command_name = input_command.substring(0,input_command.indexOf(";"));
+        if (command_name == "adc?") {
+            int ind = input_command.indexOf(";") + 1;
+            String command_args = input_command.substring(ind);
             float elapsedtime;
             unsigned short n_channels;
-            parse_and_read_n_samples(&elapsedtime, &n_channels);
-        } else if (input_command == "temperature") {
+            parse_and_read_n_samples(command_args, &elapsedtime, &n_channels);
+        } else if (command_name == "temp?") {
             read_temp();
         }
     }
 }
 void loop(void) {
     if (Serial.available() > 0) {  // Wait to receive a signal.
-
-        // measure_SPS();
-        float elapsedtime;
-        unsigned short n_channels;
-        parse_and_read_n_samples(&elapsedtime, &n_channels);
+        process_serial_input();
 
     }
 }

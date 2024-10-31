@@ -3,6 +3,7 @@ import logging
 
 import serial
 import numpy as np
+import struct
 
 from rich.progress import track
 
@@ -52,7 +53,7 @@ class ADC:
         ADCError: when ch0 and ch1 parameters are both False.
     """
 
-    CMD_TEMPLATE = "{ch0};{ch1};{samples}s"
+    CMD_TEMPLATE = "{measurement};{ch0};{ch1};{samples}s"
     AVAILABLE_CHANNELS = ['CH0', 'CH1']
 
     PORT = '/dev/ttyACM0'
@@ -128,7 +129,7 @@ class ADC:
         if flush:  # Clear input buffer. Otherwise messes up values at the beginning.
             self._serial.flushInput()
 
-        cmd = ADC.CMD_TEMPLATE.format(ch0=int(self._ch0), ch1=int(self._ch1), samples=n_samples)
+        cmd = ADC.CMD_TEMPLATE.format(measurement='adc?', ch0=int(self._ch0), ch1=int(self._ch1), samples=n_samples)
         logger.debug("ADC command: {}".format(cmd))
 
         self._serial.write(bytes(cmd, 'utf-8'))
@@ -144,6 +145,28 @@ class ADC:
             logger.debug("({}, {}) = ({}, {})".format('CH0', 'CH1', ch0, ch1))
 
         return data
+
+    def acquire_temperature(self, flush=True):
+        """Acquires temperature measurements
+
+        Args:
+            flush: if true, flushes input from the serial port before taking measurements.
+
+        Returns:
+            the value as a list  [temp].
+        """
+
+        if flush:  # Clear input buffer. Otherwise messes up values at the beginning.
+            self._serial.flushInput()
+
+        cmd = "{measurement}".format(measurement='temp?')
+        logger.debug("ADC command: {}".format(cmd))
+
+        self._serial.write(bytes(cmd, 'utf-8'))
+
+        temp = self._read_data(1, name='Temperature')
+
+        return temp
 
     def active_channels(self):
         """Returns number of active channels."""
@@ -166,6 +189,9 @@ class ADC:
             except (ValueError, UnicodeDecodeError) as e:
                 logger.warning("Error while reading from ADC: {}".format(e))
 
+        if name == 'Temperature':
+            data = [self._read_float()]
+
         return data
 
     def _read_bits(self):
@@ -176,3 +202,6 @@ class ADC:
 
     def _bits_to_volts(self, value):
         return value * self._multiplier_mV / 1000
+
+    def _read_float(self):
+        return struct.unpack('I', self._serial.read(4))
