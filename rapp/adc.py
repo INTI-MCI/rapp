@@ -53,7 +53,7 @@ class ADC:
         ADCError: when ch0 and ch1 parameters are both False.
     """
 
-    CMD_TEMPLATE = "{measurement};{ch0};{ch1};{samples}s"
+    CMD_TEMPLATE = "{measurement};{ch0};{ch1};{samples}\n"
     AVAILABLE_CHANNELS = ['CH0', 'CH1']
 
     PORT = '/dev/ttyACM0'

@@ -48,6 +48,12 @@ void serial_write_short(short data){
     Serial.write(buffer, 2);
 }
 
+union writable_float {
+  float f;
+  byte bytes[4];
+};
+
+
 float read_n_samples_from_channel(unsigned long n_samples, byte channel){
     ads.startADCReading(MUX_BY_CHANNEL[channel], ADS_READING_MODE_CONTINUOUS);
     delay(ADS_READING_DELAY);
@@ -75,6 +81,12 @@ float read_temp(void){
     return temp;
 }
 
+void read_and_send_temp(void){
+  writable_float temp;
+  temp.f = read_temp();
+  Serial.write(temp.bytes, 4);
+}
+
 float read_n_samples(unsigned long n_samples, bool ch0, bool ch1){
     float elapsedtime_ch0 = 0, elapsedtime_ch1 = 0, elapsedtime = 0;
     if (ch0) {
@@ -93,38 +105,19 @@ unsigned long parse_and_read_n_samples(String command_args, float *out_elapsedti
     unsigned long n_samples = parse_int(command_args);
     *out_elapsedtime = read_n_samples(n_samples, ch0, ch1);
     *out_n_channels = (unsigned short) ch0 + (unsigned short) ch1;
-
     return n_samples;
 }
 
-unsigned long parse_int2() {
-    unsigned long value = Serial.parseInt();
-    Serial.read(); // Remove next char (terminator) from buffer.
-    return value;
-}
-
-bool parse_bool2() {
-    bool value = Serial.parseInt();
-    Serial.read(); // Remove next char (terminator) from buffer.
-    return value;
-}
-
-bool parse_bool(String command_args) {
-  bool value = false;
+bool parse_bool(String& command_args) {
   int ind = command_args.indexOf(";");
-  String ch0 = command_args.substring(0, ind);
-  if (ch0.startsWith("1")) { // porque el formato del command es "{ch0};{ch1};{samples}s",
-   //donde ch0 y ch1 pueden ser 0 o 1 (adc.py línea 131) (las llaves no son un problema?)
-    value = true;
-  } else if (ch0.startsWith("0")) {
-    value = false;
-  }
+  String arg01 = command_args.substring(0, ind);
+  bool value = arg01.startsWith("1");
   command_args = command_args.substring(ind + 1);
   return value;
 }
 
-unsigned long parse_int(String command_args) {
-  unsigned long value = command_args.substring(0, command_args.indexOf("s")).toInt();
+unsigned long parse_int(String& command_args) {
+  unsigned long value = command_args.substring(0, command_args.indexOf("\n")).toInt();
   return value;
 }
 
@@ -156,7 +149,7 @@ void process_serial_input() {
             unsigned short n_channels;
             parse_and_read_n_samples(command_args, &elapsedtime, &n_channels);
         } else if (command_name == "temp?") {
-            read_temp();
+            read_and_send_temp();
         }
     }
 }
