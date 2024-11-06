@@ -25,7 +25,7 @@ SAMPLES = 2
 FILENAME = 'temperatura'
 
 params = "tiempo-total-{}-tiempo-espera-{}-muestras{}".format(MEASUREMENT_TIME, MEASUREMENT_WAIT, SAMPLES)
-measurement_name = f"{date.today()}-{'temperatura'}-{params}.txt"
+measurement_name = f"{date.today()}-{time.time()}-{'temperatura'}-{params}.txt"
 output_folder = r'C:\Users\Admin\rapp\workdir\output-data'
 measurement_dir = os.path.join(output_folder, measurement_name)
 # os.makedirs(measurement_dir, exist_ok=False)
@@ -60,7 +60,6 @@ def main(port=PORT, baudrate=BAUDRATE, timeout=TIMEOUT, wait=WAIT, cmd=CMD,
             temp = serial_connection.readline()
             temp = struct.unpack('<f', temp)[0]
             temperaturas[i] = '{}\n'.format(temp)
-        print(temperaturas)
         with open(r"{measurement_dir}".format(measurement_dir=measurement_dir), 'a') as f:
             f.writelines(temperaturas)
 
