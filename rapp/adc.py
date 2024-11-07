@@ -159,7 +159,7 @@ class ADC:
         if flush:  # Clear input buffer. Otherwise messes up values at the beginning.
             self._serial.flushInput()
 
-        cmd = "{measurement}".format(measurement='temp?')
+        cmd = "temp?"
         logger.debug("ADC command: {}".format(cmd))
 
         self._serial.write(bytes(cmd, 'utf-8'))
@@ -183,11 +183,12 @@ class ADC:
         data = []
         desc = "Measuring {}:".format(name)
 
-        for _ in track(range(n_samples), description=desc, disable=not self.progressbar):
-            try:
-                data.append(self._bits_to_volts(self._read_bits()))
-            except (ValueError, UnicodeDecodeError) as e:
-                logger.warning("Error while reading from ADC: {}".format(e))
+        if name == 'CH0' or name == 'CH1':
+            for _ in track(range(n_samples), description=desc, disable=not self.progressbar):
+                try:
+                    data.append(self._bits_to_volts(self._read_bits()))
+                except (ValueError, UnicodeDecodeError) as e:
+                    logger.warning("Error while reading from ADC: {}".format(e))
 
         if name == 'Temperature':
             data = [self._read_float()]
@@ -204,4 +205,4 @@ class ADC:
         return value * self._multiplier_mV / 1000
 
     def _read_float(self):
-        return struct.unpack('I', self._serial.read(4))
+        return struct.unpack('<f', self._serial.read(4))[0]
