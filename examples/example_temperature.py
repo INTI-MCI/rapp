@@ -14,8 +14,8 @@ BAUDRATE = 57600
 TIMEOUT = 1
 WAIT = 2
 CMD = "temp?\n"
-MEASUREMENT_WAIT = 7#60
-MEASUREMENT_TIME = 30#3600
+MEASUREMENT_WAIT = 60
+MEASUREMENT_TIME = 3600
 SAMPLES = 10
 
 FILENAME = 'temperatura'
@@ -68,7 +68,8 @@ def main(port=PORT, baudrate=BAUDRATE, timeout=TIMEOUT, wait=WAIT, cmd=CMD,
             flag_header = False
 
         with open(measurement_dir, 'a') as f:
-            f.writelines(",".join(temperaturas) + '\n')
+            hora_ = time.strftime("%H:%M:%S")
+            f.writelines(",".join(temperaturas) + ',' + str(hora_) + '\n')
         print(temperaturas)
 
         hora_fin = time.time()
