@@ -9,6 +9,7 @@ from pathlib import Path
 from datetime import date, timedelta
 
 import numpy as np
+import schedule
 from rich.progress import track
 
 from rapp import constants as ct
@@ -71,6 +72,9 @@ FILE_HEADER = (
     "#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#"
 )
 
+TEMP_COLUMNS = ["ANGLE", "TEMP"]
+TEMP_WAIT = 60
+TEMP_HEADER = ("Tiempo-espera-{} s".format(TEMP_WAIT))
 
 class Polarimeter:
     """High accuracy polarimeter for optical rotation measurements.
@@ -87,12 +91,13 @@ class Polarimeter:
     def __init__(
         self,
         adc: ADC, analyzer: RotaryStage, hwp: RotaryStage, data_file: DataFile,
-        norm_det: PM100 = None, wait: int = 10
+        temp_file: DataFile = None, norm_det: PM100 = None, wait: int = 10
     ):
         self._adc = adc
         self._analyzer = analyzer
         self._hwp = hwp
         self._data_file = data_file
+        self._temp_file = temp_file
         self._norm_det = norm_det
         self._wait = wait
 
@@ -118,6 +123,14 @@ class Polarimeter:
         failures = 0
 
         self._hwp.reset()
+
+        parameters = {
+            "position": 0,
+            "hwp_position": 0,
+            "rep": 1
+        }
+
+        schedule.every(TEMP_WAIT).seconds.do(self.read_temperature, **parameters)
         for hwp_position in self._hwp:
             rep = 1
             while rep < reps + 1:
@@ -131,6 +144,10 @@ class Polarimeter:
                     for position in track(
                         self._analyzer, style='white', description=p_desc, disable=not analyzer_bar
                     ):
+                        parameters["position"] = position
+                        parameters["hwp_position"] = hwp_position
+                        parameters["rep"] = rep
+                        schedule.run_pending()
                         for data_chunk in self.read_samples(samples, chunk_size):
                             self._add_data_to_file(data_chunk, position=position)
 
@@ -173,6 +190,11 @@ class Polarimeter:
                 acquired_samples = [(*acq_s, normalization_value) for acq_s in acquired_samples]
 
             yield acquired_samples
+
+    def read_temperature(self, position=0, hwp_position=0, rep=1):
+        acquired_temperature = self._adc.acquire_temperature()
+        data = [position] + [acquired_temperature] + [hwp_position] + [rep]
+        self._temp_file.add_row(data)
 
     def close(self):
         self._adc.close()
@@ -310,9 +332,14 @@ def run(
         overwrite, header=FILE_HEADER, column_names=FILE_COLUMNS, delimiter=FILE_DELIMITER,
         output_dir=measurement_dir)
 
+    logger.info("Building TemperatureFile...")
+    temp_file = DataFile(
+        overwrite, header=TEMP_HEADER, column_names=TEMP_COLUMNS, delimiter=FILE_DELIMITER,
+        output_dir=measurement_dir)
+
     logger.info("Building Polarimeter...")
     polarimeter = Polarimeter(
-        adc, analyzer, hwp, data_file, norm_det=pm100, wait=mc_wait
+        adc, analyzer, hwp, data_file, temp_file, norm_det=pm100, wait=mc_wait
     )
 
     logger.info("Starting measurement...")

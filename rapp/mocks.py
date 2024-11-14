@@ -17,7 +17,7 @@ class SerialMock:
     def read(self, n_bytes):
         time.sleep(self.delay)
         value = self._random_value()
-        return int(value).to_bytes(length=2, byteorder='big')
+        return int(value).to_bytes(length=n_bytes, byteorder='big')
 
     def close(self):
         pass
