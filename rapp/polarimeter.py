@@ -131,6 +131,7 @@ class Polarimeter:
         }
 
         schedule.every(TEMP_WAIT).seconds.do(self.read_temperature, **parameters)
+        self._temp_file.open("temperature.csv")
         for hwp_position in self._hwp:
             rep = 1
             while rep < reps + 1:
