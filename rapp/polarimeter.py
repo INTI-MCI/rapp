@@ -72,7 +72,7 @@ FILE_HEADER = (
     "#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#"
 )
 
-TEMP_COLUMNS = ["ANGLE", "TEMP"]
+TEMP_COLUMNS = ["ANGLE", "TEMP", "HWP POS", "REP"]
 TEMP_WAIT = 60
 TEMP_HEADER = ("Tiempo-espera-{} s".format(TEMP_WAIT))
 
