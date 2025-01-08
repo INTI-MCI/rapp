@@ -30,6 +30,8 @@ HELP_REPS = 'Number of repetitions (default: %(default)s).'
 HELP_WORKDIR = 'folder to use as working directory (default: %(default)s)'
 HELP_DELAY_POSITION = 'delay (in seconds) after changing analyzer position (default: %(default)s).'
 HELP_MC_WAIT = 'time to wait (in seconds) before re-connecting the MC (default: %(default)s).'
+HELP_TEMP_CORRECTION = 'correction to apply to temperature measurements (default: %(default)s).'
+HELP_TEMP_WAIT = 'Time to wait (in seconds) between room temperature measurements'
 
 
 HELP_HWP_CYCLES = 'n° of cycles of the HW plate (default: %(default)s).'
@@ -54,6 +56,8 @@ def add_to_subparsers(subparsers):
     p.add_argument('--disable-pm100', action='store_true', help=HELP_DISABLE_PM100)
     p.add_argument('--work-dir', type=str, metavar='', default=ct.WORK_DIR, help=HELP_WORKDIR)
     p.add_argument('-ow', '--overwrite', action='store_true', help=HELP_OVERWRITE)
+    p.add_argument('--temp-correction', type=str, default='bias', metavar='', help=HELP_TEMP_CORRECTION)
+    p.add_argument('--temp-wait', type=int, default=60, metavar='', help=HELP_TEMP_WAIT)
 
     g = p.add_argument_group('ADC')
     g.add_argument('--mock-adc', action='store_true', help=HELP_TEST_ADC)

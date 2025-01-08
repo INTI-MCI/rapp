@@ -58,31 +58,37 @@ class ADC:
 
     PORT = '/dev/ttyACM0'
     BAUDRATE = 57600
-    TIMEOUT = 0.1
-    WAIT = 2
+    TIMEOUT = 2
+    TIMEOUT_OPEN = 5
 
     SAMPLE_RATE = 840
 
-    def __init__(self, serial, gain=GAIN_ONE, ch0=True, ch1=True, in_bytes=True, progressbar=True):
+    def __init__(self, serial, gain=GAIN_ONE, ch0=True, ch1=True, in_bytes=True, progressbar=True,
+                 timeout_open=TIMEOUT_OPEN):
         self._serial = serial
         self._in_bytes = in_bytes
         self._ch0 = ch0
         self._ch1 = ch1
         self.progressbar = ch0 != ch1
+        self.timeout_open = timeout_open
         self.max_V, self._multiplier_mV = GAINS[gain]
+        self.temperature_requested = False
 
         if not (ch0 or ch1):
             raise ADCError(MESSAGE_CHANNELS)
 
+        # Arduino resets when a new serial connection is made.
+        # We need to wait, otherwise we don't receive anything.
+        self.wait_for_connection()
+
     @classmethod
-    def build(cls, port=PORT, b=BAUDRATE, timeout=TIMEOUT, wait=WAIT, mock_serial=False, **kwargs):
+    def build(cls, port=PORT, baudrate=BAUDRATE, timeout=TIMEOUT, mock_serial=False, **kwargs):
         """Builds an ADC object.
 
         Args:
             port: serial port in which the AD is connected.
             baudrate: bits per second.
             timeout: read timeout (seconds).
-            wait: time to wait after making a connection (seconds).
             mock_serial: if True, uses a mocked serial connection.
             kwargs: optional arguments for ADC constructor
 
@@ -93,12 +99,7 @@ class ADC:
             logger.warning("Using mocked serial connection.")
             serial_connection = SerialMock()
         else:
-            serial_connection = cls.get_serial_connection(port, baudrate=b, timeout=timeout)
-            logger.info("Waiting {} seconds after connecting to ADC...".format(wait))
-            # Arduino resets when a new serial connection is made.
-            # We need to wait, otherwise we don't receive anything.
-            # TODO: check if we can avoid that Arduino resets.
-            time.sleep(wait)
+            serial_connection = cls.get_serial_connection(port, baudrate=baudrate, timeout=timeout)
 
         return cls(serial_connection, **kwargs)
 
@@ -108,6 +109,26 @@ class ADC:
             return serial.Serial(*args, **kwargs)
         except serial.serialutil.SerialException as e:
             raise ADCError("Error while making connection to serial port: {}".format(e))
+
+    def wait_for_connection(self):
+        start = time.time()
+        elapsed_time = 0
+        queries = 0
+        while elapsed_time < self.timeout_open:
+            self._serial.write(b'ready?\n')
+            output = self._serial.readline()
+            end = time.time()
+            elapsed_time = end - start
+            if output == b'yes\r\n':
+                break
+            elif output == b'no\r\n':
+                pass
+            else:
+                queries += 1
+
+        if elapsed_time >= self.timeout_open:
+            raise ADCError("Timeout while waiting for connection to open. Timeout = {} seconds with {} failed queries.".format(self.timeout_open, queries))
+        logger.debug("Connection opened in {} seconds with {} queries.".format(elapsed_time, queries))
 
     def acquire(self, n_samples, flush=True):
         """Acquires voltage measurements.
@@ -159,14 +180,18 @@ class ADC:
         if flush:  # Clear input buffer. Otherwise messes up values at the beginning.
             self._serial.flushInput()
 
-        cmd = "temp?"
+        cmd = "temp?\n"
         logger.debug("ADC command: {}".format(cmd))
 
         self._serial.write(bytes(cmd, 'utf-8'))
 
         temp = self._read_data(1, name='Temperature')
+        logger.debug("Temperature without correction = {}".format(temp[0]))
 
         return temp
+
+    def request_temperature(self):
+        pass
 
     def active_channels(self):
         """Returns number of active channels."""
@@ -191,7 +216,7 @@ class ADC:
                     logger.warning("Error while reading from ADC: {}".format(e))
 
         if name == 'Temperature':
-            data = [self._read_float()]
+            data.append(self._read_float())
 
         return data
 
@@ -205,4 +230,6 @@ class ADC:
         return value * self._multiplier_mV / 1000
 
     def _read_float(self):
-        return struct.unpack('<f', self._serial.read(4))[0]
+        read_value = self._serial.read(4)
+        logger.debug("Temperature in bytes = {}".format(read_value))
+        return struct.unpack('<f', read_value)[0]

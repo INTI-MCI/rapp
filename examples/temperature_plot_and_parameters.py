@@ -2,9 +2,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 from datetime import datetime
 import os
+import json
 
-''' This example provides correction parameters for the temperature sensor used
- in polarimeter measurements (DS18B20 sensor).
+''' 
+This example provides correction parameters for the temperature sensor used 
+in polarimeter measurements (DS18B20 sensor).
 The data used consists of the temperature measured by the DS18B20 sensor (filepath1) 
 and by two calibrated temperature sensors (filepath2) during a certain period of time.
 The temperature measurements are sampled simultaneously, but at different times, 
@@ -58,7 +60,7 @@ plt.show()
 
 
 '''Interpolated signals:'''
-time_seconds_ds18b20 = np.array([time_to_seconds(t) for t in time1])
+time_seconds_ds18b20 = np.array([time_to_seconds(t) for t in timestamps_ds18b20])
 time_seconds_calib_s = np.array([time_to_seconds(t) for t in time2])
 
 min_time_range = max(time_seconds_ds18b20[0], time_seconds_calib_s[0])
@@ -111,14 +113,34 @@ plt.legend()
 plt.show()
 
 
-'''Save linear correction parameters to .npy file in workdir\output-data
+'''Save linear correction parameters to .json file in workdir\output-data
 so we can use them in polarimeter measurement:'''
 parameters_filepath = "C:\\Users\\Admin\\rapp\\workdir\\output-data\\"
-parameters_filename = "2024-11-14-temperature-correction-parameters.npy"
+parameters_filename = "2024-11-14-temperature-correction-parameters.json"
 parameters_file = os.path.join(parameters_filepath, parameters_filename)
+comment = {
+    'comment': 'Bias and linear correction parameters for DS18B20 sensor used in polarimeter room temperature '
+               'measurements obtained from measurements with (calibrated sensors) the 14/11/2024'
+}
 
-np.save(parameters_file, linear_correction)
+correction_parameters = {
+    'bias': '{}'.format(bias),
+    'A': '{}'.format(linear_correction[0]),
+    'b': '{}'.format(linear_correction[1])
+}
 
-'''With this function we can load the parameters from the .npy file:'''
-parameters = np.load(parameters_file)
-print(parameters)
+json_data = {
+    "comment": comment,
+    "correction_parameters": correction_parameters
+}
+
+with open(parameters_file, 'w') as f:
+    json.dump(json_data, f)
+
+'''With this function we can load the parameters from the .json file:'''
+with open(parameters_file, 'r') as f:
+    json_data = json.load(f)
+
+slope = json_data['correction_parameters']['A']
+intercept = json_data['correction_parameters']['b']
+print('A =', slope, 'b =', intercept)

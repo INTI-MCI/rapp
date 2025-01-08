@@ -36,8 +36,8 @@ ADC_PORT_WIN = 'COM3'
 ADC_PORT_LINUX = '/dev/ttyACM0'
 
 ADC_BAUDRATE = 57600
-ADC_TIMEOUT = 0.1
-ADC_WAIT = 2
+ADC_TIMEOUT = 2
+ADC_TIMEOUT_OPEN = 5
 
 THORLABS_PM100_VISA_LINUX = "USB0::4883::32889::P1000529::0::INSTR"
 THORLABS_PM100_VISA_WIN = 'USB0::0x1313::0x8079::P1000529::INSTR'
@@ -73,8 +73,9 @@ FILE_HEADER = (
 )
 
 TEMP_COLUMNS = ["ANGLE", "TEMP", "HWP-POS", "REP"]
-TEMP_WAIT = 60
-TEMP_HEADER = ("Tiempo-espera-{} s".format(TEMP_WAIT))
+TEMP_HEADER = "Tiempo-espera-{} s"
+
+TEMP_CORRECTION_FILE = "workdir/output-data/2024-11-14-temperature-correction-parameters.json"
 
 class Polarimeter:
     """High accuracy polarimeter for optical rotation measurements.
@@ -84,6 +85,8 @@ class Polarimeter:
         analyzer: rotating analyzer.
         hwp: rotating half wave plate.
         data_file: handles the file writing.
+        temp_file: handles the temperature file writing.
+        temp_correction_file: temperature correction file.
         norm_det: normalization detector.
         wait: time to wait before reconnecting after motion controller error.
     """
@@ -91,23 +94,26 @@ class Polarimeter:
     def __init__(
         self,
         adc: ADC, analyzer: RotaryStage, hwp: RotaryStage, data_file: DataFile,
-        temp_file: DataFile = None, norm_det: PM100 = None, wait: int = 10
+        temp_file: DataFile = None, temp_correction_file: str = TEMP_CORRECTION_FILE,
+        norm_det: PM100 = None, wait: int = 10
     ):
         self._adc = adc
         self._analyzer = analyzer
         self._hwp = hwp
         self._data_file = data_file
         self._temp_file = temp_file
+        self._temp_correction_file = temp_correction_file
         self._norm_det = norm_det
         self._wait = wait
 
-    def start(self, samples, chunk_size: int = 0, reps: int = 1):
+    def start(self, samples, chunk_size: int = 0, reps: int = 1, temp_wait: int = 60):
         """Collects measurements rotating the analyzer and saves them in a data file.
 
         Args:
             samples: number of samples per analyzer position.
             chunk_size: measure data in chunks of this size. If 0, no chunks are used.
             reps: number of repetitions.
+            temp_wait: time to wait (in seconds) between room temperature measurements.
         """
 
         logger.info("Samples to measure in each analyzer position: {}.".format(samples))
@@ -127,10 +133,11 @@ class Polarimeter:
         parameters = {
             "position": 0,
             "hwp_position": 0,
-            "rep": 1
+            "rep": 1,
+            "temp_correction": 'bias'
         }
 
-        schedule.every(TEMP_WAIT).seconds.do(self.read_temperature, **parameters)
+        schedule.every(temp_wait).seconds.do(self.read_temperature, **parameters)
         self._temp_file.open("temperature.csv")
         for hwp_position in self._hwp:
             rep = 1
@@ -192,10 +199,36 @@ class Polarimeter:
 
             yield acquired_samples
 
-    def read_temperature(self, position=0, hwp_position=0, rep=1):
+    def read_temperature(self, position=0, hwp_position=0, rep=1, temp_correction='bias'): #request
         acquired_temperature = self._adc.acquire_temperature()
+        if temp_correction == 'bias':
+            acquired_temperature = self.temperature_bias_correction(
+                filepath=TEMP_CORRECTION_FILE, temperature=acquired_temperature
+            )
+        elif temp_correction == 'linear':
+            acquired_temperature = self.temperature_linear_correction(
+                filepath=TEMP_CORRECTION_FILE, temperature=acquired_temperature
+            )
+
         data = [position] + [acquired_temperature] + [hwp_position] + [rep]
         self._temp_file.add_row(data)
+
+    def temperature_bias_correction(self, filepath=TEMP_CORRECTION_FILE, temperature=[]):
+        with open(filepath, 'r') as f:
+            json_data = json.load(f)
+
+        bias = json_data['correction_parameters']['bias']
+
+        return temperature[0] - float(bias)
+
+    def temperature_linear_correction(self, filepath=TEMP_CORRECTION_FILE, temperature=0):
+        with open(filepath, 'r') as f:
+            json_data = json.load(f)
+
+        slope = json_data['correction_parameters']['A']
+        intercept = json_data['correction_parameters']['b']
+
+        return temperature * float(slope) + float(intercept)
 
     def close(self):
         self._adc.close()
@@ -258,6 +291,8 @@ def run(
     no_ch0: bool = False,
     no_ch1: bool = False,
     prefix: str = 'test',
+    temp_correction: str = 'bias',
+    temp_wait: int = 60,
     mock_esp: bool = False,
     mock_adc: bool = False,
     mock_pm100: bool = False,
@@ -309,7 +344,8 @@ def run(
 
     logger.info("Connecting to ADC...")
     adc = ADC.build(
-        resolve_adc_port(), b=ADC_BAUDRATE, timeout=ADC_TIMEOUT, wait=ADC_WAIT,
+        resolve_adc_port(), baudrate=ADC_BAUDRATE, timeout=ADC_TIMEOUT,
+        timeout_open=ADC_TIMEOUT_OPEN,
         ch0=not no_ch0,
         ch1=not no_ch1,
         mock_serial=mock_adc)
@@ -331,12 +367,15 @@ def run(
     logger.info("Building DataFile...")
     data_file = DataFile(
         overwrite, header=FILE_HEADER, column_names=FILE_COLUMNS, delimiter=FILE_DELIMITER,
-        output_dir=measurement_dir)
+        output_dir=measurement_dir
+    )
 
     logger.info("Building TemperatureFile...")
+    temp_header = TEMP_HEADER.format(temp_wait)
     temp_file = DataFile(
-        overwrite, header=TEMP_HEADER, column_names=TEMP_COLUMNS, delimiter=FILE_DELIMITER,
-        output_dir=measurement_dir)
+        overwrite, header=temp_header, column_names=TEMP_COLUMNS, delimiter=FILE_DELIMITER,
+        output_dir=measurement_dir
+    )
 
     logger.info("Building Polarimeter...")
     polarimeter = Polarimeter(
@@ -344,7 +383,7 @@ def run(
     )
 
     logger.info("Starting measurement...")
-    _, elapsed_time = timing(polarimeter.start)(samples, chunk_size=chunk_size, reps=reps)
+    _, elapsed_time = timing(polarimeter.start)(samples, chunk_size=chunk_size, reps=reps, temp_wait=temp_wait)
     metadata['duration'] = str(timedelta(seconds=elapsed_time)).split(".")[0]
 
     logger.info("Writing measurement metadata...")

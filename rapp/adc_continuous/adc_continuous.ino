@@ -39,6 +39,7 @@ void setup(void) {
     // Serial.setTimeout(10);
     sensorDS18B20.begin();
     sensorDS18B20.setResolution(12);
+    // sensorDS18B20.setWaitForConversion(false); + separar requestTemperatures del getTempC
 }
 
 void serial_write_short(short data){
@@ -138,11 +139,24 @@ void measure_SPS() {
     Serial.print("SAMPLES PER SECOND: ");
     Serial.println(sps);
 }
+
+void toggle_led(int n){
+  const int ledPin = 13;
+  bool ledState = LOW;
+  pinMode(ledPin, OUTPUT);
+  for (int i = 0; i < 2*n; i++) {
+    digitalWrite(ledPin, ledState);
+    ledState = !ledState;
+    delay(200);
+  }
+}
+
 void process_serial_input() {
     if (Serial.available() > 0) {
         String input_command = Serial.readStringUntil('\n');
         String command_name = input_command.substring(0,input_command.indexOf(";"));
         if (command_name == "adc?") {
+            //toggle_led(2);
             int ind = input_command.indexOf(";") + 1;
             String command_args = input_command.substring(ind);
             float elapsedtime;
@@ -150,12 +164,17 @@ void process_serial_input() {
             parse_and_read_n_samples(command_args, &elapsedtime, &n_channels);
         } else if (command_name == "temp?") {
             read_and_send_temp();
+            //toggle_led(5);
+        } else if (command_name == "ready?") {
+          Serial.println("yes"); 
+          // If required, send no
+        } else {
+          Serial.println("Comando no reconocido");
         }
     }
 }
 void loop(void) {
     if (Serial.available() > 0) {  // Wait to receive a signal.
         process_serial_input();
-
     }
 }
