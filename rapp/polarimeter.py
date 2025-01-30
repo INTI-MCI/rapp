@@ -1,6 +1,7 @@
 import os
 import sys
 import time
+import datetime
 import json
 import logging
 import warnings
@@ -106,7 +107,7 @@ class Polarimeter:
         self._norm_det = norm_det
         self._wait = wait
 
-    def start(self, samples, chunk_size: int = 0, reps: int = 1, temp_wait: int = 60):
+    def start(self, samples, chunk_size: int = 0, reps: int = 1, temp_wait: int = 60, temp_correction: str = 'bias'):
         """Collects measurements rotating the analyzer and saves them in a data file.
 
         Args:
@@ -114,6 +115,7 @@ class Polarimeter:
             chunk_size: measure data in chunks of this size. If 0, no chunks are used.
             reps: number of repetitions.
             temp_wait: time to wait (in seconds) between room temperature measurements.
+            temp_correction: temperature correction method.
         """
 
         logger.info("Samples to measure in each analyzer position: {}.".format(samples))
@@ -134,10 +136,30 @@ class Polarimeter:
             "position": 0,
             "hwp_position": 0,
             "rep": 1,
-            "temp_correction": 'bias'
+            "temp_correction": temp_correction
         }
 
-        schedule.every(temp_wait).seconds.do(self.read_temperature, **parameters)
+        parameters_req_temperature = {
+            "position_r": 0,
+            "hwp_position_r": 0,
+            "rep_r": 1,
+            "temp_correction_r": temp_correction
+        }
+
+        if temp_wait < 1:
+            logger.warning("Temperature wait time is too short. It will be set to 1 seconds.")
+            temp_wait = 1
+
+        temperature_requested = [False]
+
+        schedule_request = schedule.Scheduler()
+        schedule_request.every(temp_wait).seconds.do(self.request_temperature, parameters_req_temperature,
+                                                     parameters, temperature_requested=temperature_requested)
+
+        schedule_read = schedule.Scheduler()
+        schedule_read.every(temp_wait).seconds.do(self.read_temperature, parameters_req_temperature,
+                                                  temperature_requested=temperature_requested, write=True)
+
         self._temp_file.open("temperature.csv")
         for hwp_position in self._hwp:
             rep = 1
@@ -155,9 +177,13 @@ class Polarimeter:
                         parameters["position"] = position
                         parameters["hwp_position"] = hwp_position
                         parameters["rep"] = rep
-                        schedule.run_pending()
+
+                        schedule_read.run_pending()
+
                         for data_chunk in self.read_samples(samples, chunk_size):
                             self._add_data_to_file(data_chunk, position=position)
+
+                        schedule_request.run_pending()
 
                 except RotaryStageError as e:
                     logger.warning("Motion Controller error: {}".format(e))
@@ -192,42 +218,59 @@ class Polarimeter:
                 self._norm_det.start_measurement()
 
             acquired_samples = self._adc.acquire(samples, flush=True)
-
+            logger.debug("Read samples at: {}".format(datetime.datetime.now()))
             if self._norm_det is not None:
                 normalization_value = self._norm_det.fetch_measurement()
                 acquired_samples = [(*acq_s, normalization_value) for acq_s in acquired_samples]
 
             yield acquired_samples
 
-    def read_temperature(self, position=0, hwp_position=0, rep=1, temp_correction='bias'): #request
-        acquired_temperature = self._adc.acquire_temperature()
-        if temp_correction == 'bias':
-            acquired_temperature = self.temperature_bias_correction(
-                filepath=TEMP_CORRECTION_FILE, temperature=acquired_temperature
-            )
-        elif temp_correction == 'linear':
-            acquired_temperature = self.temperature_linear_correction(
-                filepath=TEMP_CORRECTION_FILE, temperature=acquired_temperature
-            )
+    def request_temperature(self, parameters_req_temperature={}, parameters={}, temperature_requested=[False]):
+        if not temperature_requested[0]:
+            temperature_requested[0] = self._adc.request_temperature()
+            logger.debug("Request temperature at: {}".format(datetime.datetime.now()))
 
-        data = [position] + [acquired_temperature] + [hwp_position] + [rep]
-        self._temp_file.add_row(data)
+            parameters_req_temperature["position_r"] = parameters["position"]
+            parameters_req_temperature["hwp_position_r"] = parameters["hwp_position"]
+            parameters_req_temperature["rep_r"] = parameters["rep"]
+            parameters_req_temperature["temp_correction_r"] = parameters["temp_correction"]
+
+    def read_temperature(self, parameters_req_temperature={}, temperature_requested=[True], write=True):
+        if temperature_requested[0]:
+            acquired_temperature, temperature_requested[0] = self._adc.read_temperature()
+            logger.debug("Read temperature at: {}".format(datetime.datetime.now()))
+
+            if parameters_req_temperature["temp_correction_r"] == 'bias':
+                acquired_temperature = self.temperature_bias_correction(
+                    filepath=TEMP_CORRECTION_FILE, temperature=acquired_temperature
+                )
+            elif parameters_req_temperature["temp_correction_r"] == 'linear':
+                acquired_temperature = self.temperature_linear_correction(
+                    filepath=TEMP_CORRECTION_FILE, temperature=acquired_temperature
+                )
+
+            data = ([parameters_req_temperature["position_r"]] + [round(acquired_temperature, 4)] +
+                    [parameters_req_temperature["hwp_position_r"]] + [parameters_req_temperature["rep_r"]])
+
+            if write:
+                self._temp_file.add_row(data)
+            logger.debug("Temperature: {}".format(acquired_temperature))
 
     def temperature_bias_correction(self, filepath=TEMP_CORRECTION_FILE, temperature=[]):
         with open(filepath, 'r') as f:
             json_data = json.load(f)
 
         bias = json_data['correction_parameters']['bias']
+        temperature = temperature[0]
+        return temperature - float(bias)
 
-        return temperature[0] - float(bias)
-
-    def temperature_linear_correction(self, filepath=TEMP_CORRECTION_FILE, temperature=0):
+    def temperature_linear_correction(self, filepath=TEMP_CORRECTION_FILE, temperature=[]):
         with open(filepath, 'r') as f:
             json_data = json.load(f)
 
         slope = json_data['correction_parameters']['A']
         intercept = json_data['correction_parameters']['b']
-
+        temperature = temperature[0]
         return temperature * float(slope) + float(intercept)
 
     def close(self):
@@ -383,7 +426,8 @@ def run(
     )
 
     logger.info("Starting measurement...")
-    _, elapsed_time = timing(polarimeter.start)(samples, chunk_size=chunk_size, reps=reps, temp_wait=temp_wait)
+    _, elapsed_time = timing(polarimeter.start)(samples, chunk_size=chunk_size, reps=reps, temp_wait=temp_wait,
+                                                temp_correction=temp_correction)
     metadata['duration'] = str(timedelta(seconds=elapsed_time)).split(".")[0]
 
     logger.info("Writing measurement metadata...")

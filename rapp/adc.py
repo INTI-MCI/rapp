@@ -71,8 +71,8 @@ class ADC:
         self._ch1 = ch1
         self.progressbar = ch0 != ch1
         self.timeout_open = timeout_open
-        self.max_V, self._multiplier_mV = GAINS[gain]
         self.temperature_requested = False
+        self.max_V, self._multiplier_mV = GAINS[gain]
 
         if not (ch0 or ch1):
             raise ADCError(MESSAGE_CHANNELS)
@@ -167,19 +167,31 @@ class ADC:
 
         return data
 
-    def acquire_temperature(self, flush=True):
-        """Acquires temperature measurements
+    def request_temperature(self, flush=True):
+        """Requests temperature measurements
 
-        Args:
-            flush: if true, flushes input from the serial port before taking measurements.
-
-        Returns:
-            the value as a list  [temp].
-        """
-
-        if flush:  # Clear input buffer. Otherwise messes up values at the beginning.
+                Args:
+                    flush: if true, flushes input from the serial port before taking measurements.
+                """
+        if flush:  # Clear input buffer. Otherwise, messes up values at the beginning.
             self._serial.flushInput()
 
+        cmd = "req-temp?\n"
+        logger.debug("ADC command: {}".format(cmd))
+
+        self._serial.write(bytes(cmd, 'utf-8'))
+        temperature_requested = True
+        return temperature_requested
+
+    def read_temperature(self):
+        """Reads temperature measurements
+
+                Args:
+                    temperature_requested:
+
+                Returns:
+                    the value as a list  [temp].
+                """
         cmd = "temp?\n"
         logger.debug("ADC command: {}".format(cmd))
 
@@ -187,11 +199,8 @@ class ADC:
 
         temp = self._read_data(1, name='Temperature')
         logger.debug("Temperature without correction = {}".format(temp[0]))
-
-        return temp
-
-    def request_temperature(self):
-        pass
+        temperature_requested = False
+        return temp, temperature_requested
 
     def active_channels(self):
         """Returns number of active channels."""

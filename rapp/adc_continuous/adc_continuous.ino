@@ -39,7 +39,7 @@ void setup(void) {
     // Serial.setTimeout(10);
     sensorDS18B20.begin();
     sensorDS18B20.setResolution(12);
-    // sensorDS18B20.setWaitForConversion(false); + separar requestTemperatures del getTempC
+    sensorDS18B20.setWaitForConversion(false);
 }
 
 void serial_write_short(short data){
@@ -76,8 +76,11 @@ float read_n_samples_from_channel(unsigned long n_samples, byte channel){
     return elapsedtime;
 }
 
+void request_temp(void){
+  sensorDS18B20.requestTemperatures();
+}
+
 float read_temp(void){
-    sensorDS18B20.requestTemperatures();
     float temp = sensorDS18B20.getTempC(sensorVaina);
     return temp;
 }
@@ -140,7 +143,7 @@ void measure_SPS() {
     Serial.println(sps);
 }
 
-void toggle_led(int n){
+void toggle_led(int n){  // Useful for debugging
   const int ledPin = 13;
   bool ledState = LOW;
   pinMode(ledPin, OUTPUT);
@@ -151,28 +154,35 @@ void toggle_led(int n){
   }
 }
 
+bool is_conversion_complete() {
+  sensorDS18B20.isConversionComplete();
+}
+
 void process_serial_input() {
     if (Serial.available() > 0) {
         String input_command = Serial.readStringUntil('\n');
         String command_name = input_command.substring(0,input_command.indexOf(";"));
         if (command_name == "adc?") {
-            //toggle_led(2);
             int ind = input_command.indexOf(";") + 1;
             String command_args = input_command.substring(ind);
             float elapsedtime;
             unsigned short n_channels;
             parse_and_read_n_samples(command_args, &elapsedtime, &n_channels);
-        } else if (command_name == "temp?") {
+        } else if (command_name == "req-temp?") {
+            request_temp();
+        }else if (command_name == "temp?") {
             read_and_send_temp();
-            //toggle_led(5);
         } else if (command_name == "ready?") {
-          Serial.println("yes"); 
-          // If required, send no
-        } else {
-          Serial.println("Comando no reconocido");
+            Serial.println("yes"); 
+            // If required, send no
+        } else if (command_name == "complete?") {
+            is_conversion_complete();
+        }else {
+            Serial.println("Comando no reconocido");
         }
     }
 }
+
 void loop(void) {
     if (Serial.available() > 0) {  // Wait to receive a signal.
         process_serial_input();
