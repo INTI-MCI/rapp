@@ -125,8 +125,8 @@ comment = {
 
 correction_parameters = {
     'bias': '{}'.format(bias),
-    'A': '{}'.format(linear_correction[0]),
-    'b': '{}'.format(linear_correction[1])
+    'A': '{}'.format(linear_correction[0][0]),
+    'b': '{}'.format(linear_correction[1][0])
 }
 
 json_data = {

@@ -31,7 +31,7 @@ HELP_WORKDIR = 'folder to use as working directory (default: %(default)s)'
 HELP_DELAY_POSITION = 'delay (in seconds) after changing analyzer position (default: %(default)s).'
 HELP_MC_WAIT = 'time to wait (in seconds) before re-connecting the MC (default: %(default)s).'
 HELP_TEMP_CORRECTION = 'correction to apply to temperature measurements (default: %(default)s).'
-HELP_TEMP_WAIT = 'Time to wait (in seconds) between room temperature measurements'
+HELP_TEMP_WAIT = 'time to wait (in seconds) between room temperature measurements'
 
 
 HELP_HWP_CYCLES = 'n° of cycles of the HW plate (default: %(default)s).'
