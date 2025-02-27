@@ -116,6 +116,8 @@ options:
   --disable-pm100        disables the PM100 normalization detector. (default: False).
   --work-dir             folder to use as working directory (default: workdir)
   -ow, --overwrite       whether to overwrite existing files without asking (default: False).
+  --temp-correction      correction to apply to temperature measurements (default: 'bias').
+  --temp-wait            time to wait (in seconds) between room temperature measurements
 
 ADC:
   --mock-adc             use ADC mock object. (default: False).
@@ -130,7 +132,7 @@ Analyzer:
   --acceleration         acceleration of the analyzer in deg/s^2 (default: 1).
   --deceleration         deceleration of the analyzer in deg/s^2 (default: 1).
 
-Half Wate Plate:
+Half Wave Plate:
   --hwp-cycles           n° of cycles of the HW plate (default: 0).
   --hwp-step             motion step of the rotating HW plate (default: 45).
   --hwp-delay-position   delay (in seconds) after changing HW plate position (default: 5).
@@ -170,6 +172,23 @@ simulation specific parameters:
 Example: rapp sim --name error_vs_samples --show
 ```
 
+### Temperature measurements
+This setup requires room temperature measurements since temperature affects the 
+optical rotation of quartz, the material used in this setup. A DS18B20 sensor was
+calibrated against two other sensors with higher metrological hierarchy. From this 
+calibration, correction parameters were obtained to perform bias or linear 
+corrections. The polarimeter command expects a JSON file that contains the correction
+parameters with the following format: 
+```bash
+{"comment": {"comment": "Bias and linear correction parameters for DS18B20 sensor
+                        used in polarimeter room temperature measurements obtained 
+                        from measurements with (calibrated sensors) the 14/11/2024"}, 
+ "correction_parameters": {"bias": "X.XXX", 
+                           "A": "X.XXX", 
+                           "b": "X.XXX"}}
+```
+This file can be created using the temperature_plot_and_parameters.py script in the 
+examples folder.
 
 ## References
 <a id="1">[1]</a> G. N. Vishnyakov, G. G. Levin, and A. G. Lomakin,

@@ -1,5 +1,5 @@
 import logging
-
+import time
 import serial
 
 from rapp.mocks import SerialMock
@@ -127,6 +127,9 @@ class ESP301:
         cmd = command_tpl.format(axis, position, type=position_type, ws=ws)
 
         self._serial.write(cmd.encode())
+
+        if isinstance(self._serial, SerialMock):
+            time.sleep(0.5)
 
         return self._read_float()
 

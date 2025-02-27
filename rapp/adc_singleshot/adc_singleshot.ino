@@ -16,7 +16,7 @@ void setup(void) {
   // ads.setGain(GAIN_TWO);        // +/- 2.048V  1 bit = 0.0625mV
   // ads.setGain(GAIN_FOUR);       // +/- 1.024V  1 bit = 0.03125mV
   // ads.setGain(GAIN_EIGHT);      // +/- 0.512V  1 bit = 0.015625mV
-  // ads.setGain(GAIN_SIXTEEN);    // +/- 0.256V  1 bit = 0.0078125mV 
+  // ads.setGain(GAIN_SIXTEEN);    // +/- 0.256V  1 bit = 0.0078125mV
 
   ads.setDataRate(RATE_ADS1115_860SPS);
   ads.begin();
@@ -26,7 +26,7 @@ void loop(void) {
   short value0_bits = ads.readADC_SingleEnded(0);
   short value1_bits = ads.readADC_SingleEnded(1);
   //value1_bits = ads.readADC_SingleEnded(1);
-  
+
 
   float value0 = bits2volts(value0_bits);
   float value1 = bits2volts(value1_bits);
