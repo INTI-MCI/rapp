@@ -72,7 +72,7 @@ class ADC:
         self.progressbar = ch0 != ch1
         self.timeout_open = timeout_open
         self.temperature_requested = False
-        self.max_V, self._multiplier_mV = GAINS[gain] # 5, 10/2**24 to try 24 bit ADC
+        self.max_V, self._multiplier_mV = GAINS[gain]  # 5, 10/2**24 to try 24 bit ADC
 
         if not (ch0 or ch1):
             raise ADCError(MESSAGE_CHANNELS)
@@ -241,7 +241,7 @@ class ADC:
     def _read_bits(self):
         if self._in_bytes:
             return int.from_bytes(self._serial.read(2), byteorder='big', signed=True)
-            #.read(4) for 24 bit ADC
+            # .read(4) for 24 bit ADC
         else:
             return int(self._serial.readline().decode().strip())
 
