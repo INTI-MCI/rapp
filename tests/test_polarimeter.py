@@ -87,7 +87,9 @@ def test_motion_controller_failure(tmp_path):
 
     data_file = DataFile(overwrite=True, delimiter=FILE_DELIMITER, output_dir=output_dir)
 
-    p = polarimeter.Polarimeter(adc, analyzer, hwp, data_file, wait=0)
+    temp_file = DataFile(overwrite=True, delimiter=FILE_DELIMITER, output_dir=output_dir)
+
+    p = polarimeter.Polarimeter(adc, analyzer, hwp, data_file, temp_file, wait=0)
 
     failures = p.start(samples, reps=reps)
     assert failures == 1
@@ -95,4 +97,4 @@ def test_motion_controller_failure(tmp_path):
     p.close()
 
     files_in_dir = os.listdir(output_dir)
-    assert len(files_in_dir) == 6
+    assert len(files_in_dir) == 7

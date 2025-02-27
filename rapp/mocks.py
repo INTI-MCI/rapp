@@ -7,11 +7,19 @@ class SerialMock:
 
     def __init__(self, delay=0):
         self.delay = delay
+        self.ready = False
 
     def readline(self):
-        return '{}'.format(0).encode('utf-8')
+        if self.ready:
+            output = 'yes\r\n'.encode('utf-8')
+            self.ready = False
+        else:
+            output = '{}'.format(0).encode('utf-8')
+        return output
 
     def write(self, v):
+        if v == b'ready?\n':
+            self.ready = True
         pass
 
     def read(self, n_bytes):
