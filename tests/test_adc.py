@@ -15,7 +15,7 @@ def test_build(monkeypatch):
         adc.ADC.build(dev='BADDEVICE')
 
     monkeypatch.setattr(serial, "Serial", lambda *x, **y: mocks.SerialMock())
-    adc.ADC.build(wait=0)
+    adc.ADC.build(timeout_open=0)
 
 
 def test_acquire():
