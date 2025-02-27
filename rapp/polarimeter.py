@@ -78,6 +78,7 @@ TEMP_HEADER = "Tiempo-espera-{} s"
 
 TEMP_CORRECTION_FILE = "workdir/output-data/2024-11-14-temperature-correction-parameters.json"
 
+
 class Polarimeter:
     """High accuracy polarimeter for optical rotation measurements.
 
@@ -107,7 +108,8 @@ class Polarimeter:
         self._norm_det = norm_det
         self._wait = wait
 
-    def start(self, samples, chunk_size: int = 0, reps: int = 1, temp_wait: int = 60, temp_correction: str = 'bias'):
+    def start(self, samples, chunk_size: int = 0, reps: int = 1, temp_wait: int = 60,
+              temp_correction: str = 'bias'):
         """Collects measurements rotating the analyzer and saves them in a data file.
 
         Args:
@@ -153,12 +155,15 @@ class Polarimeter:
         temperature_requested = [False]
 
         schedule_request = schedule.Scheduler()
-        schedule_request.every(temp_wait).seconds.do(self.request_temperature, parameters_req_temperature,
-                                                     parameters, temperature_requested=temperature_requested)
+        schedule_request.every(temp_wait).seconds.do(self.request_temperature,
+                                                     parameters_req_temperature, parameters,
+                                                     temperature_requested=temperature_requested)
 
         schedule_read = schedule.Scheduler()
-        schedule_read.every(temp_wait).seconds.do(self.read_temperature, parameters_req_temperature,
-                                                  temperature_requested=temperature_requested, write=True)
+        schedule_read.every(temp_wait).seconds.do(self.read_temperature,
+                                                  parameters_req_temperature,
+                                                  temperature_requested=temperature_requested,
+                                                  write=True)
 
         self._temp_file.open("temperature.csv")
         for hwp_position in self._hwp:
@@ -225,7 +230,8 @@ class Polarimeter:
 
             yield acquired_samples
 
-    def request_temperature(self, parameters_req_temperature={}, parameters={}, temperature_requested=[False]):
+    def request_temperature(self, parameters_req_temperature={}, parameters={},
+                            temperature_requested=[False]):
         if not temperature_requested[0]:
             temperature_requested[0] = self._adc.request_temperature()
             logger.debug("Request temperature at: {}".format(datetime.datetime.now()))
@@ -235,7 +241,8 @@ class Polarimeter:
             parameters_req_temperature["rep_r"] = parameters["rep"]
             parameters_req_temperature["temp_correction_r"] = parameters["temp_correction"]
 
-    def read_temperature(self, parameters_req_temperature={}, temperature_requested=[True], write=True):
+    def read_temperature(self, parameters_req_temperature={}, temperature_requested=[True],
+                         write=True):
         if temperature_requested[0]:
             acquired_temperature, temperature_requested[0] = self._adc.read_temperature()
             logger.debug("Read temperature at: {}".format(datetime.datetime.now()))
@@ -249,8 +256,11 @@ class Polarimeter:
                     filepath=TEMP_CORRECTION_FILE, temperature=acquired_temperature
                 )
 
-            data = ([parameters_req_temperature["position_r"]] + [round(acquired_temperature, 4)] +
-                    [parameters_req_temperature["hwp_position_r"]] + [parameters_req_temperature["rep_r"]])
+            data = ([parameters_req_temperature["position_r"]]
+                    + [round(acquired_temperature, 4)]
+                    + [parameters_req_temperature["hwp_position_r"]]
+                    + [parameters_req_temperature["rep_r"]]
+                    )
 
             if write:
                 self._temp_file.add_row(data)
@@ -426,7 +436,8 @@ def run(
     )
 
     logger.info("Starting measurement...")
-    _, elapsed_time = timing(polarimeter.start)(samples, chunk_size=chunk_size, reps=reps, temp_wait=temp_wait,
+    _, elapsed_time = timing(polarimeter.start)(samples, chunk_size=chunk_size,
+                                                reps=reps, temp_wait=temp_wait,
                                                 temp_correction=temp_correction)
     metadata['duration'] = str(timedelta(seconds=elapsed_time)).split(".")[0]
 

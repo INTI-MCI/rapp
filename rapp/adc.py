@@ -53,7 +53,7 @@ class ADC:
         ADCError: when ch0 and ch1 parameters are both False.
     """
 
-    CMD_TEMPLATE = "{measurement};{ch0};{ch1};{samples}\n"
+    CMD_TEMPLATE = "{measurement};{ch0};{ch1};{samples};\n"
     AVAILABLE_CHANNELS = ['CH0', 'CH1']
 
     PORT = '/dev/ttyACM0'
@@ -72,7 +72,7 @@ class ADC:
         self.progressbar = ch0 != ch1
         self.timeout_open = timeout_open
         self.temperature_requested = False
-        self.max_V, self._multiplier_mV = GAINS[gain]
+        self.max_V, self._multiplier_mV = GAINS[gain] # 5, 10/2**24 to try 24 bit ADC
 
         if not (ch0 or ch1):
             raise ADCError(MESSAGE_CHANNELS)
@@ -99,7 +99,9 @@ class ADC:
             logger.warning("Using mocked serial connection.")
             serial_connection = SerialMock()
         else:
-            serial_connection = cls.get_serial_connection(port, baudrate=baudrate, timeout=timeout)
+            serial_connection = cls.get_serial_connection(port,
+                                                          baudrate=baudrate,
+                                                          timeout=timeout)
 
         return cls(serial_connection, **kwargs)
 
@@ -127,8 +129,13 @@ class ADC:
                 queries += 1
 
         if elapsed_time >= self.timeout_open:
-            raise ADCError("Timeout while waiting for connection to open. Timeout = {} seconds with {} failed queries.".format(self.timeout_open, queries))
-        logger.debug("Connection opened in {} seconds with {} queries.".format(elapsed_time, queries))
+            raise ADCError(
+                "Timeout while waiting for connection to open. Timeout = {} seconds with"
+                " {} failed queries.".format(self.timeout_open, queries)
+            )
+        logger.debug(
+            "Connection opened in {} seconds with {} queries.".format(elapsed_time, queries)
+        )
 
     def acquire(self, n_samples, flush=True):
         """Acquires voltage measurements.
@@ -150,7 +157,9 @@ class ADC:
         if flush:  # Clear input buffer. Otherwise messes up values at the beginning.
             self._serial.flushInput()
 
-        cmd = ADC.CMD_TEMPLATE.format(measurement='adc?', ch0=int(self._ch0), ch1=int(self._ch1), samples=n_samples)
+        cmd = ADC.CMD_TEMPLATE.format(
+            measurement='adc?', ch0=int(self._ch0), ch1=int(self._ch1), samples=n_samples
+        )
         logger.debug("ADC command: {}".format(cmd))
 
         self._serial.write(bytes(cmd, 'utf-8'))
@@ -232,6 +241,7 @@ class ADC:
     def _read_bits(self):
         if self._in_bytes:
             return int.from_bytes(self._serial.read(2), byteorder='big', signed=True)
+            #.read(4) for 24 bit ADC
         else:
             return int(self._serial.readline().decode().strip())
 
