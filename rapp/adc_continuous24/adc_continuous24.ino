@@ -3,7 +3,8 @@
 #include <OneWire.h>
 #include <DallasTemperature.h>
 
-ArduinoUno_ADC_CS1237 adc(13,19);// Declare the object to work with the ArduinoUno_ADC_CS1237 library functions, specifying the pins (SCLK, DATA). You can specify any Arduino pins.
+//ArduinoUno_ADC_CS1237 adc(13,19);// Declare the object to work with the ArduinoUno_ADC_CS1237 library functions, specifying the pins (SCLK, DATA). You can specify any Arduino pins.
+ArduinoUno_ADC_CS1237 adc(9, 6);
 
 const unsigned short int SERIAL_BAUDRATE = 57600;
 
@@ -21,12 +22,17 @@ DallasTemperature sensorDS18B20(&oneWireObjeto);
 
 DeviceAddress sensorVaina = {0x28, 0xCF, 0x42, 0x76, 0xE0, 0x01, 0x3C, 0x70};
 
-const byte register_to_write = 0b01110000;
+const byte register_to_write = 0b01010000;
 
 void setup(void) {
     Serial.begin(SERIAL_BAUDRATE);
-
+    Serial.println("Hola");
+    Serial.println(millis());
     adc.begin();
+    Serial.println("adc.begin");
+    Serial.println(adc.getDOUT_DRDY());
+    Serial.println(adc.getSCLK());
+    Serial.println(millis());
 	  //adc.setDefaultRegister(); // CH 0 input, PGA = 1, DRATE = 1280 Hz, VREF = DISABLED
     Serial.print("Antes de setear, ");
     adc.read_and_printRegister();
@@ -38,9 +44,9 @@ void setup(void) {
     // When we don't use terminator character, this helps to reduce the parseInt() delay.
     // Instead of setting this, for an optimal result is better to ALWAYS use terminator character.
     // Serial.setTimeout(10);
-    sensorDS18B20.begin();
-    sensorDS18B20.setResolution(12);
-    sensorDS18B20.setWaitForConversion(false);
+    //sensorDS18B20.begin();
+    //sensorDS18B20.setResolution(12);
+    //sensorDS18B20.setWaitForConversion(false);
 }
 
 void serial_write_short(short data){
@@ -233,6 +239,10 @@ void process_serial_input() {
               adc.read_and_printRegister();
               delay(1000);
             }
+        } else if (command_name == "adc_register"){
+          const byte register_to_write_ = 0b01110000;
+            adc.setFullRegister(register_to_write_);
+            adc.read_and_printRegister();
         } else if (command_name == "req-temp?") {
             request_temp();
         } else if (command_name == "temp?") {

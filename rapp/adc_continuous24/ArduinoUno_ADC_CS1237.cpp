@@ -12,9 +12,13 @@ void ArduinoUno_ADC_CS1237::begin(void){											//	Parameter: none
 		digitalWrite(SCLK, LOW); //Pull it LOW										//
 
 	//Make sure the chip is awake
-		while (digitalRead(DOUT_DRDY) == 0) {} //Wait while DRDY is low
+		Serial.println("Clock en 0, leyendo DOUT esperando un 1");
+    while (digitalRead(DOUT_DRDY) == 0) {} //Wait while DRDY is low
+    Serial.println("1 recibido en DOUT, esperando un 0");
 		while (digitalRead(DOUT_DRDY) == 1) {} //Wait while DRDY is high
+    Serial.println("0 recibido, comienza delay");
 		delay(OFF_ON_SETTLING_TIME);
+    Serial.println("Fin del delay");
 }
 
 void ArduinoUno_ADC_CS1237::clockCycle()
@@ -28,8 +32,8 @@ void ArduinoUno_ADC_CS1237::clockCycle()
 void ArduinoUno_ADC_CS1237::writeBit(bool bit)
 {
   digitalWrite(SCLK, HIGH);
+  digitalWrite(DOUT_DRDY, bit); //Write the register values
   customDelay455ns();
-  digitalWrite(DOUT_DRDY, bit); //Write the register values        
   digitalWrite(SCLK, LOW);
   customDelay455ns();
 }
@@ -55,15 +59,19 @@ void ArduinoUno_ADC_CS1237::setDefaultRegister(void) {
 
 int32_t ArduinoUno_ADC_CS1237::readADC() //Data acquisition function - Returns a long variable
 {
-    while (digitalRead(DOUT_DRDY) == 1) //Wait for the DRDY/DOUT to fall LOW
+    int datoPrevio = digitalRead(DOUT_DRDY);
+    int datoActual = digitalRead(DOUT_DRDY);
+    while (datoPrevio - datoActual != 1) //Wait for the DRDY/DOUT to fall LOW
     {
+        datoPrevio = datoActual;
+        datoActual = digitalRead(DOUT_DRDY);
         //Wait until dout/drdy becomes 0
     }
     //DRDY was low, so we can proceed further
 
     int32_t result = 0; //24-bit output data is stored in this variable
 
-    delayMicroseconds(1); //t4 (could be zero, actually)
+    delayMicroseconds(40); //t4 (could be zero, actually)
 
     for (int i = 0; i < 24; i++) //Read the 24-bits
     {
@@ -260,6 +268,7 @@ void ArduinoUno_ADC_CS1237::setFullRegister(byte register_to_write)
     ADCreading = readADC(); //32-bit variable that stores the whole ADC reading
 
     pinMode(DOUT_DRDY, OUTPUT); //After the 27th SCLK pulse, set DOUT to OUTPUT
+    digitalWrite(DOUT_DRDY, 1);
 
     for (uint8_t i = 0; i < 2; i++) clockCycle(); //Emit 2 pulses (28-29)
 
@@ -276,8 +285,8 @@ void ArduinoUno_ADC_CS1237::setFullRegister(byte register_to_write)
     for (uint8_t i = 0; i < 8; i++) //38-45 SCLK pulses
     {
         writeBit(((register_to_write >> (7 - i)) & 0b00000001) ? HIGH : LOW); //Write the register values        
-        Serial.print("Bit que se escribió: ");
-        read_and_print(((register_to_write >> (7 - i)) & 0b00000001) ? HIGH : LOW);
+        //Serial.print("Bit que se escribió: ");
+        //read_and_print(((register_to_write >> (7 - i)) & 0b00000001) ? HIGH : LOW);
     }
 
     // send 1 clock pulse, to set the Pins of the ADCs to output and pull high
@@ -295,6 +304,7 @@ int ArduinoUno_ADC_CS1237::getRegister() //Reads all registers. The actual value
     ADCreading = readADC(); //32-bit variable that stores the whole ADC reading
     
     pinMode(DOUT_DRDY, OUTPUT); //After the 27th SCLK pulse, set DOUT to OUTPUT
+    digitalWrite(DOUT_DRDY, 1);
 
     for (uint8_t i = 0; i < 2; i++) clockCycle(); //Emit 2 pulses (28-29)
 
@@ -303,10 +313,11 @@ int ArduinoUno_ADC_CS1237::getRegister() //Reads all registers. The actual value
       writeBit(((0x56 >> (6 - i)) & 0b00000001) ? HIGH : LOW); //0x56 - READ
     }
 
+    pinMode(DOUT_DRDY, INPUT_PULLUP); //we read, so dout becomes INPUT
+
     clockCycle(); //Send the 37th SCLK pulse
     
-    //After the 37th SCLK pulse switch the direction of DOUT. 
-    pinMode(DOUT_DRDY, INPUT_PULLUP); //we read, so dout becomes INPUT
+    //After the 37th SCLK pulse switch the direction of DOUT. (Moved before 37th SCLK pulse)
 
     registerValue = 0; //Because we are reading
 
@@ -349,6 +360,13 @@ void ArduinoUno_ADC_CS1237::read_and_print(int value){
     Serial.println(); // Print a newline character
 }
 
+int ArduinoUno_ADC_CS1237::getDOUT_DRDY(){
+  return DOUT_DRDY;
+}
+
+int ArduinoUno_ADC_CS1237::getSCLK(){
+  return SCLK;
+}
 
 //-------------------------------------------------------------------------------------------------------------
 //This is valid for Arduino Uno, make sure you adjust it for your own MCU based on its clock speed.  
@@ -360,7 +378,7 @@ void ArduinoUno_ADC_CS1237::customDelay455ns()
 {
   // Adjust the number of cycles based on the calculated value
   // This may need to be fine-tuned based on the actual execution time
-  for (int i = 0; i < 20; ++i) // 455 ns/ 187.5 ns = 2.4. Since 455 is a minimum req, I increased to 10. There's no max value...
+  for (int i = 0; i < 2; ++i) // 455 ns/ 187.5 ns = 2.4. Since 455 is a minimum req, I increased to 10. There's no max value...
   {
     DELAY_455_NS;
   }
