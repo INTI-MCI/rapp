@@ -71,7 +71,7 @@ int32_t ArduinoUno_ADC_CS1237::readADC() //Data acquisition function - Returns a
 
     int32_t result = 0; //24-bit output data is stored in this variable
 
-    delayMicroseconds(40); //t4 (could be zero, actually)
+    delayMicroseconds(10); //t4 (could be zero, actually)
 
     for (int i = 0; i < 24; i++) //Read the 24-bits
     {
@@ -264,6 +264,8 @@ void ArduinoUno_ADC_CS1237::setFullRegister(byte register_to_write)
     //bit 7   : reserved, don't touch
     //----------------------------------------------------------
 
+    Serial.print("Registro que se va a escribir: ");
+
     //Shift out 27 (24+3) bits
     ADCreading = readADC(); //32-bit variable that stores the whole ADC reading
 
@@ -278,9 +280,6 @@ void ArduinoUno_ADC_CS1237::setFullRegister(byte register_to_write)
     }
 
     clockCycle(); //Send the 37th SCLK pulse
-
-    Serial.print("Registro que se va a escribir: ");
-    read_and_print(register_to_write);
 
     for (uint8_t i = 0; i < 8; i++) //38-45 SCLK pulses
     {

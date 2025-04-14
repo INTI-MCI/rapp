@@ -26,19 +26,18 @@ const byte register_to_write = 0b01010000;
 
 void setup(void) {
     Serial.begin(SERIAL_BAUDRATE);
-    Serial.println("Hola");
-    Serial.println(millis());
+    Serial.println();
+    serial_log("Comienzo de adc_continuous24::setup.");    
     adc.begin();
-    Serial.println("adc.begin");
-    Serial.println(adc.getDOUT_DRDY());
-    Serial.println(adc.getSCLK());
-    Serial.println(millis());
+    serial_log("adc.begin completado.");
+    Serial.println("Pin de DOUT_DRDY: " + String(adc.getDOUT_DRDY()));
+    Serial.println("Pin de SCLK: " + String(adc.getSCLK()));
 	  //adc.setDefaultRegister(); // CH 0 input, PGA = 1, DRATE = 1280 Hz, VREF = DISABLED
     Serial.print("Antes de setear, ");
     adc.read_and_printRegister();
 
     adc.setFullRegister(register_to_write);
-
+    serial_log("Registro actualizado.");
     adc.read_and_printRegister();
 
     // When we don't use terminator character, this helps to reduce the parseInt() delay.
@@ -47,6 +46,10 @@ void setup(void) {
     //sensorDS18B20.begin();
     //sensorDS18B20.setResolution(12);
     //sensorDS18B20.setWaitForConversion(false);
+}
+
+void serial_log(String msg){
+    Serial.println(String(millis()) + " ms: " + msg);
 }
 
 void serial_write_short(short data){
@@ -169,6 +172,19 @@ bool parse_bool(String& command_args) {
   return value;
 }
 
+byte parse_byte(String& command_args) {
+  int ind = command_args.indexOf(";");
+  String arg01 = command_args.substring(0, ind);
+  uint8_t start_at = arg01.startsWith("0b")?2:0;
+  byte value = arg01[start_at] == '1';
+  for (int i=0;i<8 && (start_at + i) < arg01.length();i++){
+    value = value << 1;
+    value |= arg01[start_at + i] == '1';
+  }
+  command_args = command_args.substring(ind + 1);
+  return value;
+}
+
 unsigned long parse_int(String& command_args) {
   int ind = command_args.indexOf(";");
   unsigned long value = command_args.substring(0, ind).toInt();
@@ -235,14 +251,17 @@ void process_serial_input() {
             String command_args = input_command.substring(ind);
             parse_read_and_print_n_samples_dt(command_args);
         } else if (command_name == "adc_register?"){
-            for (uint8_t i = 0; i < 10; i++) {
+            for (uint8_t i = 0; i < 5; i++) {
+              Serial.print(String(i) + " : ");
               adc.read_and_printRegister();
               delay(1000);
             }
         } else if (command_name == "adc_register"){
-          const byte register_to_write_ = 0b01110000;
+            int ind = input_command.indexOf(";") + 1;
+            String command_args = input_command.substring(ind);
+            byte register_to_write_ = parse_byte(command_args);
             adc.setFullRegister(register_to_write_);
-            adc.read_and_printRegister();
+            // adc.read_and_printRegister();
         } else if (command_name == "req-temp?") {
             request_temp();
         } else if (command_name == "temp?") {
