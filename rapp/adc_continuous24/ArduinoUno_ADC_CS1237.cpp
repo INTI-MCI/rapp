@@ -1,97 +1,82 @@
-#include "ArduinoUno_ADC_CS1237.h"													//
+#include "ArduinoUno_ADC_CS1237.h"
 
-#define OFF_ON_SETTLING_TIME 1000 //
-#define REGISTER_SETTLING_TIME 350 //
+void ArduinoUno_ADC_CS1237::begin(void) {
+//Configure SCL, SDA pins:
+    pinMode(DOUT_DRDY, INPUT); //DOUT_DRDY - Input
+    //digitalWrite(DOUT_DRDY, LOW); //Pull it LOW
 
-void ArduinoUno_ADC_CS1237::begin(void){											//	Parameter: none
-	//	Configure SCL, SDA pins:												//
-		pinMode(DOUT_DRDY, INPUT); //DRDY - Input
-		//digitalWrite(DOUT_DRDY, LOW); //Pull it LOW
+    pinMode(SCLK, OUTPUT); //SCLK - OUTPUT
+    digitalWrite(SCLK, LOW); //Pull it LOW
 
-		pinMode(SCLK, OUTPUT); //SCLK - OUTPUT
-		digitalWrite(SCLK, LOW); //Pull it LOW										//
+//Make sure the chip is awake
+    if (DEBUG_CS1237) Serial.println("Clock en 0, leyendo DOUT esperando un 1");
+    while (digitalRead(DOUT_DRDY) == 0) {} //Wait while DOUT_DRDY is low
+    if (DEBUG_CS1237) Serial.println("1 recibido en DOUT, esperando un 0");
+    while (digitalRead(DOUT_DRDY) == 1) {} //Wait while DOUT_DRDY is high
 
-	//Make sure the chip is awake
-		Serial.println("Clock en 0, leyendo DOUT esperando un 1");
-    while (digitalRead(DOUT_DRDY) == 0) {} //Wait while DRDY is low
-    Serial.println("1 recibido en DOUT, esperando un 0");
-		while (digitalRead(DOUT_DRDY) == 1) {} //Wait while DRDY is high
-    Serial.println("0 recibido, comienza delay");
-		delay(OFF_ON_SETTLING_TIME);
-    Serial.println("Fin del delay");
+    if (DEBUG_CS1237) Serial.println("0 recibido, comienza delay");
+    delay(OFF_ON_SETTLING_TIME);
+    if (DEBUG_CS1237) Serial.println("Fin del delay");
 }
 
-void ArduinoUno_ADC_CS1237::clockCycle()
-{
-  digitalWrite(SCLK, HIGH);
-  customDelay455ns(); //t6
-  digitalWrite(SCLK, LOW);
-  customDelay455ns(); //t6
+void ArduinoUno_ADC_CS1237::clockCycle() {
+    digitalWrite(SCLK, HIGH);
+    customDelay455ns(); //t5
+    digitalWrite(SCLK, LOW);
+    customDelay455ns(); //t5
 }
 
-void ArduinoUno_ADC_CS1237::writeBit(bool bit)
-{
-  digitalWrite(SCLK, HIGH);
-  digitalWrite(DOUT_DRDY, bit); //Write the register values
-  customDelay455ns();
-  digitalWrite(SCLK, LOW);
-  customDelay455ns();
+void ArduinoUno_ADC_CS1237::writeBit(bool bit) {
+    digitalWrite(SCLK, HIGH);
+    digitalWrite(DOUT_DRDY, bit); //Write the bit value into DOUT_DRDY pin
+    customDelay455ns(); //t6
+    digitalWrite(SCLK, LOW);
+    customDelay455ns(); //t5
 }
 
-bool ArduinoUno_ADC_CS1237::readBit()
-{
-  digitalWrite(SCLK, HIGH);
-  customDelay455ns(); //t6
-  bool single_bit = digitalRead(DOUT_DRDY); //Acá estamos suponiendo que para leer un bit alcanza el tiempo de espera del delay455
-  digitalWrite(SCLK, LOW);
-  customDelay455ns(); //t6
-  return single_bit;
+bool ArduinoUno_ADC_CS1237::readBit() {
+    digitalWrite(SCLK, HIGH);
+    customDelay455ns(); //t6
+    bool single_bit = digitalRead(DOUT_DRDY); //Read the value from DOUT_DRDY
+    digitalWrite(SCLK, LOW);
+    customDelay455ns(); //t5
+    return single_bit;
 }
 
-void ArduinoUno_ADC_CS1237::setDefaultRegister(void) {
-	//Set all registers to a default value (my arbitrarily chosen default values)
-		setRegister(0, 0); //CH 0 input
-		setRegister(1, 0); //PGA = 1
-		setRegister(2, 3); //DRATE = 1280 Hz
-		setRegister(3, 1); //VREF = DISABLED
-
-}
-
-int32_t ArduinoUno_ADC_CS1237::readADC() //Data acquisition function - Returns a long variable
-{
-    int datoPrevio = digitalRead(DOUT_DRDY);
-    int datoActual = digitalRead(DOUT_DRDY);
-    while (datoPrevio - datoActual != 1) //Wait for the DRDY/DOUT to fall LOW
-    {
-        datoPrevio = datoActual;
-        datoActual = digitalRead(DOUT_DRDY);
-        //Wait until dout/drdy becomes 0
+int32_t ArduinoUno_ADC_CS1237::readADC() {
+//Data acquisition function - Returns int32 variable
+    int previousValue = digitalRead(DOUT_DRDY);
+    int newValue = digitalRead(DOUT_DRDY);
+    //Wait for the DOUT_DRDY to fall LOW:
+    while (previousValue - newValue != 1){
+        previousValue = newValue;
+        newValue = digitalRead(DOUT_DRDY);
     }
-    //DRDY was low, so we can proceed further
 
     int32_t result = 0; //24-bit output data is stored in this variable
 
-    delayMicroseconds(10); //t4 (could be zero, actually)
+    delayMicroseconds(0); //t4
 
-    for (int i = 0; i < 24; i++) //Read the 24-bits
-    {
-      result <<= 1; 
-      result |= readBit();
-      //i = 0; MSB @ bit 23
-      //i = 1; MSB-1 @ bit 22
-      //... i = 23; LSB @ bit 0 (not shifted, just OR'd together with the result)
+    //Read the 24-bits:
+    for (int i = 0; i < 24; i++) {
+        result <<= 1;
+        result |= readBit();
+        //i = 0; MSB @ bit 23
+        //i = 1; MSB-1 @ bit 22
+        //... i = 23; LSB @ bit 0 (not shifted, just OR'd together with the result)
     }
 
-    //Shift bit 25-26-27 as well.
+    //Shift bit 25-26-27 as well:
     for (uint8_t i = 0; i < 3; i++) clockCycle();
 
-	  if( result & 0x00800000 ){ result |= 0xFF800000; }
+    //Check if the data is signed:
+    if(result & 0x00800000) result |= 0xFF800000;
 
     return result;
 }
 
-void ArduinoUno_ADC_CS1237::setRegister(int registertowrite, int valuetowrite)
-{
+void ArduinoUno_ADC_CS1237::setRegister(int registertowrite, int valuetowrite) {
+//Write a value to a specific register
     //"Arbitrary" register numbers
     //0 - Channel
     //1 - PGA
@@ -99,11 +84,11 @@ void ArduinoUno_ADC_CS1237::setRegister(int registertowrite, int valuetowrite)
     //3 - REF
 
     //Config register structure
-    //bit 0-1 : Channel. 00 - A, 01 - reserved, 10 - Temperature, 11 - internal short (maybe for offset calibration?)
-    //bit 2-3 : PGA. 00 - 1, 01 - 2, 10 - 64, 11 - 128
-    //bit 4-5 : speed. 00 - 10 Hz, 01 - 40 Hz, 10 - 640 Hz, 11 - 1280 Hz
-    //bit 6   : Reference. Default is enabled which is 0.
-    //bit 7   : reserved, don't touch
+    //bit 0-1 : Channel. 00 - A (Default), 01 - Reserved, 10 - Temperature, 11 - Internal short (maybe for offset calibration?)
+    //bit 2-3 : PGA. 00 - 1, 01 - 2, 10 - 64, 11 - 128 (Default)
+    //bit 4-5 : Speed. 00 - 10 Hz (Default), 01 - 40 Hz, 10 - 640 Hz, 11 - 1280 Hz
+    //bit 6   : Reference. 0 - Enabled (Default), 1 - Disabled
+    //bit 7   : Reserved, don't touch. If needed, set to 0
     //----------------------------------------------------------
     
     byte register_value = 0b00000000;
@@ -123,7 +108,7 @@ void ArduinoUno_ADC_CS1237::setRegister(int registertowrite, int valuetowrite)
                 Serial.println("Channel = 0");
                 break;
             case 1: // Reserved // W0 1
-                //dont implement it!
+                //don't implement it!
                 Serial.println("Channel = Reserved, invalid!");
                 break;
             case 2: //Temperature // W0 2
@@ -136,7 +121,7 @@ void ArduinoUno_ADC_CS1237::setRegister(int registertowrite, int valuetowrite)
                 break;
             }
             Serial.print("Después de setear ch, ");
-            read_and_print(register_value);
+            printSerialByte(register_value);
         break;
         //-------------------------------------------------------------------------------------------------------------
 
@@ -168,7 +153,7 @@ void ArduinoUno_ADC_CS1237::setRegister(int registertowrite, int valuetowrite)
                 break;
             }
             Serial.print("Después de setear PGA, ");
-            read_and_print(register_value);
+            printSerialByte(register_value);
             break;
             //-------------------------------------------------------------------------------------------------------------
 
@@ -196,7 +181,7 @@ void ArduinoUno_ADC_CS1237::setRegister(int registertowrite, int valuetowrite)
                 break;
             }
             Serial.print("Después de setear sps, ");
-            read_and_print(register_value);
+            printSerialByte(register_value);
             break;
             //-------------------------------------------------------------------------------------------------------------
         case 3: //VREF
@@ -212,148 +197,144 @@ void ArduinoUno_ADC_CS1237::setRegister(int registertowrite, int valuetowrite)
             }
             else {}//Other values wont trigger anything
             Serial.print("Después de setear VREF, ");
-            read_and_print(register_value);
+            printSerialByte(register_value);
             break;
     }
 
-    //Shift out 27 (24+3) bits
+    //Shift out 27 (24+3) bits:
     ADCreading = readADC(); //32-bit variable that stores the whole ADC reading
 
-    pinMode(DOUT_DRDY, OUTPUT); //After the 27th SCLK pulse, set DOUT to OUTPUT
+    pinMode(DOUT_DRDY, OUTPUT); //After the 27th SCLK pulse, set DOUT_DRDY to OUTPUT
 
     for (uint8_t i = 0; i < 2; i++) clockCycle(); //Emit 2 pulses (28-29)
 
-    for (uint8_t i = 0; i < 7; i++) //SCLK 30-36, sending READ word
-    {
+    //SCLK 30-36, sending READ word:
+    for (uint8_t i = 0; i < 7; i++) {
         writeBit(((0x65 >> (6 - i)) & 0b00000001) ? HIGH : LOW); //0x65 - WRITE
     }
 
     clockCycle(); //Send the 37th SCLK pulse
 
+    if (DEBUG_CS1237) {
     Serial.print("Registro que se va a escribir: ");
-    read_and_print(register_value);
-
-    for (uint8_t i = 0; i < 8; i++) //38-45 SCLK pulses
-    {
-        writeBit(((register_value >> (7 - i)) & 0b00000001) ? HIGH : LOW); //Write the register values        
-        //Serial.print("Bit que se escribió: ");
-        //read_and_print(((register_value >> (7 - i)) & 0b00000001));
+    printSerialByte(register_value);
     }
 
-    // send 1 clock pulse, to set the Pins of the ADCs to output and pull high
+    //38-45 SCLK pulses:
+    for (uint8_t i = 0; i < 8; i++) {
+        writeBit(((register_value >> (7 - i)) & 0b00000001) ? HIGH : LOW); //Write the register values
+    }
+
+    // Send 1 clock pulse, to set the pins of the ADCs to output and pull high
     clockCycle();
 
-    // At the 46th SCLK, switch DRDY / DOUT to output and pull up DRDY / DOUT. 
+    // At the 46th SCLK, switch DOUT_DRDY to output and pull up DOUT_DRDY:
     pinMode(DOUT_DRDY, INPUT_PULLUP);
     delay(REGISTER_SETTLING_TIME);
 }
 
-void ArduinoUno_ADC_CS1237::setFullRegister(byte register_to_write)
-{
-    //"Arbitrary" register numbers
-    //0 - Channel
-    //1 - PGA
-    //2 - Speed
-    //3 - REF
+void ArduinoUno_ADC_CS1237::setDefaultRegister(void) {
+//Set all registers to a default value (my arbitrarily chosen default values) using setRegister
+    setRegister(0, 0); //CH 0 input
+    setRegister(1, 0); //PGA = 1
+    setRegister(2, 2); //DRATE = 640 Hz
+    setRegister(3, 1); //VREF = DISABLED
+}
 
+void ArduinoUno_ADC_CS1237::setFullRegister(byte register_to_write) {
+// Set all registers to a given value
     //Config register structure
-    //bit 0-1 : Channel. 00 - A, 01 - reserved, 10 - Temperature, 11 - internal short (maybe for offset calibration?)
-    //bit 2-3 : PGA. 00 - 1, 01 - 2, 10 - 64, 11 - 128
-    //bit 4-5 : speed. 00 - 10 Hz, 01 - 40 Hz, 10 - 640 Hz, 11 - 1280 Hz
-    //bit 6   : Reference. Default is enabled which is 0.
-    //bit 7   : reserved, don't touch
+    //bit 0-1 : Channel. 00 - A (Default), 01 - Reserved, 10 - Temperature, 11 - Internal short (maybe for offset calibration?)
+    //bit 2-3 : PGA. 00 - 1, 01 - 2, 10 - 64, 11 - 128 (Default)
+    //bit 4-5 : Speed. 00 - 10 Hz (Default), 01 - 40 Hz, 10 - 640 Hz, 11 - 1280 Hz
+    //bit 6   : Reference. 0 - Enabled (Default), 1 - Disabled
+    //bit 7   : Reserved, don't touch. If needed, set to 0
     //----------------------------------------------------------
 
-    Serial.print("Registro que se va a escribir: ");
+    if (DEBUG_CS1237) Serial.println("Registro que se va a escribir: "+ String(register_to_write, BIN));
 
-    //Shift out 27 (24+3) bits
+    //Shift out 27 (24+3) bits:
     ADCreading = readADC(); //32-bit variable that stores the whole ADC reading
 
-    pinMode(DOUT_DRDY, OUTPUT); //After the 27th SCLK pulse, set DOUT to OUTPUT
-    digitalWrite(DOUT_DRDY, 1);
+    pinMode(DOUT_DRDY, OUTPUT); //After the 27th SCLK pulse, set DOUT_DRDY to OUTPUT
+    digitalWrite(DOUT_DRDY, 1); //Force DOUT_DRDY high
 
     for (uint8_t i = 0; i < 2; i++) clockCycle(); //Emit 2 pulses (28-29)
 
-    for (uint8_t i = 0; i < 7; i++) //SCLK 30-36, sending READ word
-    {
+    //SCLK 30-36, sending READ word:
+    for (uint8_t i = 0; i < 7; i++) {
       writeBit(((0x65 >> (6 - i)) & 0b00000001) ? HIGH : LOW); //0x65 - WRITE
     }
 
     clockCycle(); //Send the 37th SCLK pulse
 
-    for (uint8_t i = 0; i < 8; i++) //38-45 SCLK pulses
-    {
-        writeBit(((register_to_write >> (7 - i)) & 0b00000001) ? HIGH : LOW); //Write the register values        
-        //Serial.print("Bit que se escribió: ");
-        //read_and_print(((register_to_write >> (7 - i)) & 0b00000001) ? HIGH : LOW);
+    //38-45 SCLK pulses:
+    for (uint8_t i = 0; i < 8; i++) {
+        writeBit(((register_to_write >> (7 - i)) & 0b00000001) ? HIGH : LOW); //Write the register values
     }
 
     // send 1 clock pulse, to set the Pins of the ADCs to output and pull high
     clockCycle();
 
-    // At the 46th SCLK, switch DRDY / DOUT to output and pull up DRDY / DOUT. 
+    // At the 46th SCLK, switch DOUT_DRDY to output and pull up DOUT_DRDY
     pinMode(DOUT_DRDY, INPUT_PULLUP);
 }
 
-int ArduinoUno_ADC_CS1237::getRegister() //Reads all registers. The actual values will be fetched with other, simple functions
-{  
+int ArduinoUno_ADC_CS1237::getRegister() {
+//Reads all registers. The actual values will be fetched with other, simple functions
     int registerValue; //Variable that stores the config register value
 
-    //Shift out 27 (24+3) bits
+    //Shift out 27 (24+3) bits:
     ADCreading = readADC(); //32-bit variable that stores the whole ADC reading
     
-    pinMode(DOUT_DRDY, OUTPUT); //After the 27th SCLK pulse, set DOUT to OUTPUT
+    pinMode(DOUT_DRDY, OUTPUT); //After the 27th SCLK pulse, set DOUT_DRDY to OUTPUT
     digitalWrite(DOUT_DRDY, 1);
 
     for (uint8_t i = 0; i < 2; i++) clockCycle(); //Emit 2 pulses (28-29)
 
-    for (uint8_t i = 0; i < 7; i++) //SCLK 30-36, sending READ word
-    {
+    //SCLK 30-36, sending READ word:
+    for (uint8_t i = 0; i < 7; i++) {
       writeBit(((0x56 >> (6 - i)) & 0b00000001) ? HIGH : LOW); //0x56 - READ
     }
 
-    pinMode(DOUT_DRDY, INPUT_PULLUP); //we read, so dout becomes INPUT
+    pinMode(DOUT_DRDY, INPUT_PULLUP); //We read, so DOUT_DRDY becomes INPUT
 
     clockCycle(); //Send the 37th SCLK pulse
     
-    //After the 37th SCLK pulse switch the direction of DOUT. (Moved before 37th SCLK pulse)
+    //After the 37th SCLK pulse switch the direction of DOUT_DRDY. (This was moved before 37th SCLK pulse)
 
     registerValue = 0; //Because we are reading
 
-    for (uint8_t i = 0; i < 8; i++) //38-45 SCLK pulses
-    {
+    //38-45 SCLK pulses:
+    for (uint8_t i = 0; i < 8; i++) {
       registerValue <<= 1;
       registerValue |= readBit();
-
-      //read_and_print(registerValue);
     }
 
     // send 1 clock pulse, to set the Pins of the ADCs to output and pull high
     clockCycle();
 
-    // At the 46th SCLK, switch DRDY / DOUT to output and pull up DRDY / DOUT. 
-    pinMode(DOUT_DRDY, INPUT_PULLUP); //Ready to receive the DRDY to perform a new acquisition
+    // At the 46th SCLK, switch DOUT_DRDY to output and pull up DOUT_DRDY.
+    pinMode(DOUT_DRDY, INPUT_PULLUP); //Ready to receive the DOUT_DRDY to perform a new acquisition
 
     return registerValue;
 }
 
-void ArduinoUno_ADC_CS1237::read_and_printRegister(){
+void ArduinoUno_ADC_CS1237::read_and_printRegister() {
   int regvalues = getRegister(); //Read the register value
   Serial.print("Register ");
-  read_and_print(regvalues);
+  printSerialByte(regvalues);
 }
 
-void ArduinoUno_ADC_CS1237::read_and_print(int value){
+void ArduinoUno_ADC_CS1237::printSerialByte(int value) {
     Serial.print("Value: 0b"); //Print the register value in a convenient 0bxxxxxxxx format
 
-    for (int i = 15; i >= 8; i--) 
-    {
+    for (int i = 15; i >= 8; i--) {
       Serial.print((value >> i) & 1); //Print/shift the register bits until the whole byte is printed
     }
     Serial.print(" "); // Print a newline character
     
-    for (int i = 7; i >= 0; i--) 
-    {
+    for (int i = 7; i >= 0; i--) {
       Serial.print((value >> i) & 1); //Print/shift the register bits until the whole byte is printed
     }
     Serial.println(); // Print a newline character

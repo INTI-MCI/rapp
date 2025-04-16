@@ -158,7 +158,7 @@ class ADC:
             self._serial.flushInput()
 
         cmd = ADC.CMD_TEMPLATE.format(
-            measurement='adc?', ch0=int(self._ch0), ch1=int(self._ch1), samples=n_samples
+            measurement='adc', ch0=int(self._ch0), ch1=int(self._ch1), samples=n_samples
         )
         logger.debug("ADC command: {}".format(cmd))
 
@@ -176,32 +176,33 @@ class ADC:
 
         return data
 
-    def request_temperature(self, flush=True):
+    def request_temperature(self, flush=True, channel=0):
         """Requests temperature measurements
 
                 Args:
                     flush: if true, flushes input from the serial port before taking measurements.
+                    channel: channel 0 - Room temperature, channel 1 - Quartz plate temperature
                 """
         if flush:  # Clear input buffer. Otherwise, messes up values at the beginning.
             self._serial.flushInput()
 
-        cmd = "req-temp?\n"
+        cmd = f"req-temp;{channel};\n"
         logger.debug("ADC command: {}".format(cmd))
 
         self._serial.write(bytes(cmd, 'utf-8'))
         temperature_requested = True
         return temperature_requested
 
-    def read_temperature(self):
+    def read_temperature(self, channel=0):
         """Reads temperature measurements
 
                 Args:
-                    temperature_requested:
+                    channel: channel 0 - Room temperature, channel 1 - Quartz plate temperature
 
                 Returns:
                     the value as a list  [temp].
                 """
-        cmd = "temp?\n"
+        cmd = f"temp;{channel};\n"
         logger.debug("ADC command: {}".format(cmd))
 
         self._serial.write(bytes(cmd, 'utf-8'))
@@ -240,8 +241,8 @@ class ADC:
 
     def _read_bits(self):
         if self._in_bytes:
-            return int.from_bytes(self._serial.read(2), byteorder='big', signed=True)
-            # .read(4) for 24 bit ADC
+            return int.from_bytes(self._serial.read(4), byteorder='big', signed=True)
+            # .read(4) for 24 bit ADC (we receive 32 bits)
         else:
             return int(self._serial.readline().decode().strip())
 

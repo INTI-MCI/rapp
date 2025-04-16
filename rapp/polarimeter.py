@@ -87,7 +87,8 @@ class Polarimeter:
         analyzer: rotating analyzer.
         hwp: rotating half wave plate.
         data_file: handles the file writing.
-        temp_file: handles the temperature file writing.
+        room_temperature_file: handles the room temperature file writing.
+        qp_temperature_file: handles the quartz plate temperature file writing.
         temp_correction_file: temperature correction file.
         norm_det: normalization detector.
         wait: time to wait before reconnecting after motion controller error.
@@ -96,14 +97,15 @@ class Polarimeter:
     def __init__(
         self,
         adc: ADC, analyzer: RotaryStage, hwp: RotaryStage, data_file: DataFile,
-        temp_file: DataFile = None, temp_correction_file: str = TEMP_CORRECTION_FILE,
-        norm_det: PM100 = None, wait: int = 10
+        room_temperature_file: DataFile = None, qp_temperature_file: DataFile = None,
+        temp_correction_file: str = TEMP_CORRECTION_FILE, norm_det: PM100 = None, wait: int = 10
     ):
         self._adc = adc
         self._analyzer = analyzer
         self._hwp = hwp
         self._data_file = data_file
-        self._temp_file = temp_file
+        self._room_temperature_file = room_temperature_file
+        self._qp_temperature_file = qp_temperature_file
         self._temp_correction_file = temp_correction_file
         self._norm_det = norm_det
         self._wait = wait
@@ -157,15 +159,25 @@ class Polarimeter:
         schedule_request = schedule.Scheduler()
         schedule_request.every(temp_wait).seconds.do(self.request_temperature,
                                                      parameters_req_temperature, parameters,
-                                                     temperature_requested=temperature_requested)
+                                                     temperature_requested=temperature_requested,
+                                                     channel=0)
+        schedule_request.every(temp_wait).seconds.do(self.request_temperature,
+                                                     parameters_req_temperature, parameters,
+                                                     temperature_requested=temperature_requested,
+                                                     channel=1)
 
         schedule_read = schedule.Scheduler()
         schedule_read.every(temp_wait).seconds.do(self.read_temperature,
                                                   parameters_req_temperature,
                                                   temperature_requested=temperature_requested,
-                                                  write=True)
+                                                  write=True, channel=0)
+        schedule_read.every(temp_wait).seconds.do(self.read_temperature,
+                                                  parameters_req_temperature,
+                                                  temperature_requested=temperature_requested,
+                                                  write=True, channel=1)
 
-        self._temp_file.open("temperature.csv")
+        self._room_temperature_file.open("room-temperature.csv")
+        self._qp_temperature_file.open("qp-temperature.csv")
         for hwp_position in self._hwp:
             rep = 1
             while rep < reps + 1:
@@ -231,10 +243,10 @@ class Polarimeter:
             yield acquired_samples
 
     def request_temperature(self, parameters_req_temperature={}, parameters={},
-                            temperature_requested=[False]):
+                            temperature_requested=[False], channel=0):
         if not temperature_requested[0]:
-            temperature_requested[0] = self._adc.request_temperature()
-            logger.debug("Request temperature at: {}".format(datetime.datetime.now()))
+            temperature_requested[0] = self._adc.request_temperature(channel)
+            logger.debug("Request temperature for channel {} at: {}".format(channel, datetime.datetime.now()))
 
             parameters_req_temperature["position_r"] = parameters["position"]
             parameters_req_temperature["hwp_position_r"] = parameters["hwp_position"]
@@ -242,10 +254,10 @@ class Polarimeter:
             parameters_req_temperature["temp_correction_r"] = parameters["temp_correction"]
 
     def read_temperature(self, parameters_req_temperature={}, temperature_requested=[True],
-                         write=True):
+                         write=True, channel=0):
         if temperature_requested[0]:
-            acquired_temperature, temperature_requested[0] = self._adc.read_temperature()
-            logger.debug("Read temperature at: {}".format(datetime.datetime.now()))
+            acquired_temperature, temperature_requested[0] = self._adc.read_temperature(channel)
+            logger.debug("Read temperature for channel {} at: {}".format(channel, datetime.datetime.now()))
 
             if parameters_req_temperature["temp_correction_r"] == 'bias':
                 acquired_temperature = self.temperature_bias_correction(
@@ -263,7 +275,10 @@ class Polarimeter:
                     )
 
             if write:
-                self._temp_file.add_row(data)
+                if channel == 0:
+                    self._room_temperature_file.add_row(data)
+                if channel == 1:
+                    self._qp_temperature_file.add_row(data)
             logger.debug("Temperature: {}".format(acquired_temperature))
 
     def temperature_bias_correction(self, filepath=TEMP_CORRECTION_FILE, temperature=[]):
@@ -423,16 +438,24 @@ def run(
         output_dir=measurement_dir
     )
 
-    logger.info("Building TemperatureFile...")
+    logger.info("Building RoomTemperatureFile...")
     temp_header = TEMP_HEADER.format(temp_wait)
-    temp_file = DataFile(
+    room_temperature_file = DataFile(
+        overwrite, header=temp_header, column_names=TEMP_COLUMNS, delimiter=FILE_DELIMITER,
+        output_dir=measurement_dir
+    )
+
+    logger.info("Building QuartzPlateTemperatureFile...")
+    temp_header = TEMP_HEADER.format(temp_wait)
+    qp_temperature_file = DataFile(
         overwrite, header=temp_header, column_names=TEMP_COLUMNS, delimiter=FILE_DELIMITER,
         output_dir=measurement_dir
     )
 
     logger.info("Building Polarimeter...")
     polarimeter = Polarimeter(
-        adc, analyzer, hwp, data_file, temp_file, norm_det=pm100, wait=mc_wait
+        adc, analyzer, hwp, data_file, room_temperature_file, qp_temperature_file, norm_det=pm100,
+        wait=mc_wait
     )
 
     logger.info("Starting measurement...")
