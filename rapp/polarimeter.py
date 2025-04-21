@@ -154,24 +154,26 @@ class Polarimeter:
             logger.warning("Temperature wait time is too short. It will be set to 1 seconds.")
             temp_wait = 1
 
-        temperature_requested = [False]
+        temperature_requested = [False, False]
 
-        schedule_request = schedule.Scheduler()
-        schedule_request.every(temp_wait).seconds.do(self.request_temperature,
+        schedule_request_0 = schedule.Scheduler()
+        schedule_request_1 = schedule.Scheduler()
+        schedule_request_0.every(temp_wait).seconds.do(self.request_temperature,
                                                      parameters_req_temperature, parameters,
                                                      temperature_requested=temperature_requested,
                                                      channel=0)
-        schedule_request.every(temp_wait).seconds.do(self.request_temperature,
+        schedule_request_1.every(temp_wait).seconds.do(self.request_temperature,
                                                      parameters_req_temperature, parameters,
                                                      temperature_requested=temperature_requested,
                                                      channel=1)
 
-        schedule_read = schedule.Scheduler()
-        schedule_read.every(temp_wait).seconds.do(self.read_temperature,
+        schedule_read_0 = schedule.Scheduler()
+        schedule_read_1 = schedule.Scheduler()
+        schedule_read_0.every(temp_wait).seconds.do(self.read_temperature,
                                                   parameters_req_temperature,
                                                   temperature_requested=temperature_requested,
                                                   write=True, channel=0)
-        schedule_read.every(temp_wait).seconds.do(self.read_temperature,
+        schedule_read_1.every(temp_wait).seconds.do(self.read_temperature,
                                                   parameters_req_temperature,
                                                   temperature_requested=temperature_requested,
                                                   write=True, channel=1)
@@ -195,12 +197,14 @@ class Polarimeter:
                         parameters["hwp_position"] = hwp_position
                         parameters["rep"] = rep
 
-                        schedule_read.run_pending()
+                        schedule_read_0.run_pending()
+                        schedule_read_1.run_pending()
 
                         for data_chunk in self.read_samples(samples, chunk_size):
                             self._add_data_to_file(data_chunk, position=position)
 
-                        schedule_request.run_pending()
+                        schedule_request_0.run_pending()
+                        schedule_request_1.run_pending()
 
                 except RotaryStageError as e:
                     logger.warning("Motion Controller error: {}".format(e))
@@ -244,8 +248,8 @@ class Polarimeter:
 
     def request_temperature(self, parameters_req_temperature={}, parameters={},
                             temperature_requested=[False], channel=0):
-        if not temperature_requested[0]:
-            temperature_requested[0] = self._adc.request_temperature(channel)
+        if not temperature_requested[channel]:
+            temperature_requested[channel] = self._adc.request_temperature(channel)
             logger.debug("Request temperature for channel {} at: {}".format(channel, datetime.datetime.now()))
 
             parameters_req_temperature["position_r"] = parameters["position"]
@@ -255,8 +259,8 @@ class Polarimeter:
 
     def read_temperature(self, parameters_req_temperature={}, temperature_requested=[True],
                          write=True, channel=0):
-        if temperature_requested[0]:
-            acquired_temperature, temperature_requested[0] = self._adc.read_temperature(channel)
+        if temperature_requested[channel]:
+            acquired_temperature, temperature_requested[channel] = self._adc.read_temperature(channel)
             logger.debug("Read temperature for channel {} at: {}".format(channel, datetime.datetime.now()))
 
             if parameters_req_temperature["temp_correction_r"] == 'bias':
@@ -277,7 +281,7 @@ class Polarimeter:
             if write:
                 if channel == 0:
                     self._room_temperature_file.add_row(data)
-                if channel == 1:
+                elif channel == 1:
                     self._qp_temperature_file.add_row(data)
             logger.debug("Temperature: {}".format(acquired_temperature))
 
