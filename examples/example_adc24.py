@@ -43,7 +43,18 @@ def wait_for_connection(self):
         output = self.readline()
         end = time.time()
         elapsed_time = end - start
+        print('output: ', output)
         if output == b'yes\r\n':
+            line = self.readline()
+            self.reset_input_buffer()
+            print("Line: {}".format(line))
+            # if self.inWaiting():
+            #     print("Connection opened, buffer: {}".format(self.inWaiting()))
+            #     self.reset_input_buffer()
+            #     print("Connection opened, buffer: {}".format(self.inWaiting()))
+            #     buf = self.read(self.inWaiting())
+            #     line = self.readline()
+            #     print("Buffer: {}, line: {}".format(buf, line))
             break
         elif output == b'no\r\n':
             pass
@@ -128,11 +139,14 @@ def main(n_samples=5, ch0=1, ch1=1):
     adc = get_serial_connection(ADC_WIN_DEVICE, baudrate=ADC_BAUDRATE, timeout=ADC_TIMEOUT)
     # adc = ADC(resolve_adc_device(), timeout_open=ADC_TIMEOUT_OPEN)#, baudrate=ADC_BAUDRATE, timeout=ADC_TIMEOUT)
     wait_for_connection(adc)
-
-    adc.flushInput()
-
+    # buf = adc.readline()
+    # print(buf)
+    adc.reset_input_buffer()
+    # time.sleep(5)
+    # buf2 = adc.readline()
+    # print(buf2)
     adc.write(bytes(CMD_TEMPLATE.format(measurement='adc', ch0=ch0, ch1=ch1, samples=n_samples).encode('utf-8')))
-
+    # adc.write(bytes('adc_n_dt;{};500;\n'.format(n_samples).encode('utf-8')))
     none_array0 = np.full(n_samples, None)
     none_array1 = np.full(n_samples, None)
     datos0 = []
@@ -148,23 +162,9 @@ def main(n_samples=5, ch0=1, ch1=1):
         datos1.append(channel1)
         datos1.append(int.from_bytes(channel1, byteorder='big', signed=True))
 
-    print("{} = ({})".format('CH0', datos0))
-    print("{} = ({})".format('CH1', datos1))
+    print("{} = ({})".format('CH0', datos0)) if ch0 else None
+    print("{} = ({})".format('CH1', datos1)) if ch1 else None
 
-    # print("Acquiring...")
-    # data = acquire(adc, n_samples=n_samples, _ch0=ch0, _ch1=ch1)
-    # sps = n_samples / elapsed_time
-    #
-    # channels_names_tuple = "({})".format(", ".join(data.keys()))
-    #
-    # values = list(zip(*data.values()))
-    #
-    # for d in values:
-    #     print("{} = {}".format(channels_names_tuple, d))
-    #
-    # print("Samples per second: {}".format(sps))
-    # print("Number of measurements: {}".format(len(data)))
-    #
     adc.close()
 
 

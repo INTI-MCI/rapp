@@ -31,10 +31,10 @@ GAINS = {
 }
 
 PGA = {
-    1: (1.24, 0.00124/2**23),
-    2: (0.62, 0.00062/2**23),
-    64: (0.019375, 0.000019375/2**23),
-    128: (0.0096875, 0.0000096875/2**23)
+    1: (1.24, 1240/2**23),
+    2: (0.62, 620/2**23),
+    64: (0.019375, 19.375/2**23),
+    128: (0.0096875, 9.6875/2**23)
 }
 
 MESSAGE_CHANNELS = "Both ch0 and ch1 are False. Please set at least one of them as True."
@@ -129,6 +129,9 @@ class ADC:
             end = time.time()
             elapsed_time = end - start
             if output == b'yes\r\n':
+                line = self._serial.readline()
+                self._serial.reset_input_buffer()  # está un poco de más
+                logger.info("Line in input buffer after making connection: {}".format(line))
                 break
             elif output == b'no\r\n':
                 pass
@@ -162,7 +165,9 @@ class ADC:
             raise ADCError(MESSAGE_SAMPLES.format(n_samples))
 
         if flush:  # Clear input buffer. Otherwise messes up values at the beginning.
-            self._serial.flushInput()
+            if self._serial.inWaiting():
+                self._serial.readline()  # With TIMEOUT = 2
+            self._serial.reset_input_buffer()
 
         cmd = ADC.CMD_TEMPLATE.format(
             measurement='adc', ch0=int(self._ch0), ch1=int(self._ch1), samples=n_samples
@@ -237,7 +242,7 @@ class ADC:
         if name == 'CH0' or name == 'CH1':
             for _ in track(range(n_samples), description=desc, disable=not self.progressbar):
                 try:
-                    data.append(self._read_bits())# (self._bits_to_volts(self._read_bits()))
+                    data.append(self._bits_to_volts(self._read_bits()))
                 except (ValueError, UnicodeDecodeError) as e:
                     logger.warning("Error while reading from ADC: {}".format(e))
 
@@ -249,7 +254,7 @@ class ADC:
     def _read_bits(self):
         if self._in_bytes:
             datos = self._serial.read(4)
-            logger.info(datos)
+            logger.debug(datos)
             return int.from_bytes(datos, byteorder='big', signed=True)
             # .read(2) for 16 bit ADC
         else:

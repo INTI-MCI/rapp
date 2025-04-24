@@ -122,14 +122,14 @@ union writable_float {
 };
 
 
-float read_n_samples_from_channel(unsigned long n_samples, byte channel) {
+float read_n_samples_from_channel(unsigned long n_samples, bool channel) {
     float starttime = millis();
     int32_t data = 0;
 
     unsigned long i = 0;
     while (i < n_samples) {
-        if (channel == 0) int32_t data = adc0.readADC();
-        else if (channel == 1) int32_t data = adc1.readADC();
+        if (channel) data = adc1.readADC();
+        else data = adc0.readADC();
         serial_write_32bit(data);
         i = i + 1;
     };
