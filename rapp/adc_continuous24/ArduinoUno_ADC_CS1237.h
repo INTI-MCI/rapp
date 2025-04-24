@@ -1,6 +1,6 @@
 #ifndef ArduinoUno_ADC_CS1237_h
 #define ArduinoUno_ADC_CS1237_h
-#define DEBUG_CS1237 1 // Set to 0/1 to disable/enable debug messages
+#define DEBUG_CS1237 0 // Set to 0/1 to disable/enable debug messages
 #define OFF_ON_SETTLING_TIME 1000
 #define REGISTER_SETTLING_TIME 350
 

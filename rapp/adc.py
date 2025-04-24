@@ -30,6 +30,13 @@ GAINS = {
     GAIN_SIXTEEN: (0.256, 0.0078125),
 }
 
+PGA = {
+    1: (1.24, 0.00124/2**23),
+    2: (0.62, 0.00062/2**23),
+    64: (0.019375, 0.000019375/2**23),
+    128: (0.0096875, 0.0000096875/2**23)
+}
+
 MESSAGE_CHANNELS = "Both ch0 and ch1 are False. Please set at least one of them as True."
 MESSAGE_SAMPLES = "You must ask for a positive number of samples... Got {}"
 
@@ -43,7 +50,7 @@ class ADC:
 
     Args:
         connection: a serial connection to the AD.
-        gain: the gain to use. One of [GAIN_TWOTHIRDS, GAIN_ONE, ...].
+        gain: the gain to use. One of GAINS for 16 bit adc or PGA for 24 bit adc.
         ch0: if true, measures the channel 0.
         ch1: if true, measures the channel 1.
         in_bytes: if true, assumes incoming data is in bytes.
@@ -62,8 +69,9 @@ class ADC:
     TIMEOUT_OPEN = 5
 
     SAMPLE_RATE = 840
+    SAMPLE_RATE_24 = 640
 
-    def __init__(self, serial, gain=GAIN_ONE, ch0=True, ch1=True, in_bytes=True, progressbar=True,
+    def __init__(self, serial, gain=1, ch0=True, ch1=True, in_bytes=True, progressbar=True,
                  timeout_open=TIMEOUT_OPEN):
         self._serial = serial
         self._in_bytes = in_bytes
@@ -72,11 +80,10 @@ class ADC:
         self.progressbar = ch0 != ch1
         self.timeout_open = timeout_open
         self.temperature_requested = False
-        self.max_V, self._multiplier_mV = GAINS[gain]  # 5, 10/2**24 to try 24 bit ADC
+        self.max_V, self._multiplier_mV = PGA[gain]  # 5, 10/2**24 to try 24 bit ADC
 
         if not (ch0 or ch1):
             raise ADCError(MESSAGE_CHANNELS)
-
         # Arduino resets when a new serial connection is made.
         # We need to wait, otherwise we don't receive anything.
         self.wait_for_connection()
@@ -218,7 +225,7 @@ class ADC:
 
     def measurement_time(self, samples):
         """Returns the time (in seconds) a measurement will take for given number of samples."""
-        return samples * self.active_channels() / self.SAMPLE_RATE
+        return samples * self.active_channels() / self.SAMPLE_RATE_24
 
     def close(self):
         self._serial.close()
@@ -230,7 +237,7 @@ class ADC:
         if name == 'CH0' or name == 'CH1':
             for _ in track(range(n_samples), description=desc, disable=not self.progressbar):
                 try:
-                    data.append(self._bits_to_volts(self._read_bits()))
+                    data.append(self._read_bits())# (self._bits_to_volts(self._read_bits()))
                 except (ValueError, UnicodeDecodeError) as e:
                     logger.warning("Error while reading from ADC: {}".format(e))
 
@@ -241,8 +248,10 @@ class ADC:
 
     def _read_bits(self):
         if self._in_bytes:
-            return int.from_bytes(self._serial.read(4), byteorder='big', signed=True)
-            # .read(4) for 24 bit ADC (we receive 32 bits)
+            datos = self._serial.read(4)
+            logger.info(datos)
+            return int.from_bytes(datos, byteorder='big', signed=True)
+            # .read(2) for 16 bit ADC
         else:
             return int(self._serial.readline().decode().strip())
 

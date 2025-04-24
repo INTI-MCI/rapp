@@ -6,7 +6,7 @@
 const unsigned short int SERIAL_BAUDRATE = 57600;
 
 ArduinoUno_ADC_CS1237 adc0(13,19);// Declare the object to work with the ArduinoUno_ADC_CS1237 library functions, specifying the pins (SCLK, DATA).
-ArduinoUno_ADC_CS1237 adc1(9, 6);
+ArduinoUno_ADC_CS1237 adc1(11, 9);
 
 const byte register_to_write = 0b01010000; // CH 0 input, PGA = 1, DRATE = 640 Hz, VREF = DISABLED
 
@@ -19,7 +19,8 @@ const int dataPin1 = 5;   // Pin where quartz plate temperature sensors 1-Wire b
 OneWire oneWire1(dataPin1);
 DallasTemperature sensorDS18B20_1(&oneWire1);
 //Falta averiguar la dirección del otro sensor!!
-DeviceAddress plateTemp = {0x28, 0xCF, 0x42, 0x76, 0xE0, 0x01, 0x3C, 0x70};
+
+DeviceAddress plateTemp = {0x90, 0x01, 0x55, 0x05, 0x7F, 0xA5, 0xA5, 0x66};
 
 void setup(void) {
     Serial.begin(SERIAL_BAUDRATE);
@@ -98,8 +99,10 @@ void serial_write_32bit(int32_t data) {
     Serial.print(' ');
     serial_print_byte_bin(buffer[3]);
     //int32_t data_signed = data;
-    char data_signed_str[30];
-    sprintf(data_signed_str, " ( %ld )", data);
+    char float_str[10];
+    char data_signed_str[60];
+    dtostrf((float) data/83886.08, 5, 2, float_str);
+    sprintf(data_signed_str, " ( %ld , %s %%)", data, float_str);
     Serial.print(data_signed_str);
     Serial.println();
     Serial.println();
@@ -126,7 +129,7 @@ float read_n_samples_from_channel(unsigned long n_samples, byte channel) {
     unsigned long i = 0;
     while (i < n_samples) {
         if (channel == 0) int32_t data = adc0.readADC();
-        if (channel == 1) int32_t data = adc1.readADC();
+        else if (channel == 1) int32_t data = adc1.readADC();
         serial_write_32bit(data);
         i = i + 1;
     };
@@ -139,22 +142,24 @@ float read_n_samples_from_channel(unsigned long n_samples, byte channel) {
 
 void request_temp(String channel) {
     bool ch = parse_bool(channel);
-    if (ch == 0) sensorDS18B20_0.requestTemperatures();
-    if (ch == 1) sensorDS18B20_1.requestTemperatures();
+    if (ch) sensorDS18B20_1.requestTemperatures();
+    else sensorDS18B20_0.requestTemperatures();
+    
 }
 
 float read_temp(String channel) {
     bool ch = parse_bool(channel);
     float temp;
-    if (ch == 0) temp = sensorDS18B20_0.getTempC(roomTemp);
-    if (ch == 1) temp = sensorDS18B20_1.getTempC(plateTemp);
+    if (ch) temp = sensorDS18B20_1.getTempC(plateTemp);
+    else temp = sensorDS18B20_0.getTempC(roomTemp);
     return temp;
 }
 
 void read_and_send_temp(String channel) {
   writable_float temp;
   temp.f = read_temp(channel);
-  Serial.write(temp.bytes, 4);
+  if (DEBUG_CS1237) Serial.println(temp.f);
+  else Serial.write(temp.bytes, 4);
 }
 
 float read_n_samples(unsigned long n_samples, bool ch0, bool ch1) {
@@ -260,7 +265,7 @@ void process_serial_input() {
     if (Serial.available() > 0) {
         String input_command = Serial.readStringUntil('\n');
         String command_name = input_command.substring(0,input_command.indexOf(";"));
-        if (command_name == "adc?") { // Command: "adc;ch0;ch1;nsamples;"
+        if (command_name == "adc") { // Command: "adc;ch0;ch1;nsamples;"
             String command_args = getArgs(input_command);
             float elapsedtime;
             unsigned short n_channels;

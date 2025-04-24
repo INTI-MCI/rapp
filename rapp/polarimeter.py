@@ -322,6 +322,7 @@ class Polarimeter:
         logger.debug("Writing data to file...")
         for row in data:
             self._data_file.add_row([position] + list(row))
+            logger.info(data)
 
     def _handle_motion_controller_error(self, hwp_position):
         logger.warning("Waiting {} seconds...".format(self._wait))
