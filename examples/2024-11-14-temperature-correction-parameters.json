@@ -1,0 +1,1 @@
+{"comment": {"comment": "Bias and linear correction parameters for DS18B20 sensor used in polarimeter room temperature measurements obtained from measurements with (calibrated sensors) the 14/11/2024"}, "correction_parameters": {"bias": "0.21817126389493027", "A": "0.7847571698821061", "b": "4.432277251485473"}}
