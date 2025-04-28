@@ -66,7 +66,7 @@ class ADC:
     PORT = '/dev/ttyACM0'
     BAUDRATE = 57600
     TIMEOUT = 2
-    TIMEOUT_OPEN = 5
+    TIMEOUT_OPEN = 7
 
     SAMPLE_RATE = 840
     SAMPLE_RATE_24 = 640
@@ -130,8 +130,10 @@ class ADC:
             elapsed_time = end - start
             if output == b'yes\r\n':
                 line = self._serial.readline()
-                self._serial.reset_input_buffer()  # está un poco de más
-                logger.info("Line in input buffer after making connection: {}".format(line))
+                logger.info("Data in input buffer after making connection: {}".format(line))
+                # line2 = self._serial.readline()
+                # logger.info("Data 2 in input buffer after making connection: {}".format(line2))
+                self._serial.reset_input_buffer()  # está un poco de más, lo dejo hasta saber mas de la comunicación
                 break
             elif output == b'no\r\n':
                 pass
@@ -165,8 +167,6 @@ class ADC:
             raise ADCError(MESSAGE_SAMPLES.format(n_samples))
 
         if flush:  # Clear input buffer. Otherwise messes up values at the beginning.
-            if self._serial.inWaiting():
-                self._serial.readline()  # With TIMEOUT = 2
             self._serial.reset_input_buffer()
 
         cmd = ADC.CMD_TEMPLATE.format(

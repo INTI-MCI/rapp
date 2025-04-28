@@ -13,7 +13,7 @@ ADC_WIN_DEVICE = 'COM3'
 ADC_LINUX_DEVICE = '/dev/ttyACM0'
 ADC_BAUDRATE = 57600
 ADC_TIMEOUT = 2
-ADC_TIMEOUT_OPEN = 5
+ADC_TIMEOUT_OPEN = 7
 
 ADC_MULTIPLIER_mV = 0.125
 ADC_WAIT_TIME = 5
@@ -38,6 +38,7 @@ def wait_for_connection(self):
     start = time.time()
     elapsed_time = 0
     queries = 0
+    connection = True
     while elapsed_time < ADC_TIMEOUT_OPEN:
         self.write(b'ready?\n')
         output = self.readline()
@@ -45,14 +46,16 @@ def wait_for_connection(self):
         elapsed_time = end - start
         print('output: ', output)
         if output == b'yes\r\n':
-            line = self.readline()
-            self.reset_input_buffer()
-            print("Line: {}".format(line))
-            # if self.inWaiting():
+            line1 = self.readline()
+            # self.reset_input_buffer()
+            print("Line 1 left in input buffer: {}".format(line1))
+            line2 = self.readline()
+            print("Line 2 left in input buffer: {}".format(line2))
+            # if self.in_waiting():
             #     print("Connection opened, buffer: {}".format(self.inWaiting()))
             #     self.reset_input_buffer()
             #     print("Connection opened, buffer: {}".format(self.inWaiting()))
-            #     buf = self.read(self.inWaiting())
+            #     buf = self.read(self.in_waiting())
             #     line = self.readline()
             #     print("Buffer: {}, line: {}".format(buf, line))
             break
@@ -66,9 +69,11 @@ def wait_for_connection(self):
             "Timeout while waiting for connection to open. Timeout = {} seconds with"
             " {} failed queries.".format(ADC_TIMEOUT_OPEN, queries)
         )
+        connection = False
     print(
         "Connection opened in {} seconds with {} queries.".format(elapsed_time, queries)
     )
+    return connection
 
 
 def acquire(self, n_samples, _ch0=True, _ch1=True, flush=True):
@@ -86,7 +91,7 @@ def acquire(self, n_samples, _ch0=True, _ch1=True, flush=True):
     """
 
     if flush:  # Clear input buffer. Otherwise messes up values at the beginning.
-        self.flushInput()
+        self.reset_input_buffer()
 
     cmd = CMD_TEMPLATE.format(
         measurement='adc', ch0=int(_ch0), ch1=int(_ch1), samples=n_samples
@@ -138,34 +143,39 @@ def main(n_samples=5, ch0=1, ch1=1):
     print("Instantiating ADC...")
     adc = get_serial_connection(ADC_WIN_DEVICE, baudrate=ADC_BAUDRATE, timeout=ADC_TIMEOUT)
     # adc = ADC(resolve_adc_device(), timeout_open=ADC_TIMEOUT_OPEN)#, baudrate=ADC_BAUDRATE, timeout=ADC_TIMEOUT)
-    wait_for_connection(adc)
-    # buf = adc.readline()
-    # print(buf)
-    adc.reset_input_buffer()
-    # time.sleep(5)
-    # buf2 = adc.readline()
-    # print(buf2)
-    adc.write(bytes(CMD_TEMPLATE.format(measurement='adc', ch0=ch0, ch1=ch1, samples=n_samples).encode('utf-8')))
-    # adc.write(bytes('adc_n_dt;{};500;\n'.format(n_samples).encode('utf-8')))
-    none_array0 = np.full(n_samples, None)
-    none_array1 = np.full(n_samples, None)
-    datos0 = []
-    datos1 = []
+    connection = wait_for_connection(adc)
+    if not connection:
+        adc.close()
+        return
+    else:
+        print("Connection opened.")
+        # buf = adc.readline()
+        # print(buf)
+        adc.reset_input_buffer()
+        # time.sleep(5)
+        # buf2 = adc.readline()
+        # print(buf2)
+        adc.write(bytes(CMD_TEMPLATE.format(measurement='adc', ch0=ch0, ch1=ch1, samples=n_samples).encode('utf-8')))
+        # adc.write(bytes('adc_n_dt;{};500;\n'.format(n_samples).encode('utf-8')))
+        none_array0 = np.full(n_samples, None)
+        none_array1 = np.full(n_samples, None)
+        datos0 = []
+        datos1 = []
 
-    for i in range(n_samples):
-        channel0 = adc.read(4) if ch0 else none_array0
-        datos0.append(channel0)
-        datos0.append(int.from_bytes(channel0, byteorder='big', signed=True))
+        for i in range(n_samples):
+            channel0 = adc.read(4) if ch0 else none_array0
+            datos0.append(channel0)
+            datos0.append(int.from_bytes(channel0, byteorder='big', signed=True))
 
-    for i in range(n_samples):
-        channel1 = adc.read(4) if ch1 else none_array1
-        datos1.append(channel1)
-        datos1.append(int.from_bytes(channel1, byteorder='big', signed=True))
+        for i in range(n_samples):
+            channel1 = adc.read(4) if ch1 else none_array1
+            datos1.append(channel1)
+            datos1.append(int.from_bytes(channel1, byteorder='big', signed=True))
 
-    print("{} = ({})".format('CH0', datos0)) if ch0 else None
-    print("{} = ({})".format('CH1', datos1)) if ch1 else None
+        print("{} = ({})".format('CH0', datos0)) if ch0 else None
+        print("{} = ({})".format('CH1', datos1)) if ch1 else None
 
-    adc.close()
+        adc.close()
 
 
 if __name__ == '__main__':
