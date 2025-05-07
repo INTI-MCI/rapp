@@ -1,5 +1,6 @@
 import re
 import logging
+import os
 
 import pandas as pd
 import numpy as np
@@ -21,6 +22,8 @@ COLUMN_CH1 = 'CH1'
 COLUMN_CH2 = 'NORM'
 COLUMN_ANGLE = 'ANGLE'
 ALLOWED_COLUMNS = [COLUMN_ANGLE, COLUMN_CH0, COLUMN_CH1, COLUMN_CH2]
+COLUMN_TEMP = 'TEMPERATURE'
+ALLOWED_COLUMNS_TEMP = [COLUMN_ANGLE, COLUMN_TEMP, 'HWP-POS', 'REP']
 
 DELIMITER = ","
 PARAMETER_STRING = "cycles={}, step={}°, samples={}."
@@ -49,8 +52,9 @@ class Measurement:
     Args:
         data: the data of the measurement.
     """
-    def __init__(self, data: pd.DataFrame, cycles=None, step=None, samples=None):
+    def __init__(self, data: pd.DataFrame, cycles=None, step=None, samples=None, temperature=None):
         self._data = data
+        self._temperature = temperature
 
         self._cycles = cycles
         self._step = step
@@ -81,7 +85,15 @@ class Measurement:
             if data[COLUMN_CH1].isnull().values.any():
                 data[COLUMN_CH1] = data[COLUMN_CH0]
 
-        return cls(data, **parse_input_parameters_from_filepath(filepath))
+        """Search for a temperature.csv file within the same folder"""
+        temperature_file = os.path.join(os.path.dirname(filepath), "temperature.csv")
+        if os.path.exists(temperature_file):
+            temperature = pd.read_csv(temperature_file, sep=sep, skip_blank_lines=True,
+                                      comment='#', encoding=ct.ENCONDIG)
+        else:
+            temperature = None
+
+        return cls(data, **parse_input_parameters_from_filepath(filepath), temperature=temperature)
 
     @classmethod
     def simulate(
@@ -251,3 +263,15 @@ class Measurement:
 
         m2._data[COLUMN_ANGLE] += angles[last_multiple_index - 1] + float(self._step)
         self._data = pd.concat([self._data, m2._data], ignore_index=True)
+
+    @property
+    def temperature(self):
+        return self._temperature[COLUMN_TEMP] if self._temperature is not None else None
+
+    @property
+    def angle_temp(self):
+        return self._temperature[COLUMN_ANGLE] if self._temperature is not None else None
+
+    @property
+    def angles(self):
+        return self._data[COLUMN_ANGLE]

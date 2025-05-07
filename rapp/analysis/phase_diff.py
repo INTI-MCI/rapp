@@ -1,11 +1,13 @@
 import os
 import logging
+import glob
 
 import numpy as np
 
 from matplotlib import pyplot as plt
 from scipy.optimize import curve_fit  # noqa
 from scipy.special import gamma
+from scipy.signal import hilbert
 
 
 from rapp import constants as ct
@@ -28,7 +30,8 @@ def phase_difference_from_folder(
 ):
     logger.info("Calculating phase difference for {}...".format(folder))
 
-    files = sorted([os.path.join(folder, x) for x in os.listdir(folder) if x.endswith("csv")])
+    files = sorted([os.path.join(folder, x) for x in os.listdir(folder) if x.endswith("csv") and
+                    x != "temperature.csv"])
     if not files:
         raise ValueError("Folder does not contain measurements!")
 
@@ -93,12 +96,16 @@ def phase_difference_from_folder(
         logger.info("STD phase of CH1: {}".format(std_phi2))
 
     mean_phase_diff = np.mean(phase_diffs)
-    std_phase_diff = np.std(phase_diffs, ddof=1)
+    n = len(phase_diffs)
+    std_phase_diff = np.std(phase_diffs, ddof=1) if n > 1 else 0.0
     # Standard deviation of the sample standard deviation.
     # The latter should be np.std(phase_diffs, ddof=1).
     # See https://stats.stackexchange.com/questions/631/standard-deviation-of-standard-deviation
-    n = len(phase_diffs)
-    std_std = std_phase_diff * np.sqrt(1 - 2 / (n - 1) * (gamma(n / 2) / gamma((n - 1) / 2)) ** 2)
+    if n > 1:
+        std_std = std_phase_diff * np.sqrt(1 - 2 / (n - 1) * (gamma(n / 2) / gamma((n - 1) / 2))
+                                           ** 2)
+    else:
+        std_std = 0.0
 
     logger.info("Mean phase difference: {}".format(mean_phase_diff))
     logger.info("STD phase difference: {:.5f} ± {:.5f} (k=1)".format(std_phase_diff, std_std))
@@ -208,7 +215,8 @@ def phase_difference_from_file(
 
 
 def phase_difference(
-    measurement: Measurement, method, filename=None, norm=False, show=False, **kwargs
+    measurement: Measurement, method, filename=None, norm=False, show=False, normplot=False,
+    **kwargs
 ):
     xs, s1, s2, s1err, s2err, res = measurement.phase_diff(method=method, norm=norm, **kwargs)
 
@@ -221,13 +229,24 @@ def phase_difference(
     logger.info("Detected phase difference (analyzer angles): {}".format(log_phi))
 
     if method in ["ODR", "NLS", "WNLS", "DFT", "ANNEAL"] and (filename or show):
-        plot_phase_difference((xs, s1, s2, s1err, s2err, res), filename=filename, show=show)
+        plot_phase_difference((xs, s1, s2, s1err, s2err, res), filename=filename, show=show,
+                              norm=normplot)
 
     return (xs, s1, s2, s1err, s2err, res)
 
 
-def plot_phase_difference(phase_diff_result, work_dir=ct.WORK_DIR, filename=None, show=False):
+def plot_phase_difference(phase_diff_result, work_dir=ct.WORK_DIR, filename=None, show=False,
+                          norm=False):
     xs, s1, s2, s1err, s2err, res = phase_diff_result
+
+    if norm:
+        s1max, s2max = s1.max(), s2.max()
+        s1 /= s1max
+        s2 /= s2max
+        s1err /= s1max
+        s2err /= s2max
+        res.fits1 /= s1max
+        res.fits2 /= s2max
 
     output_folder = os.path.join(ct.WORK_DIR, ct.OUTPUT_FOLDER_PLOTS)
     create_folder(output_folder)
@@ -237,7 +256,7 @@ def plot_phase_difference(phase_diff_result, work_dir=ct.WORK_DIR, filename=None
     plot = Plot(ylabel=ct.LABEL_VOLTAGE, xlabel=ct.LABEL_ANGLE, folder=output_folder)
 
     markevery = int(len(xs) * 0.02)
-    plot.the_ax.set_xlim(140, 360)
+    # plot.the_ax.set_xlim(140, 360)
 
     d1 = plot.add_data(
         xs,
@@ -334,3 +353,81 @@ def plot_phase_difference(phase_diff_result, work_dir=ct.WORK_DIR, filename=None
         plot.show()
 
     plot.close()
+
+
+def instantaneous_phase_difference(
+    filepath, norm=False, fill_none=False, plot=False, show=False, **kwargs
+):
+    folders = [os.path.join(filepath, f) for f in os.listdir(filepath) if os.path.isdir(
+        os.path.join(filepath, f))]
+    if len(folders) != 2:
+        ValueError("Folder {} does not contain two folders.".format(filepath))
+    files_i = glob.glob(f"{folders[0]}/*.csv")
+    files_i = [f for f in files_i if not f.endswith("temperature.csv")]
+    files_i = sorted(files_i)
+    files_f = glob.glob(f"{folders[1]}/*.csv")
+    files_f = [f for f in files_f if not f.endswith("temperature.csv")]
+    files_f = sorted(files_f)
+
+    for file_i, file_f in zip(files_i, files_f):
+        measurement_i = Measurement.from_file(file_i, fill_none=fill_none)
+        measurement_f = Measurement.from_file(file_f, fill_none=fill_none)
+
+        xs_i, s1_i, s2_i, s1_sigma_i, s2_sigma_i = measurement_i.average_data(norm=norm)
+        xs_f, s1_f, s2_f, s1_sigma_f, s2_sigma_f = measurement_f.average_data(norm=norm)
+
+        analytic_s1_i = hilbert(s1_i - s1_i.mean())
+        inst_phase1_i = np.angle(analytic_s1_i)
+        analytic_s2_i = hilbert(s2_i - s2_i.mean())
+        inst_phase2_i = np.angle(analytic_s2_i)
+        inst_phase_diff_i = np.exp(1j * inst_phase2_i) / np.exp(1j * inst_phase1_i)
+        inst_phase_diff_i = np.angle(inst_phase_diff_i)
+
+        analytic_s1_f = hilbert(s1_f - s1_f.mean())
+        inst_phase1_f = np.angle(analytic_s1_f)
+        analytic_s2_f = hilbert(s2_f - s2_f.mean())
+        inst_phase2_f = np.angle(analytic_s2_f)
+        inst_phase_diff_f = np.exp(1j * inst_phase2_f) / np.exp(1j * inst_phase1_f)
+        inst_phase_diff_f = np.angle(inst_phase_diff_f)
+
+        fig, axs = plt.subplots(1, 3)
+        axs[0].plot(xs_i, s1_i, 'r', label="CH0-NoQuartz")
+        axs[0].plot(xs_i, s2_i, 'r--', label="CH1-NoQuartz")
+        axs[0].plot(xs_i, s1_f, 'k', label="CH0-Quartz")
+        axs[0].plot(xs_i, s2_f, 'k--', label="CH1-Quartz")
+        axs[0].legend(loc="upper left", frameon=False)
+        axs[1].plot(xs_i, np.rad2deg(inst_phase_diff_f - inst_phase_diff_i))
+        axs[1].set_title("Phase difference")
+        axs[2].plot(xs_i, inst_phase_diff_i - inst_phase_diff_i.mean())
+        axs[2].plot(xs_i, inst_phase_diff_f - inst_phase_diff_f.mean())
+        axs[2].set_title("Phase difference (no mean)")
+
+        unwrap_inst_phase1_i = np.unwrap(inst_phase1_i)
+        unwrap_inst_phase2_i = np.unwrap(inst_phase2_i)
+        coef_lin_1i = np.polyfit(xs_i, unwrap_inst_phase1_i, deg=1)
+        coef_lin_2i = np.polyfit(xs_i, unwrap_inst_phase2_i, deg=1)
+        lin_1i = np.polyval(coef_lin_1i, xs_i)
+        lin_2i = np.polyval(coef_lin_2i, xs_i)
+        const_inst_phase1_i = unwrap_inst_phase1_i - lin_1i
+        const_inst_phase2_i = unwrap_inst_phase2_i - lin_2i
+
+        unwrap_inst_phase1_f = np.unwrap(inst_phase1_f)
+        unwrap_inst_phase2_f = np.unwrap(inst_phase2_f)
+        coef_lin_1f = np.polyfit(xs_f, unwrap_inst_phase1_f, deg=1)
+        coef_lin_2f = np.polyfit(xs_f, unwrap_inst_phase2_f, deg=1)
+        lin_1f = np.polyval(coef_lin_1f, xs_f)
+        lin_2f = np.polyval(coef_lin_2f, xs_f)
+        const_inst_phase1_f = unwrap_inst_phase1_f - lin_1f
+        const_inst_phase2_f = unwrap_inst_phase2_f - lin_2f
+
+        inst_diff_objeto = np.angle(np.exp(1j * inst_phase2_f) / np.exp(1j * inst_phase2_i))
+
+        fig, axs = plt.subplots(1, 2)
+        axs[0].plot(xs_i, const_inst_phase1_i, 'r', label="CH0-NoQuartz")
+        axs[0].plot(xs_i, const_inst_phase2_i, 'r--', label="CH1-NoQuartz")
+        axs[0].plot(xs_i, const_inst_phase1_f, 'k', label="CH0-Quartz")
+        axs[0].plot(xs_i, const_inst_phase2_f, 'k--', label="CH1-Quartz")
+        axs[0].legend(loc="upper left", frameon=False)
+        axs[1].plot(xs_i, inst_diff_objeto)
+        axs[1].set_title("Phase difference objeto")
+        plt.show()
