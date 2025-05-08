@@ -4,11 +4,22 @@ import numpy as np
 
 from rapp import constants as ct
 from rapp.utils import create_folder
-from rapp.measurement import Measurement
+from rapp.measurement import Measurement, process_temperature_data
 from rapp.analysis.plot import Plot
 
 
 logger = logging.getLogger(__name__)
+
+
+def plot_temperature(filepath, **kwargs):
+    temperature = process_temperature_data(filepath)
+
+    plot = Plot(ylabel=ct.LABEL_TEMP, xlabel=ct.LABEL_REP, folder=ct.WORK_DIR)
+    plot.set_title("Temperature")
+    plot.add_data(temperature[0], style='-', color='b', lw=1.5, label='Mean')
+    plot.add_data(temperature[1], style=':', color='k', lw=1.5, label='Max')
+    plot.add_data(temperature[2], style=':', color='k', lw=1.5, label='Min')
+    plot.show()
 
 
 def plot_raw_from_file(filepath, work_dir=ct.WORK_DIR, **kwargs):
