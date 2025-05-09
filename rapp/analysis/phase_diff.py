@@ -12,8 +12,8 @@ from scipy.signal import hilbert
 
 from rapp import constants as ct
 from rapp.analysis.plot import Plot
-from rapp.measurement import Measurement
-from rapp.utils import create_folder, round_to_n
+from rapp.measurement import Measurement, process_temperature_data
+from rapp.utils import create_folder, round_to_n, sort_files_by_rep
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +35,8 @@ def phase_difference_from_folder(
     if not files:
         raise ValueError("Folder does not contain measurements!")
 
+    files = sort_files_by_rep(files)
+
     results = []
 
     for file_number, filepath in enumerate(files):
@@ -49,6 +51,7 @@ def phase_difference_from_folder(
 
         # logger.info("Parameters: {}.".format(measurement.parameters_string()))
         if new_measurement:
+            logger.info("Processing {}...".format(filepath))
             res = phase_difference(measurement, method, norm=norm, show=False, **kwargs)
             results.append(res)
 
@@ -127,6 +130,8 @@ def phase_difference_from_folder(
     ]
 
     if plot or show:
+        temperature = process_temperature_data(folder)
+
         output_folder = os.path.join(ct.WORK_DIR, ct.OUTPUT_FOLDER_PLOTS)
         f, axs = plt.subplots(
             1,
@@ -156,6 +161,12 @@ def phase_difference_from_folder(
         axs[2].set_ylabel("Diferencia de fase (°)")
         axs[2].set_xlabel("Nro de repetición")
         axs[2].set_title("DIFF")
+        twin2 = axs[2].twinx()
+        twin2.plot(temperature[0], linestyle="-", color="r", label="Temperatura Media")
+        twin2.set_ylabel("Temperatura (°C)")
+        twin2.plot(temperature[1], linestyle=":", color="k")
+        twin2.plot(temperature[2], linestyle=":", color="k")
+        twin2.legend()
         axs[2].legend()
 
         f.tight_layout()

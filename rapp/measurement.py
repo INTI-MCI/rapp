@@ -186,6 +186,7 @@ class Measurement:
             x_sigma=np.deg2rad(ct.ANALYZER_UNCERTAINTY),
             s1_sigma=s1_sigma,
             s2_sigma=s2_sigma,
+            allow_nan=True,
             **kwargs
         )
 
@@ -281,12 +282,17 @@ class Measurement:
         return self._data[COLUMN_ANGLE]
 
 
-def process_temperature_data(filepath):
+def process_temperature_data(filepath, raise_error=True):
+    if os.path.isdir(filepath):
+        filepath = os.path.join(filepath, "temperature.csv")
+
     if os.path.exists(filepath):
         temperature = pd.read_csv(filepath, sep=DELIMITER, skip_blank_lines=True,
                                   comment='#', encoding=ct.ENCONDIG)
-    else:
+    elif raise_error:
         ValueError("Temperature file does not exist.")
+    else:
+        return None
 
     n_reps = temperature[COLUMN_REP].max()
     mean_temps = np.zeros(n_reps)
