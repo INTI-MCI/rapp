@@ -3,6 +3,7 @@ import logging
 from pathlib import Path
 
 import numpy as np
+import os
 
 from rapp.measurement import Measurement
 
@@ -13,12 +14,16 @@ def optical_rotation(folder1, folder2, method="DFT"):
     logger.debug("Folder without optical active sample measurements {}...".format(folder1))
     logger.debug("Folder with optical active sample measurements {}...".format(folder2))
 
-    files_i = glob.glob(f"{folder1}/*.csv")
-    files_i = [f for f in files_i if f != "temperature.csv"]
-    files_i = sorted(files_i)
-    files_f = glob.glob(f"{folder2}/*.csv")
-    files_f = [f for f in files_f if f != "temperature.csv"]
-    files_f = sorted(files_f)
+    csv_files_i = [
+        f for f in glob.glob(f"{folder1}/*.csv")
+        if os.path.basename(f) != "temperature.csv"
+    ]
+    files_i = sorted(csv_files_i)
+    csv_files_f = [
+        f for f in glob.glob(f"{folder2}/*.csv")
+        if os.path.basename(f) != "temperature.csv"
+    ]
+    files_f = sorted(csv_files_f)
 
     if not files_i:
         raise ValueError("Empty folder!: {}".format(folder1))

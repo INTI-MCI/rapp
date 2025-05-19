@@ -104,8 +104,6 @@ void serial_write_32bit(int32_t data) {
     dtostrf((float) data/83886.08, 5, 2, float_str);
     sprintf(data_signed_str, " ( %ld , %s %%)", data, float_str);
     Serial.print(data_signed_str);
-    Serial.println();
-    Serial.println();
     }
     else Serial.write(buffer, 4);
 }
@@ -131,6 +129,7 @@ float read_n_samples_from_channel(unsigned long n_samples, bool channel) {
         if (channel) data = adc1.readADC();
         else data = adc0.readADC();
         serial_write_32bit(data);
+        if (DEBUG_CS1237) Serial.println();
         i = i + 1;
     };
 
@@ -215,9 +214,13 @@ void parse_read_and_print_n_samples_dt(String command_args) {
   unsigned long n_samples = parse_int(command_args);
   unsigned long dt = parse_int(command_args);
   for (int i = 0; i < n_samples; i++){
-    int32_t data = adc0.readADC();
+    int32_t data0 = adc0.readADC();
+    int32_t data1 = adc1.readADC();
     Serial.print( (String) i+" : " );
-    serial_write_32bit(data);
+    serial_write_32bit(data0);
+    Serial.print(" | ");
+    serial_write_32bit(data1);
+    Serial.println();
     delay(dt);
   }
 }

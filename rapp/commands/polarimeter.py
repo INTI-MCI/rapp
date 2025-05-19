@@ -12,6 +12,7 @@ EPILOG = "Example: {}".format(EXAMPLE)
 HELP_SAMPLES = 'n° of samples per angle, default (%(default)s) gives 10 cycles of 50 Hz noise.'
 HELP_CYCLES = 'n° of cycles to run (default: %(default)s).'
 HELP_STEP = 'step of the rotating analyzer (default: %(default)s). If cycles==0, step is ignored.'
+HELP_DELAY = 'wait time before start in seconds (default: %(default)s).'
 HELP_DELAY_POSITION = 'delay (in seconds) after changing analyzer position (default: %(default)s).'
 HELP_VELOCITY = 'velocity of the analyzer in deg/s (default: %(default)s).'
 HELP_ACCELERATION = 'acceleration of the analyzer in deg/s^2 (default: %(default)s).'
@@ -47,6 +48,7 @@ def formatter(prog):
 def add_to_subparsers(subparsers):
     p = subparsers.add_parser(NAME, help=HELP, epilog=EPILOG, formatter_class=formatter)
     p.add_argument('--samples', type=int, default=169, help=HELP_SAMPLES)
+    p.add_argument('--delay', type=float, default=0, help=HELP_DELAY)
     p.add_argument('--chunk-size', type=int, default=500, metavar='', help=HELP_CHUNK_SIZE)
     p.add_argument('--reps', type=int, default=1, metavar='', help=HELP_REPS)
     p.add_argument('--mc-wait', type=float, default=15, metavar='', help=HELP_MC_WAIT)

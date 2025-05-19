@@ -131,8 +131,8 @@ class ADC:
             if output == b'yes\r\n':
                 line = self._serial.readline()
                 logger.info("Data in input buffer after making connection: {}".format(line))
-                # line2 = self._serial.readline()
-                # logger.info("Data 2 in input buffer after making connection: {}".format(line2))
+                line2 = self._serial.readline()
+                logger.info("Data 2 in input buffer after making connection: {}".format(line2))
                 self._serial.reset_input_buffer()  # está un poco de más, lo dejo hasta saber mas de la comunicación
                 break
             elif output == b'no\r\n':

@@ -75,9 +75,9 @@ FILE_HEADER = (
 
 # TEMP_COLUMNS = ["ANGLE", "ROOM TEMP", "QP TEMP", "HWP-POS", "REP"]
 TEMP_COLUMNS = ["ANGLE", "TEMPERATURE", "HWP-POS", "REP"]
-TEMP_HEADER = "Tiempo-espera-{} s"
+TEMP_HEADER = "# Tiempo-espera-{} s"
 
-TEMP_CORRECTION_FILE = "workdir/output-data/2024-11-14-temperature-correction-parameters.json"
+TEMP_CORRECTION_FILE = "examples/2024-11-14-temperature-correction-parameters.json"
 
 
 class Polarimeter:
@@ -360,6 +360,7 @@ def run(
     cycles: float = 0,
     step: float = 45,
     reps: int = 1,
+    delay: float = 0,
     delay_position: float = 0,
     velocity: float = 4,
     acceleration: float = 8,
@@ -441,6 +442,11 @@ def run(
         except PM100Error:
             logger.warning("Thorlabs PM100 connection not found.")
 
+    delay = abs(delay)
+    if delay > 0:
+        logger.info("Delay start...")
+        time.sleep(delay)
+
     logger.info("Building DataFile...")
     data_file = DataFile(
         overwrite, header=FILE_HEADER, column_names=FILE_COLUMNS, delimiter=FILE_DELIMITER,
@@ -465,7 +471,7 @@ def run(
     polarimeter = Polarimeter(
         adc, analyzer, hwp, data_file, temperature_file, norm_det=pm100,
         wait=mc_wait
-    )
+    )    
 
     logger.info("Starting measurement...")
     _, elapsed_time = timing(polarimeter.start)(samples, chunk_size=chunk_size,
