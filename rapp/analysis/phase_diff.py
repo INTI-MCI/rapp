@@ -156,7 +156,7 @@ def phase_difference_from_folder(
         axs[1].set_title("CH1")
         axs[1].legend()
 
-        label_phase_diff = "STD = {}°".format(round_to_n(std_phase_diff, 2))
+        label_phase_diff = "Diferencia de fase"
         axs[2].plot(phase_diffs, ".-", color="k", label=label_phase_diff)
         axs[2].set_ylabel("Diferencia de fase (°)")
         axs[2].set_xlabel("Nro de repetición")
@@ -164,7 +164,7 @@ def phase_difference_from_folder(
         twin2 = axs[2].twinx()
         twin2.plot(temperature[0], linestyle="-", color="r", label="Temperatura Media")
         twin2.set_ylabel("Temperatura (°C)")
-        twin2.plot(temperature[1], linestyle=":", color="k")
+        twin2.plot(temperature[1], linestyle=":", color="k", label="Temperatura Max/Min")
         twin2.plot(temperature[2], linestyle=":", color="k")
         twin2.legend()
         axs[2].legend()
