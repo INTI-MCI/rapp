@@ -8,7 +8,8 @@ from matplotlib import pyplot as plt
 from scipy.optimize import curve_fit  # noqa
 from scipy.special import gamma
 from scipy.signal import hilbert
-
+import matplotlib as mpl
+mpl.rcParams.update(mpl.rcParamsDefault)
 
 from rapp import constants as ct
 from rapp.analysis.plot import Plot

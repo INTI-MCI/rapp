@@ -21,6 +21,8 @@ DallasTemperature sensorDS18B20_1(&oneWire1);
 //Falta averiguar la dirección del otro sensor!!
 
 DeviceAddress plateTemp = {0x90, 0x01, 0x55, 0x05, 0x7F, 0xA5, 0xA5, 0x66};
+//DeviceAddress plateTemp = {0x5C, 0x01, 0x55, 0x05, 0x7F, 0xA5, 0xA5, 0x66};
+//DeviceAddress plateTemp = {0x6C, 0x01, 0x55, 0x05, 0x7F, 0xA5, 0xA5, 0x66};
 
 void setup(void) {
     Serial.begin(SERIAL_BAUDRATE);
@@ -149,8 +151,8 @@ void request_temp(String channel) {
 float read_temp(String channel) {
     bool ch = parse_bool(channel);
     float temp;
-    if (ch) temp = sensorDS18B20_1.getTempC(plateTemp);
-    else temp = sensorDS18B20_0.getTempC(roomTemp);
+    if (ch) temp = sensorDS18B20_1.getTempCByIndex(0); //sensorDS18B20_1.getTempC(plateTemp);
+    else temp = sensorDS18B20_0.getTempC(roomTemp); //sensorDS18B20_0.getTempCByIndex(0);
     return temp;
 }
 
@@ -254,8 +256,12 @@ void toggle_led(int n) {  // Useful for debugging
   }
 }
 
-bool is_conversion_complete() {
-  sensorDS18B20_0.isConversionComplete();
+bool is_conversion_complete(String channel) {
+  bool ch = parse_bool(channel);
+  bool answer;
+  if (ch) answer = sensorDS18B20_1.isConversionComplete(); //sensorDS18B20_1.getTempC(plateTemp);
+  else answer = sensorDS18B20_0.isConversionComplete(); //sensorDS18B20_0.getTempCByIndex(0);
+  Serial.write(answer);
 }
 
 String getArgs(String in_command) {
@@ -303,8 +309,9 @@ void process_serial_input() {
             Serial.println("yes");
             // If required, send no
         }
-        else if (command_name == "complete?") {
-            is_conversion_complete();
+        else if (command_name == "complete?") { // Command: "complete?;channel;"
+            String command_args = getArgs(input_command);
+            is_conversion_complete(command_args);
         }
         else {Serial.println("Comando no reconocido");}
     }
