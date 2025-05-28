@@ -13,25 +13,27 @@ in polarimeter measurements (DS18B20 sensor).
 
 logger = logging.getLogger(__name__)
 
-PORT = 'COM3'
+PORT = 'COM4'
 BAUDRATE = 57600
 TIMEOUT = 2
 TIMEOUT_CONNECTION = 7  # Max time to wait for serial connection in seconds
-MEASUREMENT_WAIT = 5  # Time we wait between temperature measurements in seconds
-MEASUREMENT_TIME = 20  # Time of the measurement in seconds
-SAMPLES = 1
-CHANNEL = 1
-CMD_REQ_TEMP = f"req-temp;{CHANNEL};\n"
-CMD_COMPLETE = f"complete?;{CHANNEL};\n"
-CMD_TEMP = f"temp;{CHANNEL};\n"
+MEASUREMENT_WAIT = 120  # Time we wait between temperature measurements in seconds
+MEASUREMENT_TIME = 50400  # Time of the measurement in seconds
+SAMPLES = 10
+CMD_REQ_TEMP = "req-temp;{};\n"
+CMD_COMPLETE = "complete?;{};\n"
+CMD_TEMP = "temp;{};\n"
 
 FILENAME = 'temperatura'
 
 params = "tiempo-total-{}-tiempo-espera-{}-muestras{}".format(MEASUREMENT_TIME, MEASUREMENT_WAIT, SAMPLES)
-measurement_name = f"{date.today()}-{time.time()}-{'temperatura'}-{params}.txt"
-output_folder = r'C:\Users\Admin\rapp\workdir\output-data'
-measurement_dir = os.path.join(output_folder, measurement_name)
-# os.makedirs(measurement_dir, exist_ok=False)
+measurement_name_0 = f"{date.today()}-{time.time()}-{'temperatura'}-sensor-0-{params}-.txt"
+output_folder = r'C:\Users\cvargas\rapp\workdir\output-data'
+measurement_dir_0 = os.path.join(output_folder, measurement_name_0)
+# os.makedirs(measurement_dir_0, exist_ok=False)
+measurement_name_1 = f"{date.today()}-{time.time()}-{'temperatura'}-sensor-1-{params}-.txt"
+measurement_dir_1 = os.path.join(output_folder, measurement_name_1)
+# os.makedirs(measurement_dir_1, exist_ok=False)
 
 
 class ADCError(Exception):
@@ -56,7 +58,7 @@ def wait_for_connection(serial_connection):
         elapsed_time = end - start
         if output == b'yes\r\n':
             line = serial_connection.readline()
-            print("Data in input buffer after making connection: {}".format(line))
+            # print("Data in input buffer after making connection: {}".format(line))
             serial_connection.reset_input_buffer()  # está un poco de más, lo dejo hasta saber mas de la comunicación
             break
         elif output == b'no\r\n':
@@ -85,45 +87,69 @@ def main(port=PORT, baudrate=BAUDRATE, timeout=TIMEOUT, cmd_req_temp=CMD_REQ_TEM
 
     flag_header = True
     hora = time.time()
+    request_0 = cmd_req_temp.format(0)
+    request_1 = cmd_req_temp.format(1)
+    complete_0 = cmd_complete.format(0)
+    complete_1 = cmd_complete.format(1)
+    read_0 = cmd_temp.format(0)
+    read_1 = cmd_temp.format(1)
     while time.time() - hora < measurement_time:
-        temperaturas = [0] * samples
+        temperaturas0 = [0] * samples
+        temperaturas1 = [0] * samples
         hora_inicio = time.time()
         for i in range(samples):
-            ask = True
+            ask1 = True
+            ask2 = True
             # serial_connection.reset_input_buffer()
-            serial_connection.write(bytes(cmd_req_temp, 'utf-8'))
+            serial_connection.write(bytes(request_0, 'utf-8'))
+            serial_connection.write(bytes(request_1, 'utf-8'))
 
-            while ask:
-                serial_connection.write(bytes(cmd_complete, 'utf-8'))
-                # print("ADC command: {}".format(cmd_complete))
-                answer = serial_connection.read(1)
-                ask = answer == b'\x00'
-                # print("ADC response: {}".format(ask))
-                if ask:
+            while not ask1 and not ask2:
+                serial_connection.write(bytes(complete_0, 'utf-8'))
+                answer1 = serial_connection.read(1)
+                ask1 = answer1 == b'\x00'
+
+                serial_connection.write(bytes(complete_1, 'utf-8'))
+                answer2 = serial_connection.read(1)
+                ask2 = answer2 == b'\x00'
+                if ask1 or ask2:
                     time.sleep(0.1)
 
-            serial_connection.write(bytes(cmd_temp, 'utf-8'))
-            temp = serial_connection.read(4)
-            temp = struct.unpack('<f', temp)[0]
-            temperaturas[i] = '{}'.format(temp)
+            serial_connection.write(bytes(read_0, 'utf-8'))
+            temp0 = serial_connection.read(4)
+            temp0 = struct.unpack('<f', temp0)[0]
+            temperaturas0[i] = '{}'.format(temp0)
+
+            serial_connection.write(bytes(read_1, 'utf-8'))
+            temp1 = serial_connection.read(4)
+            temp1 = struct.unpack('<f', temp1)[0]
+            temperaturas1[i] = '{}'.format(temp1)
+
         if flag_header:
             hora_fin = time.time()
             tiempo_mediciones = hora_fin - hora_inicio
             header = {'tiempo_total': measurement_time, 'tiempo_espera': measurement_wait, 'muestras': samples,
                       'tiempo_mediciones': tiempo_mediciones}
             header = json.dumps(header)
-            with open(measurement_dir, 'w') as f:
+            with open(measurement_dir_0, 'w') as f:
+                f.write(header + '\n')
+            with open(measurement_dir_1, 'w') as f:
                 f.write(header + '\n')
             flag_header = False
 
-        with open(measurement_dir, 'a') as f:
+        with open(measurement_dir_0, 'a') as f:
             hora_ = time.strftime("%H:%M:%S")
-            f.writelines(",".join(temperaturas) + ',' + str(hora_) + '\n')
-        print(temperaturas)
+            f.writelines(",".join(temperaturas0) + ',' + str(hora_) + '\n')
+        print("Sensor 0: ", temperaturas0)
+
+        with open(measurement_dir_1, 'a') as f:
+            hora_ = time.strftime("%H:%M:%S")
+            f.writelines(",".join(temperaturas1) + ',' + str(hora_) + '\n')
+        print("Sensor 1: ", temperaturas1)
 
         hora_fin = time.time()
         tiempo_mediciones = hora_fin - hora_inicio
-        print("Tiempo de mediciones: {}".format(tiempo_mediciones))
+        # print("Tiempo de mediciones: {}".format(tiempo_mediciones))
         espera = measurement_wait - tiempo_mediciones
         time.sleep(espera)
 
