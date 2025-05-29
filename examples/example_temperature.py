@@ -13,12 +13,12 @@ in polarimeter measurements (DS18B20 sensor).
 
 logger = logging.getLogger(__name__)
 
-PORT = 'COM4'
+PORT = 'COM3'
 BAUDRATE = 57600
 TIMEOUT = 2
 TIMEOUT_CONNECTION = 7  # Max time to wait for serial connection in seconds
-MEASUREMENT_WAIT = 120  # Time we wait between temperature measurements in seconds
-MEASUREMENT_TIME = 50400  # Time of the measurement in seconds
+MEASUREMENT_WAIT = 10  # 120  # Time we wait between temperature measurements in seconds
+MEASUREMENT_TIME = 30  # 50400  # Time of the measurement in seconds
 SAMPLES = 10
 CMD_REQ_TEMP = "req-temp;{};\n"
 CMD_COMPLETE = "complete?;{};\n"
@@ -26,14 +26,16 @@ CMD_TEMP = "temp;{};\n"
 
 FILENAME = 'temperatura'
 
-params = "tiempo-total-{}-tiempo-espera-{}-muestras{}".format(MEASUREMENT_TIME, MEASUREMENT_WAIT, SAMPLES)
-measurement_name_0 = f"{date.today()}-{time.time()}-{'temperatura'}-sensor-0-{params}-.txt"
-output_folder = r'C:\Users\cvargas\rapp\workdir\output-data'
-measurement_dir_0 = os.path.join(output_folder, measurement_name_0)
-# os.makedirs(measurement_dir_0, exist_ok=False)
-measurement_name_1 = f"{date.today()}-{time.time()}-{'temperatura'}-sensor-1-{params}-.txt"
-measurement_dir_1 = os.path.join(output_folder, measurement_name_1)
-# os.makedirs(measurement_dir_1, exist_ok=False)
+# output_folder = r'C:\Users\cvargas\rapp\workdir\output-data' # Para la compu portatil del labo
+output_folder = r"C:\Users\Admin\rapp\workdir\output-data"
+sub_folder = r"{d}-{t}-{filename}".format(d=date.today(), t=time.time(), filename=FILENAME)
+measurement_dir = os.path.join(output_folder, sub_folder)
+os.makedirs(measurement_dir, exist_ok=False)
+params = r"tiempo-total-{}-tiempo-espera-{}-muestras-{}".format(MEASUREMENT_TIME, MEASUREMENT_WAIT, SAMPLES)
+measurement_name_0 = f"sensor-0-{params}.txt"
+measurement_path_0 = os.path.join(measurement_dir, measurement_name_0)
+measurement_name_1 = f"sensor-1-{params}.txt"
+measurement_path_1 = os.path.join(measurement_dir, measurement_name_1)
 
 
 class ADCError(Exception):
@@ -104,7 +106,7 @@ def main(port=PORT, baudrate=BAUDRATE, timeout=TIMEOUT, cmd_req_temp=CMD_REQ_TEM
             serial_connection.write(bytes(request_0, 'utf-8'))
             serial_connection.write(bytes(request_1, 'utf-8'))
 
-            while not ask1 and not ask2:
+            while ask1 or ask2:
                 serial_connection.write(bytes(complete_0, 'utf-8'))
                 answer1 = serial_connection.read(1)
                 ask1 = answer1 == b'\x00'
@@ -131,18 +133,18 @@ def main(port=PORT, baudrate=BAUDRATE, timeout=TIMEOUT, cmd_req_temp=CMD_REQ_TEM
             header = {'tiempo_total': measurement_time, 'tiempo_espera': measurement_wait, 'muestras': samples,
                       'tiempo_mediciones': tiempo_mediciones}
             header = json.dumps(header)
-            with open(measurement_dir_0, 'w') as f:
+            with open(measurement_path_0, 'w') as f:
                 f.write(header + '\n')
-            with open(measurement_dir_1, 'w') as f:
+            with open(measurement_path_1, 'w') as f:
                 f.write(header + '\n')
             flag_header = False
 
-        with open(measurement_dir_0, 'a') as f:
+        with open(measurement_path_0, 'a') as f:
             hora_ = time.strftime("%H:%M:%S")
             f.writelines(",".join(temperaturas0) + ',' + str(hora_) + '\n')
         print("Sensor 0: ", temperaturas0)
 
-        with open(measurement_dir_1, 'a') as f:
+        with open(measurement_path_1, 'a') as f:
             hora_ = time.strftime("%H:%M:%S")
             f.writelines(",".join(temperaturas1) + ',' + str(hora_) + '\n')
         print("Sensor 1: ", temperaturas1)
