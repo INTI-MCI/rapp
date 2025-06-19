@@ -141,12 +141,14 @@ def main(port=PORT, baudrate=BAUDRATE, timeout=TIMEOUT, cmd_req_temp=CMD_REQ_TEM
 
         with open(measurement_path_0, 'a') as f:
             hora_ = time.strftime("%H:%M:%S")
-            f.writelines(",".join(temperaturas0) + ',' + str(hora_) + '\n')
+            dia_ = time.strftime("%Y/%m/%d")
+            f.writelines(",".join(temperaturas0) + ',' + str(hora_) + ',' + str(dia_) + '\n')
         print("Sensor 0: ", temperaturas0)
 
         with open(measurement_path_1, 'a') as f:
             hora_ = time.strftime("%H:%M:%S")
-            f.writelines(",".join(temperaturas1) + ',' + str(hora_) + '\n')
+            dia_ = time.strftime("%Y/%m/%d")
+            f.writelines(",".join(temperaturas1) + ',' + str(hora_) + ',' + str(dia_) + '\n')
         print("Sensor 1: ", temperaturas1)
 
         hora_fin = time.time()
