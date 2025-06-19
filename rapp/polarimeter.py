@@ -98,7 +98,7 @@ class Polarimeter:
         self,
         adc: ADC, analyzer: RotaryStage, hwp: RotaryStage, data_file: DataFile,
         temperature_file: DataFile = None,
-        temp_correction_file: str = TEMP_CORRECTION_FILE, norm_det: PM100 = None, wait: int = 10
+        temp_correction_file: str = TEMP_CORRECTION_FILE, norm_det: PM100 = None, wait: float = 10
     ):
         self._adc = adc
         self._analyzer = analyzer
@@ -133,7 +133,7 @@ class Polarimeter:
 
         failures = 0
 
-        self._hwp.reset()
+        # self._hwp.reset()
 
         parameters = {
             "position": 0,
@@ -379,7 +379,8 @@ def run(
     hwp_step: float = 45,
     hwp_delay_position: float = 5,
     mc_wait: float = 15,
-    disable_pm100: bool = True,
+    enable_pm100: bool = True,
+    # enable_hwp: bool = True,
     work_dir: str = ct.WORK_DIR
 ):
 
@@ -416,9 +417,12 @@ def run(
         name='Analyzer'
     )
 
+    # if enable_hwp:
     logger.info("Connecting Rotary Stage: HalfWavePlate...")
     hwp = RotaryStage(
         motion_controller, hwp_cycles, hwp_step, hwp_delay_position, axis=2, name='HalfWavePlate')
+    # else:
+    #     logger.info("HalfWavePlate disabled.")
 
     logger.info("Connecting to ADC...")
     adc = ADC.build(
@@ -429,9 +433,7 @@ def run(
         mock_serial=mock_adc)
 
     pm100 = None
-    if disable_pm100:
-        logger.warning("Thorlabs PM100 disabled.")
-    else:
+    if enable_pm100:
         logger.info("Connecting to Thorlabs PM100...")
         try:
             pm100 = PM100.build(
@@ -441,6 +443,8 @@ def run(
             )
         except PM100Error:
             logger.warning("Thorlabs PM100 connection not found.")
+    else:
+        logger.info("Thorlabs PM100 disabled.")
 
     delay = abs(delay)
     if delay > 0:

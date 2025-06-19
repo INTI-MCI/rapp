@@ -36,6 +36,9 @@ class SerialMock:
     def flushInput(self):
         pass
 
+    def reset_input_buffer(self):
+        pass
+
     def _random_value(self):
         return random.randint(1000, 5000)
 
