@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from datetime import datetime, timedelta
+import pandas as pd
 from scipy.optimize import curve_fit
 from scipy import odr
 import os
@@ -18,20 +19,42 @@ so the signals were interpolated using a single time axis for further analysis.
 We chose to analyze the bias correction and a linear correction for the DS18B20 sensor. 
 '''
 
-N_SENSORS_DS18B20 = 2
+TIRADA_MEDICIONES = 4  # 1: 14/11/2024, 2: 26/05/2025, 3: 29/05/2025, 4: 19/06/2025
+CORRECCION_LINEAL = 0  # 0 = lineal, 1 = curve_fit, 2 = odr
 
-# filepath1 = r'C:\Users\cvargas\Documents\Mediciones\comparacion-ds18b20-keithley\2025-05-28-1748456467.473517-temperatura-sensor-1-tiempo-total-600-tiempo-espera-120-muestras10-.txt'
-# filepath3 = r'C:\Users\cvargas\Documents\Mediciones\comparacion-ds18b20-keithley\2025-05-28-1748456467.4731185-temperatura-sensor-0-tiempo-total-600-tiempo-espera-120-muestras10-.txt'
-if N_SENSORS_DS18B20 == 1:
+if TIRADA_MEDICIONES == 1:  # Las mediciones del 14/11/2024
+    fecha = '2024-11-14'
+    N_SENSORS_DS18B20 = 1
+    MEDICION_CON_FECHAS = False
     filepath1 = r'C:\Users\Admin\rapp\workdir\output-data\2024-11-14-1731605585.2825165-temperatura-tiempo-total-9000-tiempo-espera-120-muestras10.txt'
     filepath2 = r'C:\Users\Admin\rapp\workdir\output-data\2024-11-14-mediciones-temp-sensores-calibrados.txt'
-if N_SENSORS_DS18B20 == 2:
-    # filepath1 = r'C:\Users\cvargas\Documents\Mediciones\comparacion-ds18b20-keithley\2025-05-26-temperatura-sensor-0.txt'
+elif TIRADA_MEDICIONES == 2:  # Las mediciones del 26/05/2025
+    fecha = '2025-05-26'
+    N_SENSORS_DS18B20 = 2
+    MEDICION_CON_FECHAS = False
+    filepath1 = r'C:\Users\cvargas\Documents\Mediciones\comparacion-ds18b20-keithley\2025-05-26-temperatura-sensor-0.txt'
+    filepath2 = r'C:\Users\cvargas\Documents\Mediciones\comparacion-ds18b20-keithley\keithley.txt'
+    filepath3 = r'C:\Users\cvargas\Documents\Mediciones\comparacion-ds18b20-keithley\2025-05-26-temperatura-sensor-1.txt'
+elif TIRADA_MEDICIONES == 3:  # Las mediciones del 29/05/2025
+    fecha = '2025-05-29'
+    N_SENSORS_DS18B20 = 2
+    MEDICION_CON_FECHAS = False
     filepath1 = r'C:\Users\cvargas\Documents\Mediciones\comparacion-ds18b20-keithley\2025-05-29-1748544704.2162209-temperatura\sensor-0-tiempo-total-57600-tiempo-espera-120-muestras-10.txt'
-    # filepath2 = r'C:\Users\cvargas\Documents\Mediciones\comparacion-ds18b20-keithley\keithley.txt'
     filepath2 = r'C:\Users\cvargas\Documents\Mediciones\comparacion-ds18b20-keithley\2025-05-29-keithley.txt'
-    # filepath3 = r'C:\Users\cvargas\Documents\Mediciones\comparacion-ds18b20-keithley\2025-05-26-temperatura-sensor-1.txt'
     filepath3 = r'C:\Users\cvargas\Documents\Mediciones\comparacion-ds18b20-keithley\2025-05-29-1748544704.2162209-temperatura\sensor-1-tiempo-total-57600-tiempo-espera-120-muestras-10.txt'
+elif TIRADA_MEDICIONES == 4:  # Las mediciones del 19/06/2025
+    fecha = '2025-06-19'
+    N_SENSORS_DS18B20 = 2
+    MEDICION_CON_FECHAS = True
+    filepath1 = r'C:\Users\cvargas\Documents\Mediciones\comparacion-ds18b20-keithley\2025-06-19-1750363466.541328-temperatura\sensor-0-tiempo-total-313200-tiempo-espera-120-muestras-10.txt'
+    filepath2 = r'C:\Users\cvargas\Documents\Mediciones\comparacion-ds18b20-keithley\keithley-junio.txt'
+    filepath3 = r'C:\Users\cvargas\Documents\Mediciones\comparacion-ds18b20-keithley\2025-06-19-1750363466.541328-temperatura\sensor-1-tiempo-total-313200-tiempo-espera-120-muestras-10.txt'
+
+# filepath1 = r'C:\Users\cvargas\Documents\Mediciones\comparacion-ds18b20-keithley\
+# 2025-05-28-1748456467.473517-temperatura-sensor-1-tiempo-total-600-tiempo-espera-120-muestras10-.txt'
+# filepath3 = r'C:\Users\cvargas\Documents\Mediciones\comparacion-ds18b20-keithley\
+# 2025-05-28-1748456467.4731185-temperatura-sensor-0-tiempo-total-600-tiempo-espera-120-muestras10-.txt'
+
 
 def time_to_seconds(time_str) -> int:
     h, m, s = map(int, time_str.split(':'))
@@ -121,9 +144,19 @@ data1 = np.array(data1_.tolist())
 data_DS18B20_0 = data1[:, :9].astype(float)
 N = data1.shape[0]
 
-timestamps_ds18b20_0 = data1[:, 10]
-time_ds18b20_0 = add_date_to_timestamps(timestamps_ds18b20_0)
+if TIRADA_MEDICIONES == 4:
+    df1 = pd.read_csv(filepath1, skiprows=1, header=None, delimiter=',')
+    # Combinar las columnas de timestamp y fecha
+    df1['tiempo'] = pd.to_datetime(df1.iloc[:, 11], yearfirst=True) + pd.to_timedelta(df1.iloc[:, 10])
+    # # Eliminar las columnas originales
+    # df1.drop(['fecha', 'timestamp'], axis=1, inplace=True)
+    time_ds18b20_0 = df1['tiempo'].to_numpy(dtype=np.float64)
+else:
+    timestamps_ds18b20_0 = data1[:, 10]
+    time_ds18b20_0 = add_date_to_timestamps(timestamps_ds18b20_0)
+
 average_ds18b20_0 = np.mean(data_DS18B20_0, axis=1)
+print('promedios=', average_ds18b20_0.shape)
 print(f"Promedio del sensor 0 = {np.mean(average_ds18b20_0):.3f}")
 av_ds18b20_wo_mean_0 = average_ds18b20_0 - np.mean(average_ds18b20_0)
 stds_ds18b20_0 = np.std(data_DS18B20_0, axis=1)
@@ -147,8 +180,13 @@ if N_SENSORS_DS18B20 == 2:
     data_DS18B20_1 = data3[:, :10].astype(float)
     assert N == data3.shape[0]
 
-    timestamps_ds18b20_1 = data3[:, 10]
-    time_ds18b20_1 = add_date_to_timestamps(timestamps_ds18b20_1)
+    if TIRADA_MEDICIONES == 4:
+        df3 = pd.read_csv(filepath3, skiprows=1, header=None, delimiter=',')
+        df3['tiempo'] = pd.to_datetime(df3.iloc[:, 11], yearfirst=True) + pd.to_timedelta(df3.iloc[:, 10])
+        time_ds18b20_1 = df3['tiempo'].to_numpy(dtype=np.float64)
+    else:
+        timestamps_ds18b20_1 = data3[:, 10]
+        time_ds18b20_1 = add_date_to_timestamps(timestamps_ds18b20_1)
 
     average_ds18b20_1 = np.mean(data_DS18B20_1, axis=1)
     av_ds18b20_wo_mean_1 = average_ds18b20_1 - np.mean(average_ds18b20_1)
@@ -163,19 +201,34 @@ if N_SENSORS_DS18B20 == 2:
 '''Import calibrated sensors data:'''
 data2 = np.genfromtxt(filepath2, delimiter=',')
 # skip_header=17, skip_footer=16) (para las mediciones del 7-11)
-sensor1 = data2[:, 0]
-sensor1_wo_mean = sensor1 - np.mean(sensor1)
 
-sensor2 = data2[:, 1]
-sensor2_wo_mean = sensor2 - np.mean(sensor2)
-if N_SENSORS_DS18B20 == 1:
+if TIRADA_MEDICIONES == 1:
+    sensor1 = data2[:, 0]
+    sensor2 = data2[:, 1]
     time2 = np.loadtxt(filepath2, dtype=str, usecols=3, delimiter=',')
 
 # time_calibrated_sensors = np.array([datetime.strptime(t, '%H:%M:%S') for t in time2])
 
-if N_SENSORS_DS18B20 == 2:
+elif TIRADA_MEDICIONES == 2:
+    sensor1 = data2[:, 2]
+    sensor2 = data2[:, 3]
+    time2 = np.loadtxt(filepath2, dtype=str, usecols=5, delimiter=',')
+    time_calibrated_sensors = add_date_to_timestamps(time2)
+elif TIRADA_MEDICIONES == 3:
+    sensor1 = data2[:, 0]
+    sensor2 = data2[:, 1]
     time2 = np.loadtxt(filepath2, dtype=str, usecols=3, delimiter=',')
-time_calibrated_sensors = add_date_to_timestamps(time2)
+    time_calibrated_sensors = add_date_to_timestamps(time2)
+elif TIRADA_MEDICIONES == 4:
+    sensor1 = data2[:, 2]
+    sensor2 = data2[:, 3]
+    df2 = pd.read_csv(filepath2, delimiter=',', header=None)
+    df2['tiempo'] = pd.to_datetime(df2.iloc[:, 6], dayfirst=True) + pd.to_timedelta(df2.iloc[:, 5])
+    time2_ = df2['tiempo'].to_numpy(dtype=np.float64)
+    time_calibrated_sensors = time2_
+
+sensor1_wo_mean = sensor1 - np.mean(sensor1)
+sensor2_wo_mean = sensor2 - np.mean(sensor2)
 
 u_calibrated_sensors = 0.03
 
@@ -366,36 +419,56 @@ plt.show()
 '''Save linear correction parameters to .json file in workdir\output-data
 so we can use them in polarimeter measurement:'''
 parameters_filepath = "C:\\Users\\Admin\\rapp\\workdir\\output-data\\"
-parameters_filename = "2025-05-26-test-temperature-correction-parameters.json"
+parameters_filename = "{f}-test-temperature-correction-parameters.json".format(f=fecha)
+print(parameters_filename)
 parameters_file = os.path.join(parameters_filepath, parameters_filename)
 comment = {
     'comment': 'Bias and linear correction parameters for DS18B20 sensors used in polarimeter room temperature '
-               'measurements obtained from measurements with (calibrated sensors) the 26/05/2025'
+               'measurements obtained from measurements with calibrated Keithley 2000 sensors the {f}'.format(f=fecha)
 }
+
+if CORRECCION_LINEAL == 0:
+    A_sensor_0 = linear_correction_sensor_0[0][0]
+    b_sensor_0 = linear_correction_sensor_0[1][0]
+    u_correction = 0  # TODO: Propagar incertidumbre de ajuste lineal "manual"
+    if N_SENSORS_DS18B20 == 2:
+        A_sensor_1 = linear_correction_sensor_1[0][0]
+        b_sensor_1 = linear_correction_sensor_1[1][0]
+elif CORRECCION_LINEAL == 1:
+    A_sensor_0 = popt0[0]
+    b_sensor_0 = popt0[1]
+    u_correction = 0  # TODO: Propagar incertidumbre de curve fit
+    if N_SENSORS_DS18B20 == 2:
+        A_sensor_1 = popt1[0]
+        b_sensor_1 = popt1[1]
+elif CORRECCION_LINEAL == 2:
+    A_sensor_0 = output_odr0.beta[0]
+    b_sensor_0 = output_odr0.beta[1]
+    u_correction = 0  # TODO: Propagar incertidumbre de odr
+    if N_SENSORS_DS18B20 == 2:
+        A_sensor_1 = output_odr1.beta[0]
+        b_sensor_1 = output_odr1.beta[1]
+
 
 correction_parameters_0 = {
     'bias': '{}'.format(bias_sensor_0),
-    'A': '{}'.format(linear_correction_sensor_0[0][0]),
-    'b': '{}'.format(linear_correction_sensor_0[1][0])
+    'A': '{}'.format(A_sensor_0),
+    'b': '{}'.format(b_sensor_0)
+}
+
+json_data = {
+    "comment": comment,
+    "correction_parameters_sensor_0": correction_parameters_0
 }
 
 if N_SENSORS_DS18B20 == 2:
     correction_parameters_1 = {
         'bias': '{}'.format(bias_sensor_1),
-        'A': '{}'.format(linear_correction_sensor_1[0][0]),
-        'b': '{}'.format(linear_correction_sensor_1[1][0])
-    }
-if N_SENSORS_DS18B20 == 1:
-    json_data = {
-        "comment": comment,
-        "correction_parameters_sensor_0": correction_parameters_0
-    }
-if N_SENSORS_DS18B20 == 2:
-    json_data = {
-        "comment": comment,
-        "correction_parameters_sensor_0": correction_parameters_0,
-        "correction_parameters_sensor_1": correction_parameters_1
-    }
+        'A': '{}'.format(A_sensor_1),
+        'b': '{}'.format(b_sensor_1)}
+    json_data["correction_parameters_sensor_1"] = correction_parameters_1
+
+json_data["u_linear_correction"] = u_correction
 
 with open(parameters_file, 'w') as f:
     json.dump(json_data, f)
@@ -406,9 +479,9 @@ with open(parameters_file, 'r') as f:
 
 slope_0 = json_data['correction_parameters_sensor_0']['A']
 intercept_0 = json_data['correction_parameters_sensor_0']['b']
-print("Sensor 0: ", 'A =', slope_0, 'b =', intercept_0)
+print("Saved parameters for Sensor 0: ", 'A =', slope_0, 'b =', intercept_0)
 
 if N_SENSORS_DS18B20 == 2:
     slope_1 = json_data['correction_parameters_sensor_1']['A']
     intercept_1 = json_data['correction_parameters_sensor_1']['b']
-    print("Sensor 1: ", 'A =', slope_1, 'b =', intercept_1)
+    print("Saved parameters for Sensor 1: ", 'A =', slope_1, 'b =', intercept_1)
