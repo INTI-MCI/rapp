@@ -24,12 +24,12 @@ def main():
     e1 = dict(cycles=0, samples=760500, chunk_size=169, reps=1)
     e2 = dict(cycles=0, samples=760500, chunk_size=1521000, reps=1)
     e3 = dict(cycles=1.5, step=0.5, samples=338, reps=50)
-    e4 = dict(cycles=1, step=1, samples=169, reps=50, velocity=0.5)
-    e5 = dict(cycles=1, step=1, samples=169, reps=50, velocity=1)
+    e4 = dict(cycles=1, step=1, samples=134, reps=1, velocity=4, acceleration=2, deceleration=2)
+    e5 = dict(cycles=1, step=1, samples=134, reps=20, velocity=4, acceleration=4, deceleration=4)
     e6 = dict(cycles=1, step=1, samples=169, reps=50, velocity=2)
-    experimentos = [e1, e2]
+    experimentos = [e5]
     # time.sleep(5400)
-    basename = "noise-quartz" 
+    basename = "test-measurement-time-w-profiler" 
     for i, exp in enumerate(experimentos, 1):
         logger.info("EXPERIMENTO {}: {}".format(i, exp))
         prefix = f"{basename}-{i}"

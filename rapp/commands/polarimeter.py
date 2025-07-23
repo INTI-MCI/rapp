@@ -60,7 +60,7 @@ def add_to_subparsers(subparsers):
     # p.add_argument('--enable-hwp', action='store_true', help=HELP_ENABLE_HWP)
     p.add_argument('--work-dir', type=str, metavar='', default=ct.WORK_DIR, help=HELP_WORKDIR)
     p.add_argument('-ow', '--overwrite', action='store_true', help=HELP_OVERWRITE)
-    p.add_argument('--temp-correction', type=str, default='bias', metavar='',
+    p.add_argument('--temp-correction', type=str, default='linear', metavar='',
                    help=HELP_TEMP_CORRECTION)
     p.add_argument('--temp-wait', type=int, default=60, metavar='', help=HELP_TEMP_WAIT)
 
@@ -74,8 +74,8 @@ def add_to_subparsers(subparsers):
     g.add_argument('--step', type=float, default=45, help=HELP_STEP)
     g.add_argument('--delay-position', type=float, default=0, metavar='', help=HELP_DELAY_POSITION)
     g.add_argument('--velocity', type=float, default=4, metavar='', help=HELP_VELOCITY)
-    g.add_argument('--acceleration', type=float, default=1, metavar='', help=HELP_ACCELERATION)
-    g.add_argument('--deceleration', type=float, default=1, metavar='', help=HELP_DECELERATION)
+    g.add_argument('--acceleration', type=float, default=4, metavar='', help=HELP_ACCELERATION)
+    g.add_argument('--deceleration', type=float, default=4, metavar='', help=HELP_DECELERATION)
 
     g = p.add_argument_group('Half Wave Plate')
     g.add_argument('--hwp-cycles', type=float, default=0, metavar='', help=HELP_HWP_CYCLES)

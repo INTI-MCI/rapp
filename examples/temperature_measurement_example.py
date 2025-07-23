@@ -29,18 +29,18 @@ while True:
         print(leido3)
         break
 print('Puerto abierto')
-cmd_req_temp = 'req-temp;0;\n'
-cmd_temp = 'temp;0;\n'
-cmd_complete = 'complete?\n'
+cmd_req_temp = 'req-temp;1;\n'
+cmd_temp = 'temp;1;\n'
+cmd_complete = 'complete?;1;\n'
 # cmd_adc = CMD_TEMPLATE.format(measurement='adc?', ch0=1, ch1=1, samples=3)
 
 tiempos_mediciones = []
 
-for j in range(10):
+for j in range(1):
     tiempos_totales = []
-    for i in range(10):
+    for i in range(30):
         adc.reset_input_buffer()
-        ask = True
+        ask = False
 
         print('------------------')
         print('Iteracion {}'.format(i))
@@ -57,9 +57,12 @@ for j in range(10):
         # temp = adc.readline() #readline needs termination character from serial to work properly
         tiempo_read = time.time()
 
-        while ask == True:
+        while ask == False:
+            time.sleep(0.6)
             adc.write(bytes(cmd_complete, 'utf-8'))
             ask = adc.read(1)
+            ask = bool(ask)
+            # print('Ask: ', ask)
         tiempo_ask = time.time()
 
         adc.write(bytes(cmd_temp, 'utf-8'))

@@ -81,7 +81,7 @@ class RotaryStage(Iterator):
         end = 360 * math.copysign(1, self.step)
 
         if self.cycles == 0:
-            initial_position = self._motion_controller.get_position()
+            initial_position = self._motion_controller.get_position(axis=self._axis)
             return [initial_position]
 
         return np.arange(0, end * self.cycles + self.step, self.step, dtype=float)
