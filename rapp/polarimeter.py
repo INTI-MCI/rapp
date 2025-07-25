@@ -271,26 +271,26 @@ class Polarimeter:
     def read_temperature(self, parameters_req_temperature={}, temperature_requested=[True, True],
                          write=True, channel=0):
         if temperature_requested[channel]:
-            acquired_temperature, temperature_requested[channel] = self._adc.read_temperature(channel)
+            acquired_t, temperature_requested[channel] = self._adc.read_temperature(channel)
             logger.debug("Read temperature for channel {} at: {}".format(
                 channel, datetime.datetime.now()
             ))
 
             if parameters_req_temperature["temp_correction_r"] == 'bias':
-                acquired_temperature = self.temperature_bias_correction(
+                acquired_t = self.temperature_bias_correction(
                     channel=channel,
                     filepath=TEMP_CORRECTION_FILE,
-                    temperature=acquired_temperature
+                    temperature=acquired_t
                 )
             elif parameters_req_temperature["temp_correction_r"] == 'linear':
-                acquired_temperature = self.temperature_linear_correction(
+                acquired_t = self.temperature_linear_correction(
                     channel=channel,
                     filepath=TEMP_CORRECTION_FILE,
-                    temperature=acquired_temperature
+                    temperature=acquired_t
                 )
 
             data = ([parameters_req_temperature["position_r"]]
-                    + [round(acquired_temperature, 4)]
+                    + [round(acquired_t, 4)]
                     # + ["None"]
                     + [parameters_req_temperature["hwp_position_r"]]
                     + [parameters_req_temperature["rep_r"]]
@@ -298,7 +298,7 @@ class Polarimeter:
             # elif channel == 1:
             #     data = ([parameters_req_temperature["position_r"]]
             #             + []
-            #             + [round(acquired_temperature, 4)]
+            #             + [round(acquired_t, 4)]
             #             + [parameters_req_temperature["hwp_position_r"]]
             #             + [parameters_req_temperature["rep_r"]]
             #             )
@@ -310,7 +310,7 @@ class Polarimeter:
                     self._temperature_file.add_row(data)
             logger.debug("Temperature in channel {ch}: {temperature}".format(
                 ch=channel,
-                temperature=acquired_temperature)
+                temperature=acquired_t)
             )
 
     def temperature_bias_correction(
@@ -510,7 +510,7 @@ def run(
     polarimeter = Polarimeter(
         adc, analyzer, hwp, data_file, temperature_file, qp_temperature_file, norm_det=pm100,
         wait=mc_wait
-    )    
+    )
 
     logger.info("Starting measurement...")
     _, elapsed_time = timing(polarimeter.start)(samples, chunk_size=chunk_size,
