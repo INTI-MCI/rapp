@@ -9,12 +9,13 @@ from scipy.optimize import curve_fit  # noqa
 from scipy.special import gamma
 from scipy.signal import hilbert
 import matplotlib as mpl
-mpl.rcParams.update(mpl.rcParamsDefault)
 
 from rapp import constants as ct
 from rapp.analysis.plot import Plot
 from rapp.measurement import Measurement, process_temperature_data
 from rapp.utils import create_folder, round_to_n, sort_files_by_rep
+
+mpl.rcParams.update(mpl.rcParamsDefault)
 
 logger = logging.getLogger(__name__)
 

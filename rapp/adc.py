@@ -131,7 +131,7 @@ class ADC:
             if output == b'yes\r\n':
                 line = self._serial.readline()
                 logger.info("Data in input buffer after making connection: {}".format(line))
-                self._serial.reset_input_buffer()  # está un poco de más, lo dejo hasta saber mas de la comunicación
+                self._serial.reset_input_buffer()  # TODO: check if this is necessary
                 break
             elif output == b'no\r\n':
                 pass
@@ -186,7 +186,7 @@ class ADC:
 
         return data
 
-    def request_temperature(self, flush=True, channel=0):
+    def request_temperature(self, channel, flush=True):
         """Requests temperature measurements
 
                 Args:
@@ -194,16 +194,16 @@ class ADC:
                     channel: channel 0 - Room temperature, channel 1 - Quartz plate temperature
                 """
         if flush:  # Clear input buffer. Otherwise, messes up values at the beginning.
-            self._serial.flushInput()
+            self._serial.reset_input_buffer()
 
         cmd = f"req-temp;{channel};\n"
-        logger.debug("ADC command: {}".format(cmd))
+        logger.info("ADC command: {}".format(cmd))
 
         self._serial.write(bytes(cmd, 'utf-8'))
         temperature_requested = True
         return temperature_requested
 
-    def read_temperature(self, channel=0):
+    def read_temperature(self, channel=0):  # TODO: ver si saco el valor por default de channel
         """Reads temperature measurements
 
                 Args:
@@ -213,7 +213,7 @@ class ADC:
                     the value as a list  [temp].
                 """
         cmd = f"temp;{channel};\n"
-        logger.debug("ADC command: {}".format(cmd))
+        logger.info("ADC command: {}".format(cmd))
 
         self._serial.write(bytes(cmd, 'utf-8'))
 
@@ -251,9 +251,9 @@ class ADC:
 
     def _read_bits(self):
         if self._in_bytes:
-            datos = self._serial.read(4)
-            logger.debug(datos)
-            return int.from_bytes(datos, byteorder='big', signed=True)
+            bytes_data = self._serial.read(4)
+            logger.debug(bytes_data)
+            return int.from_bytes(bytes_data, byteorder='big', signed=True)
             # .read(2) for 16 bit ADC
         else:
             return int(self._serial.readline().decode().strip())

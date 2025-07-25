@@ -158,25 +158,35 @@ class Polarimeter:
 
         schedule_request_0 = schedule.Scheduler()
         schedule_request_1 = schedule.Scheduler()
-        schedule_request_0.every(temp_wait).seconds.do(self.request_temperature,
-                                                     parameters_req_temperature, parameters,
-                                                     temperature_requested=temperature_requested,
-                                                     channel=0)
-        schedule_request_1.every(temp_wait).seconds.do(self.request_temperature,
-                                                     parameters_req_temperature, parameters,
-                                                     temperature_requested=temperature_requested,
-                                                     channel=1)
+
+        schedule_request_0.every(temp_wait).seconds.do(
+            self.request_temperature,
+            channel=0,
+            parameters_req_temperature=parameters_req_temperature,
+            parameters=parameters,
+            temperature_requested=temperature_requested)
+
+        schedule_request_1.every(temp_wait).seconds.do(
+            self.request_temperature,
+            channel=1,
+            parameters_req_temperature=parameters_req_temperature,
+            parameters=parameters,
+            temperature_requested=temperature_requested)
 
         schedule_read_0 = schedule.Scheduler()
         schedule_read_1 = schedule.Scheduler()
-        schedule_read_0.every(temp_wait).seconds.do(self.read_temperature,
-                                                  parameters_req_temperature,
-                                                  temperature_requested=temperature_requested,
-                                                  write=True, channel=0)
-        schedule_read_1.every(temp_wait).seconds.do(self.read_temperature,
-                                                  parameters_req_temperature,
-                                                  temperature_requested=temperature_requested,
-                                                  write=True, channel=1)
+
+        schedule_read_0.every(temp_wait).seconds.do(
+            self.read_temperature,
+            parameters_req_temperature=parameters_req_temperature,
+            temperature_requested=temperature_requested,
+            write=True, channel=0)
+
+        schedule_read_1.every(temp_wait).seconds.do(
+            self.read_temperature,
+            parameters_req_temperature=parameters_req_temperature,
+            temperature_requested=temperature_requested,
+            write=True, channel=1)
 
         self._temperature_file.open("temperature.csv")
         self._qp_temperature_file.open("qp-temperature.csv")
@@ -246,11 +256,12 @@ class Polarimeter:
 
             yield acquired_samples
 
-    def request_temperature(self, parameters_req_temperature={}, parameters={},
-                            temperature_requested=[False], channel=0):
+    def request_temperature(self, channel, parameters_req_temperature={}, parameters={},
+                            temperature_requested=[False, False]):
         if not temperature_requested[channel]:
             temperature_requested[channel] = self._adc.request_temperature(channel)
-            logger.debug("Request temperature for channel {} at: {}".format(channel, datetime.datetime.now()))
+            logger.debug("Request temperature for channel {} at: {}".format(
+                channel, datetime.datetime.now()))
 
             parameters_req_temperature["position_r"] = parameters["position"]
             parameters_req_temperature["hwp_position_r"] = parameters["hwp_position"]
@@ -261,15 +272,21 @@ class Polarimeter:
                          write=True, channel=0):
         if temperature_requested[channel]:
             acquired_temperature, temperature_requested[channel] = self._adc.read_temperature(channel)
-            logger.debug("Read temperature for channel {} at: {}".format(channel, datetime.datetime.now()))
+            logger.debug("Read temperature for channel {} at: {}".format(
+                channel, datetime.datetime.now()
+            ))
 
             if parameters_req_temperature["temp_correction_r"] == 'bias':
-                acquired_temperature = self.temperature_bias_correction(channel=channel,
-                    filepath=TEMP_CORRECTION_FILE, temperature=acquired_temperature
+                acquired_temperature = self.temperature_bias_correction(
+                    channel=channel,
+                    filepath=TEMP_CORRECTION_FILE,
+                    temperature=acquired_temperature
                 )
             elif parameters_req_temperature["temp_correction_r"] == 'linear':
-                acquired_temperature = self.temperature_linear_correction(channel=channel, 
-                    filepath=TEMP_CORRECTION_FILE, temperature=acquired_temperature
+                acquired_temperature = self.temperature_linear_correction(
+                    channel=channel,
+                    filepath=TEMP_CORRECTION_FILE,
+                    temperature=acquired_temperature
                 )
 
             data = ([parameters_req_temperature["position_r"]]
@@ -291,9 +308,13 @@ class Polarimeter:
                     self._qp_temperature_file.add_row(data)
                 if channel == 0:
                     self._temperature_file.add_row(data)
-            logger.debug("Temperature: {}".format(acquired_temperature))
+            logger.debug("Temperature in channel {ch}: {temperature}".format(
+                ch=channel,
+                temperature=acquired_temperature)
+            )
 
-    def temperature_bias_correction(self, channel, filepath=TEMP_CORRECTION_FILE, temperature=[]):
+    def temperature_bias_correction(
+            self, channel, filepath=TEMP_CORRECTION_FILE, temperature=[]):
         with open(filepath, 'r') as f:
             json_data = json.load(f)
 
@@ -304,7 +325,8 @@ class Polarimeter:
         temperature = temperature[0]
         return temperature - float(bias)
 
-    def temperature_linear_correction(self, channel, filepath=TEMP_CORRECTION_FILE, temperature=[]):
+    def temperature_linear_correction(
+            self, channel, filepath=TEMP_CORRECTION_FILE, temperature=[]):
         with open(filepath, 'r') as f:
             json_data = json.load(f)
 

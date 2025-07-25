@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 import pandas as pd
 from scipy.optimize import curve_fit
 from scipy import odr
+import scipy.stats as stats
 import os
 import json
 
@@ -20,7 +21,8 @@ We chose to analyze the bias correction and a linear correction for the DS18B20 
 '''
 
 TIRADA_MEDICIONES = 4  # 1: 14/11/2024, 2: 26/05/2025, 3: 29/05/2025, 4: 19/06/2025
-CORRECCION_LINEAL = 0  # 0 = lineal, 1 = curve_fit, 2 = odr
+# Selecciono qué correción lineal es la que quiero guardar en el archivo:
+CORRECCION_LINEAL = 2  # 0 = lineal, 1 = curve_fit, 2 = odr
 
 if TIRADA_MEDICIONES == 1:  # Las mediciones del 14/11/2024
     fecha = '2024-11-14'
@@ -135,6 +137,14 @@ def linear(x, a, b):
 
 def linear_odr(beta, x):
     return beta[0] * x + beta[1]
+
+
+def corrected_temperature(temperature, a, b):
+    return (temperature - b) / a
+
+
+def u_corrected_temperature(temperature, u_temperature, a, u_a, b, u_b):
+    return np.sqrt((a**-1 * u_temperature)**2 + (-a**1 * u_b)**2 + (((b-temperature) / a**2) * u_a)**2)
 
 
 '''Import ds18b20 data from sensor 0 and calculate average and std:'''
@@ -309,7 +319,10 @@ perr0 = np.sqrt(np.diag(pcov0))
 print('Linear correction parameters for sensor 0 from curve_fit: [[A] [b]] =', popt0)
 print('Standard errors for linear correction parameters (sensor 0) from curve_fit:', perr0)
 
-ds18b20_linear_correction_curve_fit_0 = (splined_ds18b20_0 - popt0[1]) / popt0[0]
+a_curve_fit_0, u_a_curve_fit_0 = popt0[0], perr0[0]
+b_curve_fit_0, u_b_curve_fit_0 = popt0[1], perr0[1]
+
+ds18b20_linear_correction_curve_fit_0 = (splined_ds18b20_0 - b_curve_fit_0) / a_curve_fit_0
 
 """Linear correction using odr: """
 model_odr = odr.Model(fcn=linear_odr, estimate=np.array([1, 0]))
@@ -320,10 +333,13 @@ odr0.set_job(fit_type=0, deriv=1)
 
 output_odr0 = odr0.run()
 
+a_odr_0, u_a_odr_0 = output_odr0.beta[0], output_odr0.sd_beta[0]
+b_odr_0, u_b_odr_0 = output_odr0.beta[1], output_odr0.sd_beta[1]
+
 print('Linear correction parameters for sensor 0 from odr: [[A] [b]] =', output_odr0.beta)
 print('Standard errors for linear correction parameters (sensor 0) from odr:', output_odr0.sd_beta)
 
-ds18b20_linear_correction_odr_0 = (splined_ds18b20_0 - output_odr0.beta[1]) / output_odr0.beta[0]
+ds18b20_linear_correction_odr_0 = (splined_ds18b20_0 - b_odr_0) / a_odr_0
 
 if N_SENSORS_DS18B20 == 2:
     # Sensor 1:
@@ -348,10 +364,14 @@ if N_SENSORS_DS18B20 == 2:
 
     popt1, pcov1 = curve_fit(linear, xdata=splined_calib_mean, ydata=splined_ds18b20_1, sigma=u_ds18b20_1, absolute_sigma=True)
     perr1 = np.sqrt(np.diag(pcov1))
+
+    a_curve_fit_1, u_a_curve_fit_1 = popt1[0], perr1[0]
+    b_curve_fit_1, u_b_curve_fit_1 = popt1[1], perr1[1]
+
     print('Linear correction parameters for sensor 1 from curve_fit: [[A] [b]] =', popt1)
     print('Standard errors for linear correction parameters (sensor 1) from curve_fit:', perr1)
 
-    ds18b20_linear_correction_curve_fit_1 = (splined_ds18b20_1 - popt1[1]) / popt1[0]
+    ds18b20_linear_correction_curve_fit_1 = (splined_ds18b20_1 - a_curve_fit_1) / b_curve_fit_1
 
     data_odr_1 = odr.Data(x=splined_calib_mean, y=splined_ds18b20_1, we=1/(u_ds18b20_1**2), wd=1/(0.03**2))
 
@@ -360,10 +380,13 @@ if N_SENSORS_DS18B20 == 2:
 
     output_odr1 = odr1.run()
 
+    a_odr_1, u_a_odr_1 = output_odr1.beta[0], output_odr1.sd_beta[0]
+    b_odr_1, u_b_odr_1 = output_odr1.beta[1], output_odr1.sd_beta[1]
+
     print('Linear correction parameters for sensor 1 from odr: [[A] [b]] =', output_odr1.beta)
     print('Standard errors for linear correction parameters (sensor 1) from odr:', output_odr1.sd_beta)
 
-    ds18b20_linear_correction_odr_1 = (splined_ds18b20_1 - output_odr1.beta[1]) / output_odr1.beta[0]
+    ds18b20_linear_correction_odr_1 = (splined_ds18b20_1 - b_odr_1) / a_odr_1
 
 plt.plot(time_interp, ds18b20_0_wo_bias, label='Promedio DS18B20 0 sin sesgo')
 if N_SENSORS_DS18B20 == 2:
@@ -403,12 +426,12 @@ plt.show()
 plt.figure()
 plt.plot(splined_calib_mean, splined_ds18b20_0, '.', label='Promedio DS18B20 0')
 plt.plot(splined_calib_mean, (splined_calib_mean - linear_correction_sensor_0[1][0]) / linear_correction_sensor_0[0][0], label='Correción lineal DS18B20 0')
-plt.plot(splined_calib_mean, popt0[0] * splined_calib_mean + popt0[1], label='Correción lineal con curve_fit DS18B20 0')
-plt.plot(splined_calib_mean, output_odr0.beta[0] * splined_calib_mean + output_odr0.beta[1], label='Correción lineal con odr DS18B20 0')
+plt.plot(splined_calib_mean, a_curve_fit_0 * splined_calib_mean + b_curve_fit_0, label='Correción lineal con curve_fit DS18B20 0')
+plt.plot(splined_calib_mean, a_odr_0 * splined_calib_mean + b_odr_0, label='Correción lineal con odr DS18B20 0')
 if N_SENSORS_DS18B20 == 2:
     plt.plot(splined_calib_mean, splined_ds18b20_1, '.', label='Promedio DS18B20 1')
     plt.plot(splined_calib_mean, (splined_calib_mean - linear_correction_sensor_1[1][0]) / linear_correction_sensor_1[0][0], label='Correción lineal DS18B20 1')
-    plt.plot(splined_calib_mean, popt1[0] * splined_calib_mean + popt1[1], label='Correción lineal con curve_fit DS18B20 1')
+    plt.plot(splined_calib_mean, a_curve_fit_1 * splined_calib_mean + b_curve_fit_1, label='Correción lineal con curve_fit DS18B20 1')
     plt.plot(splined_calib_mean, output_odr1.beta[0] * splined_calib_mean + output_odr1.beta[1], label='Correción lineal con odr DS18B20 1')
 
 plt.title("Temperatura DS18B20 vs temperatura promedio sensores calibrados (ºC)")
@@ -429,31 +452,41 @@ comment = {
 
 if CORRECCION_LINEAL == 0:
     A_sensor_0 = linear_correction_sensor_0[0][0]
+    u_A_sensor_0 = 0  # TODO: Propagar incertidumbre de ajuste lineal "manual"
     b_sensor_0 = linear_correction_sensor_0[1][0]
-    u_correction = 0  # TODO: Propagar incertidumbre de ajuste lineal "manual"
+    u_b_sensor_0 = 0
     if N_SENSORS_DS18B20 == 2:
         A_sensor_1 = linear_correction_sensor_1[0][0]
+        u_A_sensor_1 = 0
         b_sensor_1 = linear_correction_sensor_1[1][0]
+        u_b_sensor_1 = 0
 elif CORRECCION_LINEAL == 1:
-    A_sensor_0 = popt0[0]
-    b_sensor_0 = popt0[1]
-    u_correction = 0  # TODO: Propagar incertidumbre de curve fit
+    A_sensor_0 = a_curve_fit_0
+    u_A_sensor_0 = u_a_curve_fit_0
+    b_sensor_0 = b_curve_fit_0
+    u_b_sensor_0 = u_b_curve_fit_0
     if N_SENSORS_DS18B20 == 2:
-        A_sensor_1 = popt1[0]
-        b_sensor_1 = popt1[1]
+        A_sensor_1 = a_curve_fit_1
+        u_A_sensor_1 = u_a_curve_fit_1
+        b_sensor_1 = b_curve_fit_1
+        u_b_sensor_1 = u_b_curve_fit_1
 elif CORRECCION_LINEAL == 2:
-    A_sensor_0 = output_odr0.beta[0]
-    b_sensor_0 = output_odr0.beta[1]
-    u_correction = 0  # TODO: Propagar incertidumbre de odr
+    A_sensor_0 = a_odr_0
+    u_A_sensor_0 = u_a_odr_0
+    b_sensor_0 = b_odr_0
+    u_b_sensor_0 = u_b_odr_0
     if N_SENSORS_DS18B20 == 2:
-        A_sensor_1 = output_odr1.beta[0]
-        b_sensor_1 = output_odr1.beta[1]
-
+        A_sensor_1 = a_odr_1
+        u_A_sensor_1 = u_a_odr_1
+        b_sensor_1 = b_odr_1
+        u_b_sensor_1 = u_b_odr_1
 
 correction_parameters_0 = {
     'bias': '{}'.format(bias_sensor_0),
     'A': '{}'.format(A_sensor_0),
-    'b': '{}'.format(b_sensor_0)
+    'u_A': '{}'.format(u_A_sensor_0),
+    'b': '{}'.format(b_sensor_0),
+    'u_b': '{}'.format(u_b_sensor_0)
 }
 
 json_data = {
@@ -465,10 +498,10 @@ if N_SENSORS_DS18B20 == 2:
     correction_parameters_1 = {
         'bias': '{}'.format(bias_sensor_1),
         'A': '{}'.format(A_sensor_1),
-        'b': '{}'.format(b_sensor_1)}
+        'u_A': '{}'.format(u_A_sensor_1),
+        'b': '{}'.format(b_sensor_1),
+        'u_b': '{}'.format(u_b_sensor_1)}
     json_data["correction_parameters_sensor_1"] = correction_parameters_1
-
-json_data["u_linear_correction"] = u_correction
 
 with open(parameters_file, 'w') as f:
     json.dump(json_data, f)
@@ -485,3 +518,22 @@ if N_SENSORS_DS18B20 == 2:
     slope_1 = json_data['correction_parameters_sensor_1']['A']
     intercept_1 = json_data['correction_parameters_sensor_1']['b']
     print("Saved parameters for Sensor 1: ", 'A =', slope_1, 'b =', intercept_1)
+
+
+plt.figure()
+plt.title("Coeficientes de sensibilidad vs tiempo (con odr)")
+temperatures = np.linspace(19, 21, 1000)
+plt.hlines(1/a_odr_0, time_ds18b20_0[0], time_ds18b20_0[-1], label='coef de u(temperatura indicada) con odr DS18B20 0')
+plt.plot(time_ds18b20_0, (1/a_odr_0)*u_ds18b20_0, label='Término con u(temperatura indicada)')
+plt.hlines(-1/a_odr_0, time_ds18b20_0[0], time_ds18b20_0[-1], label='coef de u(b) con odr DS18B20 0')
+plt.hlines((1/a_odr_0)*u_b_odr_0, time_ds18b20_0[0], time_ds18b20_0[-1], label='Término con u(b)')
+plt.plot(time_ds18b20_0, -(average_ds18b20_0-b_odr_0)/a_odr_0**2, '.', label='coef de u(m) con odr DS18B20 0')
+plt.plot(time_ds18b20_0, (-(average_ds18b20_0-b_odr_0)/a_odr_0**2)*u_a_odr_0, '.', label='Término con u(m) con odr DS18B20 0')
+if N_SENSORS_DS18B20 == 2:
+    plt.plot(time_ds18b20_1, -(average_ds18b20_1-b_odr_1)/a_odr_1**2, '.', label='u(m) con odr DS18B20 1')
+plt.legend()
+plt.show()
+
+# Test chi2:
+
+splined_calib_mean

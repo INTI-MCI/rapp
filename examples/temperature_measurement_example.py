@@ -57,7 +57,7 @@ for j in range(1):
         # temp = adc.readline() #readline needs termination character from serial to work properly
         tiempo_read = time.time()
 
-        while ask == False:
+        while not ask:
             time.sleep(0.6)
             adc.write(bytes(cmd_complete, 'utf-8'))
             ask = adc.read(1)

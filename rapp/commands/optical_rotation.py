@@ -1,4 +1,4 @@
-from rapp import constants as ct
+# from rapp import constants as ct
 from rapp.analysis import optical_rotation
 
 HELP_OR = 'Tool for calculating optical rotation from initial phase and final phase measurements.'
