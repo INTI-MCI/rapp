@@ -197,7 +197,7 @@ class ADC:
             self._serial.reset_input_buffer()
 
         cmd = f"req-temp;{channel};\n"
-        logger.info("ADC command: {}".format(cmd))
+        logger.debug("ADC command: {}".format(cmd))
 
         self._serial.write(bytes(cmd, 'utf-8'))
         temperature_requested = True
@@ -213,7 +213,7 @@ class ADC:
                     the value as a list  [temp].
                 """
         cmd = f"temp;{channel};\n"
-        logger.info("ADC command: {}".format(cmd))
+        logger.debug("ADC command: {}".format(cmd))
 
         self._serial.write(bytes(cmd, 'utf-8'))
 
