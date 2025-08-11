@@ -71,6 +71,7 @@ class Measurement:
             filepath,
             sep=sep, skip_blank_lines=True, comment='#', encoding=ct.ENCONDIG
         )
+        logger.debug("File columns: {}.".format(data.columns))
 
         if not set(data.columns).issubset(ALLOWED_COLUMNS):
             raise ValueError(
@@ -282,9 +283,9 @@ class Measurement:
         return self._data[COLUMN_ANGLE]
 
 
-def process_temperature_data(filepath, raise_error=True):
+def process_temperature_data(filepath, filename, raise_error=True):
     if os.path.isdir(filepath):
-        filepath = os.path.join(filepath, "temperature.csv")
+        filepath = os.path.join(filepath, "{}.csv".format(filename))
 
     if os.path.exists(filepath):
         temperature = pd.read_csv(filepath, sep=DELIMITER, skip_blank_lines=True,

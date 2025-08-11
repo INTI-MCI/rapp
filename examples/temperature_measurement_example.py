@@ -36,6 +36,8 @@ cmd_complete = 'complete?;1;\n'
 
 tiempos_mediciones = []
 
+# TODO: ver si agregando reset_input_buffer() a cada iteracion cambia el tiempo que tarda en estar completa la medición
+
 for j in range(1):
     tiempos_totales = []
     for i in range(30):

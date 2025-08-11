@@ -33,7 +33,7 @@ def phase_difference_from_folder(
     logger.info("Calculating phase difference for {}...".format(folder))
 
     files = sorted([os.path.join(folder, x) for x in os.listdir(folder) if x.endswith("csv") and
-                    x != "temperature.csv"])
+                    x != "temperature.csv" and x != "qp-temperature.csv"])
     if not files:
         raise ValueError("Folder does not contain measurements!")
 
@@ -53,7 +53,7 @@ def phase_difference_from_folder(
 
         # logger.info("Parameters: {}.".format(measurement.parameters_string()))
         if new_measurement:
-            logger.info("Processing {}...".format(filepath))
+            logger.debug("Processing {}...".format(filepath))
             res = phase_difference(measurement, method, norm=norm, show=False, **kwargs)
             results.append(res)
 
@@ -91,14 +91,14 @@ def phase_difference_from_folder(
     if len(phi1) > 0:
         std_phi1 = np.std(phi1)
         mean_phi1 = np.mean(phi1)
-        logger.info("STD phase of CH0: {}".format(std_phi1))
+        logger.debug("STD phase of CH0: {}".format(std_phi1))
 
     mean_phi2 = None
     std_phi2 = None
     if len(phi2) > 0:
         std_phi2 = np.std(phi2)
         mean_phi2 = np.mean(phi2)
-        logger.info("STD phase of CH1: {}".format(std_phi2))
+        logger.debug("STD phase of CH1: {}".format(std_phi2))
 
     mean_phase_diff = np.mean(phase_diffs)
     n = len(phase_diffs)
@@ -132,7 +132,8 @@ def phase_difference_from_folder(
     ]
 
     if plot or show:
-        temperature = process_temperature_data(folder)
+        temperature0 = process_temperature_data(folder, filename="temperature")
+        temperature1 = process_temperature_data(folder, filename="qp-temperature")
 
         output_folder = os.path.join(ct.WORK_DIR, ct.OUTPUT_FOLDER_PLOTS)
         f, axs = plt.subplots(
@@ -164,10 +165,14 @@ def phase_difference_from_folder(
         axs[2].set_xlabel("Nro de repetición")
         axs[2].set_title("DIFF")
         twin2 = axs[2].twinx()
-        twin2.plot(temperature[0], linestyle="-", color="r", label="Temperatura Media")
+        twin2.plot(temperature0[0], linestyle="-", color="r", label="Temperatura Media 0")
         twin2.set_ylabel("Temperatura (°C)")
-        twin2.plot(temperature[1], linestyle=":", color="k", label="Temperatura Max/Min")
-        twin2.plot(temperature[2], linestyle=":", color="k")
+        twin2.plot(temperature0[1], linestyle=":", color="r", label="Temperatura Max/Min 0")
+        twin2.plot(temperature0[2], linestyle=":", color="r")
+        twin2.plot(temperature1[0], linestyle="-", color="b", label="Temperatura Media 1")
+        twin2.set_ylabel("Temperatura (°C)")
+        twin2.plot(temperature1[1], linestyle=":", color="b", label="Temperatura Max/Min 1")
+        twin2.plot(temperature1[2], linestyle=":", color="b")
         twin2.legend()
         axs[2].legend()
 
@@ -233,13 +238,13 @@ def phase_difference(
 ):
     xs, s1, s2, s1err, s2err, res = measurement.phase_diff(method=method, norm=norm, **kwargs)
 
-    logger.info("Minimum of CH0 signal: {}".format(min(s1)))
-    logger.info("Minimum of CH1 signal: {}".format(min(s2)))
+    logger.debug("Minimum of CH0 signal: {}".format(min(s1)))
+    logger.debug("Minimum of CH1 signal: {}".format(min(s2)))
 
     phase_diff, phase_diff_u = res.round_to_n(n=2, k=1)
 
     log_phi = "{} (k=1).".format("φ=({} ± {})°".format(phase_diff, phase_diff_u))
-    logger.info("Detected phase difference (analyzer angles): {}".format(log_phi))
+    logger.debug("Detected phase difference (analyzer angles): {}".format(log_phi))
 
     if method in ["ODR", "NLS", "WNLS", "DFT", "ANNEAL"] and (filename or show):
         plot_phase_difference((xs, s1, s2, s1err, s2err, res), filename=filename, show=show,
@@ -376,10 +381,10 @@ def instantaneous_phase_difference(
     if len(folders) != 2:
         ValueError("Folder {} does not contain two folders.".format(filepath))
     files_i = glob.glob(f"{folders[0]}/*.csv")
-    files_i = [f for f in files_i if not f.endswith("temperature.csv")]
+    files_i = [f for f in files_i if not f.endswith("temperature.csv") and not f.endswith("qp-temperature.csv")]
     files_i = sorted(files_i)
     files_f = glob.glob(f"{folders[1]}/*.csv")
-    files_f = [f for f in files_f if not f.endswith("temperature.csv")]
+    files_f = [f for f in files_f if not f.endswith("temperature.csv") and not f.endswith("qp-temperature.csv")]
     files_f = sorted(files_f)
 
     for file_i, file_f in zip(files_i, files_f):

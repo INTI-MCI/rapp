@@ -80,7 +80,7 @@ class ADC:
         self.progressbar = ch0 != ch1
         self.timeout_open = timeout_open
         self.temperature_requested = False
-        self.max_V, self._multiplier_mV = PGA[gain]  # 5, 10/2**24 to try 24 bit ADC
+        self.max_V, self._multiplier_mV = PGA[gain]  # TODO: add adc config
 
         if not (ch0 or ch1):
             raise ADCError(MESSAGE_CHANNELS)
@@ -251,10 +251,9 @@ class ADC:
 
     def _read_bits(self):
         if self._in_bytes:
-            bytes_data = self._serial.read(4)
-            logger.debug(bytes_data)
+            bytes_data = self._serial.read(4)  # .read(2) for 16 bit ADC TODO: add adc config
+            logger.debug('Data in bytes = %s', bytes_data)
             return int.from_bytes(bytes_data, byteorder='big', signed=True)
-            # .read(2) for 16 bit ADC
         else:
             return int(self._serial.readline().decode().strip())
 

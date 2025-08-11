@@ -1,4 +1,4 @@
-# from rapp import constants as ct
+from rapp import constants as ct
 from rapp.analysis import optical_rotation
 
 HELP_OR = 'Tool for calculating optical rotation from initial phase and final phase measurements.'
@@ -13,7 +13,7 @@ HELP_AVG_OR = (
 HELP_HWP = 'whether the measurement was done with a half wave plate (default: %(default)s).'
 
 
-EXAMPLE = "rapp or data/28-12-2023/hwp0 data/28-12-2023/hwp29/"
+EXAMPLE = "rapp OR data/28-12-2023/hwp0 data/28-12-2023/hwp29/"
 EPILOG = "Example: {}".format(EXAMPLE)
 
 
@@ -24,7 +24,7 @@ def add_to_subparsers(subparsers):
     p.add_argument('--method', type=str, default='NLS', help=HELP_METHOD)
     # p.add_argument('--avg-or', action='store_true', help=HELP_AVG_OR)
     # p.add_argument('--hwp', action='store_true', help=HELP_HWP)
-    # p.add_argument('-v', '--verbose', action='store_true', help=ct.HELP_VERBOSE)
+    p.add_argument('-v', '--verbose', action='store_true', help=ct.HELP_VERBOSE)
 
 
 def run(**kwargs):

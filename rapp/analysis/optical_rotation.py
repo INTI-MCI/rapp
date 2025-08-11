@@ -17,11 +17,13 @@ def optical_rotation(folder1, folder2, method="DFT"):
     csv_files_i = [
         f for f in glob.glob(f"{folder1}/*.csv")
         if os.path.basename(f) != "temperature.csv"
+        if os.path.basename(f) != "qp-temperature.csv"
     ]
     files_i = sorted(csv_files_i)
     csv_files_f = [
         f for f in glob.glob(f"{folder2}/*.csv")
         if os.path.basename(f) != "temperature.csv"
+        if os.path.basename(f) != "qp-temperature.csv"
     ]
     files_f = sorted(csv_files_f)
 
@@ -45,9 +47,18 @@ def optical_rotation(folder1, folder2, method="DFT"):
         phase_diff_i.append(res_i.value)
         phase_diff_f.append(res_f.value)
 
+    phase_diff_i = np.array(phase_diff_i)
+    phase_diff_f = np.array(phase_diff_f)
+    logger.info("Initial phase differences: {}".format(phase_diff_i))
+    logger.info("Final phase differences: {}".format(phase_diff_f))
     phi1 = np.mean(phase_diff_i)
     phi2 = np.mean(phase_diff_f)
     optical_rotation = phi2 - phi1
+
+    logger.info("ϕ1: {}".format(phi1))
+    logger.info("ϕ2: {}".format(phi2))
+
+    logger.info("Optical rotation: {}".format(optical_rotation))
 
     return phi1, phi2, optical_rotation
 
