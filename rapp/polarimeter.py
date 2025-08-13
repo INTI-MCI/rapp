@@ -459,6 +459,8 @@ def run(
 
     if hwp_enabled:
         logger.info("Connecting Rotary Stage: HalfWavePlate...")
+    else:
+        logger.warning("HalfWavePlate disabled. Use --hwp to enable.")
     hwp = RotaryStage.build(
         motion_controller, hwp_cycles, hwp_step, hwp_delay_position, axis=2, name='HalfWavePlate',
         mock=hwp_enabled

@@ -1,10 +1,5 @@
 import time
 import random
-import logging
-
-from rapp.rotary_stage import RotaryStage
-
-logger = logging.getLogger(__name__)
 
 
 class SerialMock:
@@ -151,32 +146,3 @@ class ConfigureScalarPM100Mock:
 class InitiatePM100Mock:
     def immediate(self):
         pass
-
-
-class RotaryStageMock(RotaryStage):
-    def __init__(self, **kwargs):
-        super().__init__(**kwargs)
-
-    def _prepare_rotations(self):
-        self._positions = [self._motion_controller.get_position(axis=self._axis)]
-
-    def __next__(self):
-        if self._index < len(self._positions):
-            position = self._positions[self._index]
-            self._index += 1
-
-            return position
-        else:
-            raise StopIteration
-
-    def reset(self):
-        self._index = 0
-
-    def set_home(self, position):
-        logger.info("set_home ignored.")
-
-    def motor_on(self):
-        logger.info("motor_on ignored.")
-
-    def current_position_for_filename(self):
-        return None
