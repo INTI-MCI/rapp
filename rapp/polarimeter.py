@@ -193,10 +193,14 @@ class Polarimeter:
         for hwp_position in self._hwp:
             rep = 1
             while rep < reps + 1:
-                logger.info("HWP angle: {}°, repetition {}/{}".format(hwp_position, rep, reps))
+                logger.info(
+                    "{}repetition {}/{}".format(self._hwp.info_current_position(), rep, reps)
+                )
 
                 self._analyzer.reset()
-                self._data_file.open(self._build_data_filename(rep, hwp_position))
+                self._data_file.open(
+                    self._build_data_filename(rep, self._hwp.current_position_for_filename())
+                )
 
                 p_desc = 'rep no. {}: '.format(rep)
                 try:
@@ -410,12 +414,12 @@ def run(
     mock_adc: bool = False,
     mock_pm100: bool = False,
     overwrite: bool = False,
+    hwp_enable: bool = False,
     hwp_cycles: float = 0,
     hwp_step: float = 45,
     hwp_delay_position: float = 5,
     mc_wait: float = 15,
     enable_pm100: bool = True,
-    # enable_hwp: bool = True,
     work_dir: str = ct.WORK_DIR
 ):
 
@@ -435,9 +439,10 @@ def run(
     setup_log_file(log_filename)
 
     logger.info("Connecting to ESP Motion Controller...")
+    mc_use_axes = [1, 2] if hwp_enable else [1]  # start HWP motor only if enabled
     motion_controller = ESP301.build(
         MOTION_CONTROLLER_PORT_WIN, b=MOTION_CONTROLLER_BAUDRATE,
-        useaxes=[1, 2], mock_serial=mock_esp)
+        useaxes=mc_use_axes, mock_serial=mock_esp)
 
     logger.info("Connecting Rotary Stage: Analyzer...")
     analyzer = RotaryStage(
@@ -452,12 +457,12 @@ def run(
         name='Analyzer'
     )
 
-    # if enable_hwp:
-    logger.info("Connecting Rotary Stage: HalfWavePlate...")
-    hwp = RotaryStage(
-        motion_controller, hwp_cycles, hwp_step, hwp_delay_position, axis=2, name='HalfWavePlate')
-    # else:
-    #     logger.info("HalfWavePlate disabled.")
+    if hwp_enable:
+        logger.info("Connecting Rotary Stage: HalfWavePlate...")
+    hwp = RotaryStage.build(
+        motion_controller, hwp_cycles, hwp_step, hwp_delay_position, axis=2, name='HalfWavePlate',
+        mock=hwp_enable
+    )
 
     logger.info("Connecting to ADC...")
     adc = ADC.build(
