@@ -414,7 +414,7 @@ def run(
     mock_adc: bool = False,
     mock_pm100: bool = False,
     overwrite: bool = False,
-    hwp_enable: bool = False,
+    hwp_enabled: bool = False,
     hwp_cycles: float = 0,
     hwp_step: float = 45,
     hwp_delay_position: float = 5,
@@ -439,7 +439,7 @@ def run(
     setup_log_file(log_filename)
 
     logger.info("Connecting to ESP Motion Controller...")
-    mc_use_axes = [1, 2] if hwp_enable else [1]  # start HWP motor only if enabled
+    mc_use_axes = [1, 2] if hwp_enabled else [1]  # start HWP motor only if enabled
     motion_controller = ESP301.build(
         MOTION_CONTROLLER_PORT_WIN, b=MOTION_CONTROLLER_BAUDRATE,
         useaxes=mc_use_axes, mock_serial=mock_esp)
@@ -457,11 +457,11 @@ def run(
         name='Analyzer'
     )
 
-    if hwp_enable:
+    if hwp_enabled:
         logger.info("Connecting Rotary Stage: HalfWavePlate...")
     hwp = RotaryStage.build(
         motion_controller, hwp_cycles, hwp_step, hwp_delay_position, axis=2, name='HalfWavePlate',
-        mock=hwp_enable
+        mock=hwp_enabled
     )
 
     logger.info("Connecting to ADC...")

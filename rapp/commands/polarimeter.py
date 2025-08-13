@@ -78,7 +78,7 @@ def add_to_subparsers(subparsers):
     g.add_argument('--deceleration', type=float, default=4, metavar='', help=HELP_DECELERATION)
 
     g = p.add_argument_group('Half Wave Plate')
-    g.add_argument('--hwp', action='store_true', help=HELP_HWP)
+    g.add_argument('--hwp', action='store_true', help=HELP_HWP, dest='hwp_enabled')
     g.add_argument('--hwp-cycles', type=float, default=0, metavar='', help=HELP_HWP_CYCLES)
     g.add_argument('--hwp-step', type=float, default=45, metavar='', help=HELP_HWP_STEP)
     g.add_argument('--hwp-delay-position', type=float, default=5, metavar='', help=HELP_HWP_DELAY)
