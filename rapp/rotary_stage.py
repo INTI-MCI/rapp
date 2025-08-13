@@ -3,7 +3,6 @@ import math
 import logging
 from rapp.motion_controller import ESP301Error, ESP301
 import rapp.constants as ct
-from rapp.mocks import RotaryStageMock
 
 from collections.abc import Iterator
 import numpy as np
@@ -152,3 +151,32 @@ class RotaryStage(Iterator):
             self._positions[self._index - 1]
         else:
             raise ValueError("Index out of range.")
+
+
+class RotaryStageMock(RotaryStage):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    def _prepare_rotations(self):
+        self._positions = [self._motion_controller.get_position(axis=self._axis)]
+
+    def __next__(self):
+        if self._index < len(self._positions):
+            position = self._positions[self._index]
+            self._index += 1
+
+            return position
+        else:
+            raise StopIteration
+
+    def reset(self):
+        self._index = 0
+
+    def set_home(self, position):
+        logger.info("set_home ignored.")
+
+    def motor_on(self):
+        logger.info("motor_on ignored.")
+
+    def current_position_for_filename(self):
+        return None
