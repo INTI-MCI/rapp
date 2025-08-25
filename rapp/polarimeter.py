@@ -135,6 +135,10 @@ class Polarimeter:
         failures = 0
 
         # self._hwp.reset()
+        # logger.info("Waiting 5 seconds before define home")
+        # time.sleep(5)
+        # logger.info("Setting home position for HWP")
+        # self._hwp.set_home(position=0)
 
         parameters = {
             "position": 0,
@@ -151,7 +155,7 @@ class Polarimeter:
         }
 
         if temp_wait < 1:
-            logger.warning("Temperature wait time is too short. It will be set to 1 seconds.")
+            logger.warning("Temperature wait time is too short. It will be set to 1 second.")
             temp_wait = 1
 
         temperature_requested = [False, False]
@@ -333,13 +337,13 @@ class Polarimeter:
         if channel == 0:
             slope = json_data['correction_parameters_sensor_0']['A']
             intercept = json_data['correction_parameters_sensor_0']['b']
-            logger.debug('parameters sensor 0')
+            logger.debug('parameters sensor 0: {}, {}'.format(slope, intercept))
         elif channel == 1:
             slope = json_data['correction_parameters_sensor_1']['A']
             intercept = json_data['correction_parameters_sensor_1']['b']
-            logger.debug('parameters sensor 1')
+            logger.debug('parameters sensor 1: {}, {}'.format(slope, intercept))
         temperature = temperature[0]
-        return temperature * float(slope) + float(intercept)
+        return (temperature - float(intercept)) / float(slope)
 
     def close(self):
         self._adc.close()
@@ -404,7 +408,7 @@ def run(
     no_ch0: bool = False,
     no_ch1: bool = False,
     prefix: str = 'test',
-    temp_correction: str = 'bias',
+    temp_correction: str = 'linear',
     temp_wait: int = 60,
     mock_esp: bool = False,
     mock_adc: bool = False,
