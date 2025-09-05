@@ -404,7 +404,7 @@ def run(
     no_ch0: bool = False,
     no_ch1: bool = False,
     prefix: str = 'test',
-    temp_correction: str = 'bias',
+    temp_correction: str = 'linear',
     temp_wait: int = 60,
     mock_esp: bool = False,
     mock_adc: bool = False,

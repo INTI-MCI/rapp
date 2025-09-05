@@ -301,8 +301,8 @@ def process_temperature_data(filepath, filename, raise_error=True):
     min_temps = np.zeros(n_reps)
 
     for i in range(n_reps):
-        mean_temps[i] = temperature[temperature[COLUMN_REP] == i][COLUMN_TEMP].mean()
-        max_temps[i] = temperature[temperature[COLUMN_REP] == i][COLUMN_TEMP].max()
-        min_temps[i] = temperature[temperature[COLUMN_REP] == i][COLUMN_TEMP].min()
+        mean_temps[i] = temperature[temperature[COLUMN_REP] == i+1][COLUMN_TEMP].mean()
+        max_temps[i] = temperature[temperature[COLUMN_REP] == i+1][COLUMN_TEMP].max()
+        min_temps[i] = temperature[temperature[COLUMN_REP] == i+1][COLUMN_TEMP].min()
 
     return mean_temps, max_temps, min_temps
