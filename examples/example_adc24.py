@@ -8,6 +8,10 @@ from rapp.adc import ADC
 
 from rich.progress import track
 
+'''
+Así como quedó escrita puede reemplazar el serial monitor del Arduino IDE para chequear el voltaje
+que sale de los fotodiodos, modificando los parámetros de la funcion main según sea necesario
+'''
 
 ADC_WIN_DEVICE = 'COM3'
 ADC_LINUX_DEVICE = '/dev/ttyACM0'
@@ -138,8 +142,11 @@ def _read_bits(self):
     else:
         return int(self.readline().decode().strip())
 
+def bits_to_volts(value):
+        return value * (1240/2**23) / 1000
 
-def main(n_samples=5, ch0=1, ch1=1):
+
+def main(n_samples=1, ch0=1, ch1=1, total_samples=10):
     print("Instantiating ADC...")
     adc = get_serial_connection(ADC_WIN_DEVICE, baudrate=ADC_BAUDRATE, timeout=ADC_TIMEOUT)
     # adc = ADC(resolve_adc_device(), timeout_open=ADC_TIMEOUT_OPEN)#, baudrate=ADC_BAUDRATE, timeout=ADC_TIMEOUT)
@@ -155,25 +162,30 @@ def main(n_samples=5, ch0=1, ch1=1):
         # time.sleep(5)
         # buf2 = adc.readline()
         # print(buf2)
-        adc.write(bytes(CMD_TEMPLATE.format(measurement='adc', ch0=ch0, ch1=ch1, samples=n_samples).encode('utf-8')))
-        # adc.write(bytes('adc_n_dt;{};500;\n'.format(n_samples).encode('utf-8')))
-        none_array0 = np.full(n_samples, None)
-        none_array1 = np.full(n_samples, None)
-        datos0 = []
-        datos1 = []
+        for j in range(total_samples):
+            adc.write(bytes(CMD_TEMPLATE.format(measurement='adc', ch0=ch0, ch1=ch1, samples=n_samples).encode('utf-8')))
+            # adc.write(bytes('adc_n_dt;{};500;\n'.format(n_samples).encode('utf-8')))
+            none_array0 = np.full(n_samples, None)
+            none_array1 = np.full(n_samples, None)
+            datos0 = []
+            datos1 = []
 
-        for i in range(n_samples):
-            channel0 = adc.read(4) if ch0 else none_array0
-            datos0.append(channel0)
-            datos0.append(int.from_bytes(channel0, byteorder='big', signed=True))
+            for i in range(n_samples):
+                channel0 = adc.read(4) if ch0 else none_array0
+                # channel0 = adc.readline()
+                # datos0.append(channel0)
+                datos0.append(bits_to_volts(int.from_bytes(channel0, byteorder='big', signed=True)))
 
-        for i in range(n_samples):
-            channel1 = adc.read(4) if ch1 else none_array1
-            datos1.append(channel1)
-            datos1.append(int.from_bytes(channel1, byteorder='big', signed=True))
+            for i in range(n_samples):
+                channel1 = adc.read(4) if ch1 else none_array1
+                # channel1 = adc.readline()
+                # datos1.append(channel1)
+                datos1.append(bits_to_volts(int.from_bytes(channel1, byteorder='big', signed=True)))
 
-        print("{} = ({})".format('CH0', datos0)) if ch0 else None
-        print("{} = ({})".format('CH1', datos1)) if ch1 else None
+            print("{} = ({})".format('CH0', datos0)) if ch0 else None
+            print("{} = ({})".format('CH1', datos1)) if ch1 else None
+
+            time.sleep(0.25)
 
         adc.close()
 
