@@ -27,7 +27,7 @@ def sine(xs, a, phi, c):
 
 
 def phase_difference_from_folder(
-    folder, method, norm=False, fill_none=False, appended_measurements=None, plot=False,
+    folder, method, norm=False, fill_none=False, appended_measurements=None, correlation=False, plot=False,
     show=False, **kwargs
 ):
     logger.info("Calculating phase difference for {}...".format(folder))
@@ -48,7 +48,7 @@ def phase_difference_from_folder(
             measurement.append(Measurement.from_file(filepath, fill_none=fill_none), degrees=True)
 
         new_measurement = (
-            appended_measurements is None or (file_number + 1) % appended_measurements == 0
+                appended_measurements is None or (file_number + 1) % appended_measurements == 0
         )
 
         # logger.info("Parameters: {}.".format(measurement.parameters_string()))
@@ -131,9 +131,18 @@ def phase_difference_from_folder(
         std_std,
     ]
 
+    temperature0 = process_temperature_data(folder, filename="temperature")
+    temperature1 = process_temperature_data(folder, filename="qp-temperature")
+
+    if correlation:
+        correlation_ph_diff_temp0 = np.corrcoef(phase_diffs, temperature0[0], rowvar=False)
+        correlation_ph_diff_temp1 = np.corrcoef(phase_diffs, temperature1[0], rowvar=False)
+        logger.info("Correlation phase diffs and temperature ch 0: {}".format(correlation_ph_diff_temp0[0, 1]))
+        # logger.info("Correlation matrix (phase diff and t ch0): {}".format(correlation_ph_diff_temp0))
+        logger.info("Correlation phase diffs and temperature ch 1: {}".format(correlation_ph_diff_temp1[0, 1]))
+        # logger.info("Correlation matrix (phase diff and t ch1): {}".format(correlation_ph_diff_temp1))
+
     if plot or show:
-        temperature0 = process_temperature_data(folder, filename="temperature")
-        temperature1 = process_temperature_data(folder, filename="qp-temperature")
 
         output_folder = os.path.join(ct.WORK_DIR, ct.OUTPUT_FOLDER_PLOTS)
         f, axs = plt.subplots(
