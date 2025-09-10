@@ -169,3 +169,26 @@ print("Medición 5, 09/09/2025")
 print("T promedio sin placa: ", avg_temperature_no_qp, "DT: ", delta_temperatures_no_qp, "DT total: ", total_delta_temperatures_no_qp)
 print("T promedio con placa: ", avg_temperature_w_qp, "DT: ", delta_temperatures_w_qp, "DT total: ", total_delta_temperatures_w_qp)
 print("------------------")
+
+'''Gráfico del poster, diferencia de fase sin placa, entre líneas 216 y 217 de rapp/analysis/phase_diff.py:
+# TODO: agregar barras de error a las diferencias de fase
+        plt.figure()
+        plt.plot(phase_diffs, ".-", color="k", label=label_phase_diff)
+        plt.ylabel("Diferencia de fase (°)", size=14)
+        plt.xlabel("Nº de repetición", size=14)
+        plt.title("Diferencia de fase sin placa", size=17)
+        twin2 = plt.twinx()
+        twin2.plot(temperature0[0], linestyle="-", color="r", label="Temperatura Media 0")
+        twin2.set_ylabel("Temperatura (°C)", size=14)
+        twin2.plot(temperature0[1], linestyle=":", color="r", label="Temperatura Max/Min 0")
+        twin2.plot(temperature0[2], linestyle=":", color="r")
+        twin2.plot(temperature1[0], linestyle="-", color="b", label="Temperatura Media 1")
+        # twin2.set_ylabel("Temperatura (°C)")
+        twin2.plot(temperature1[1], linestyle=":", color="b", label="Temperatura Max/Min 1")
+        twin2.plot(temperature1[2], linestyle=":", color="b")
+        twin2.legend()
+        axs[2].legend()
+
+        f.tight_layout()
+
+'''
