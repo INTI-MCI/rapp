@@ -135,10 +135,18 @@ def phase_difference_from_folder(
     temperature1 = process_temperature_data(folder, filename="qp-temperature")
 
     if correlation:
+        correlation_ph_0_temp0 = np.corrcoef(phi1, temperature0[0], rowvar=False)
+        correlation_ph_1_temp0 = np.corrcoef(phi2, temperature1[0], rowvar=False)
         correlation_ph_diff_temp0 = np.corrcoef(phase_diffs, temperature0[0], rowvar=False)
+        correlation_ph_0_temp1 = np.corrcoef(phi1, temperature1[0], rowvar=False)
+        correlation_ph_1_temp1 = np.corrcoef(phi2, temperature1[0], rowvar=False)
         correlation_ph_diff_temp1 = np.corrcoef(phase_diffs, temperature1[0], rowvar=False)
+        logger.info("Correlation phase ch 0 and temperature ch 0: {}".format(correlation_ph_0_temp0[0, 1]))
+        logger.info("Correlation phase ch 1 and temperature ch 0: {}".format(correlation_ph_1_temp0[0, 1]))
         logger.info("Correlation phase diffs and temperature ch 0: {}".format(correlation_ph_diff_temp0[0, 1]))
         # logger.info("Correlation matrix (phase diff and t ch0): {}".format(correlation_ph_diff_temp0))
+        logger.info("Correlation phase ch 0 and temperature ch 1: {}".format(correlation_ph_0_temp1[0, 1]))
+        logger.info("Correlation phase ch 1 and temperature ch 1: {}".format(correlation_ph_1_temp1[0, 1]))
         logger.info("Correlation phase diffs and temperature ch 1: {}".format(correlation_ph_diff_temp1[0, 1]))
         # logger.info("Correlation matrix (phase diff and t ch1): {}".format(correlation_ph_diff_temp1))
 
