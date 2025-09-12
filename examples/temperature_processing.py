@@ -171,24 +171,24 @@ print("T promedio con placa: ", avg_temperature_w_qp, "DT: ", delta_temperatures
 print("------------------")
 
 '''Gráfico del poster, diferencia de fase sin placa, entre líneas 216 y 217 de rapp/analysis/phase_diff.py:
-# TODO: agregar barras de error a las diferencias de fase
         plt.figure()
         plt.plot(phase_diffs, ".-", color="k", label=label_phase_diff)
-        plt.ylabel("Diferencia de fase (°)", size=14)
+        plt.ylabel("Diferencia de fase / °", size=14)
         plt.xlabel("Nº de repetición", size=14)
-        plt.title("Diferencia de fase sin placa", size=17)
+        plt.title("Diferencia de fase con placa", size=17)
+        plt.legend(fontsize=14)
+        plt.xticks(fontsize=12)
+        plt.yticks(fontsize=12)
         twin2 = plt.twinx()
         twin2.plot(temperature0[0], linestyle="-", color="r", label="Temperatura Media 0")
-        twin2.set_ylabel("Temperatura (°C)", size=14)
         twin2.plot(temperature0[1], linestyle=":", color="r", label="Temperatura Max/Min 0")
         twin2.plot(temperature0[2], linestyle=":", color="r")
         twin2.plot(temperature1[0], linestyle="-", color="b", label="Temperatura Media 1")
-        # twin2.set_ylabel("Temperatura (°C)")
         twin2.plot(temperature1[1], linestyle=":", color="b", label="Temperatura Max/Min 1")
         twin2.plot(temperature1[2], linestyle=":", color="b")
-        twin2.legend()
-        axs[2].legend()
+        twin2.set_ylabel("Temperatura / °C", size=14)
+        twin2.legend(fontsize=14)
+        twin2.tick_params(axis='y', labelsize=12)
 
-        f.tight_layout()
-
+        plt.tight_layout()
 '''
