@@ -187,7 +187,6 @@ class Measurement:
             x_sigma=np.deg2rad(ct.ANALYZER_UNCERTAINTY),
             s1_sigma=s1_sigma,
             s2_sigma=s2_sigma,
-            allow_nan=True,
             **kwargs
         )
 

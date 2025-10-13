@@ -27,8 +27,8 @@ def sine(xs, a, phi, c):
 
 
 def phase_difference_from_folder(
-    folder, method, norm=False, fill_none=False, appended_measurements=None, correlation=False, plot=False,
-    show=False, **kwargs
+    folder, method, norm=False, fill_none=False, appended_measurements=None,
+    correlation=False, plot=False, show=False, **kwargs
 ):
     logger.info("Calculating phase difference for {}...".format(folder))
 
@@ -141,13 +141,19 @@ def phase_difference_from_folder(
         correlation_ph_0_temp1 = np.corrcoef(phi1, temperature1[0], rowvar=False)
         correlation_ph_1_temp1 = np.corrcoef(phi2, temperature1[0], rowvar=False)
         correlation_ph_diff_temp1 = np.corrcoef(phase_diffs, temperature1[0], rowvar=False)
-        logger.info("Correlation phase ch 0 and temperature ch 0: {}".format(correlation_ph_0_temp0[0, 1]))
-        logger.info("Correlation phase ch 1 and temperature ch 0: {}".format(correlation_ph_1_temp0[0, 1]))
-        logger.info("Correlation phase diffs and temperature ch 0: {}".format(correlation_ph_diff_temp0[0, 1]))
+        logger.info("Correlation phase ch 0 and temperature ch 0: {}".format(
+            correlation_ph_0_temp0[0, 1]))
+        logger.info("Correlation phase ch 1 and temperature ch 0: {}".format(
+            correlation_ph_1_temp0[0, 1]))
+        logger.info("Correlation phase diffs and temperature ch 0: {}".format(
+            correlation_ph_diff_temp0[0, 1]))
         # logger.info("Correlation matrix (phase diff and t ch0): {}".format(correlation_ph_diff_temp0))
-        logger.info("Correlation phase ch 0 and temperature ch 1: {}".format(correlation_ph_0_temp1[0, 1]))
-        logger.info("Correlation phase ch 1 and temperature ch 1: {}".format(correlation_ph_1_temp1[0, 1]))
-        logger.info("Correlation phase diffs and temperature ch 1: {}".format(correlation_ph_diff_temp1[0, 1]))
+        logger.info("Correlation phase ch 0 and temperature ch 1: {}".format(
+            correlation_ph_0_temp1[0, 1]))
+        logger.info("Correlation phase ch 1 and temperature ch 1: {}".format(
+            correlation_ph_1_temp1[0, 1]))
+        logger.info("Correlation phase diffs and temperature ch 1: {}".format(
+            correlation_ph_diff_temp1[0, 1]))
         # logger.info("Correlation matrix (phase diff and t ch1): {}".format(correlation_ph_diff_temp1))
 
     if plot or show:
@@ -181,6 +187,7 @@ def phase_difference_from_folder(
         axs[2].set_ylabel("Diferencia de fase (°)")
         axs[2].set_xlabel("Nro de repetición")
         axs[2].set_title("DIFF")
+        axs[2].legend()
         twin2 = axs[2].twinx()
         twin2.plot(temperature0[0], linestyle="-", color="r", label="Temperatura Media 0")
         twin2.set_ylabel("Temperatura (°C)")
@@ -191,7 +198,6 @@ def phase_difference_from_folder(
         twin2.plot(temperature1[1], linestyle=":", color="b", label="Temperatura Max/Min 1")
         twin2.plot(temperature1[2], linestyle=":", color="b")
         twin2.legend()
-        axs[2].legend()
 
         f.tight_layout()
 
@@ -214,6 +220,27 @@ def phase_difference_from_folder(
         )
         plot.save(filename="phase-difference-histogram.{}".format(FORMAT))
         plot.close()
+# TODO: agregar barras de error a las diferencias de fase
+        plt.figure()  # Plot for presentation, phase diff and temperature vs reps
+        plt.plot(phase_diffs, ".-", color="k", label=label_phase_diff)
+        plt.ylabel("Diferencia de fase / °", size=14)
+        plt.xlabel("Nº de repetición", size=14)
+        plt.title("Diferencia de fase con placa", size=17)
+        plt.legend(fontsize=14)
+        plt.xticks(fontsize=12)
+        plt.yticks(fontsize=12)
+        twin2 = plt.twinx()
+        twin2.plot(temperature0[0], linestyle="-", color="r", label="Temperatura Media 0")
+        twin2.plot(temperature0[1], linestyle=":", color="r", label="Temperatura Max/Min 0")
+        twin2.plot(temperature0[2], linestyle=":", color="r")
+        twin2.plot(temperature1[0], linestyle="-", color="b", label="Temperatura Media 1")
+        twin2.plot(temperature1[1], linestyle=":", color="b", label="Temperatura Max/Min 1")
+        twin2.plot(temperature1[2], linestyle=":", color="b")
+        twin2.set_ylabel("Temperatura / °C", size=14)
+        twin2.legend(fontsize=14)
+        twin2.tick_params(axis='y', labelsize=12)
+
+        plt.tight_layout()
 
         """
         errors = abs(phase_diffs - np.mean(phase_diffs))
@@ -398,10 +425,12 @@ def instantaneous_phase_difference(
     if len(folders) != 2:
         ValueError("Folder {} does not contain two folders.".format(filepath))
     files_i = glob.glob(f"{folders[0]}/*.csv")
-    files_i = [f for f in files_i if not f.endswith("temperature.csv") and not f.endswith("qp-temperature.csv")]
+    files_i = [f for f in files_i if not f.endswith("temperature.csv") and not f.endswith(
+        "qp-temperature.csv")]
     files_i = sorted(files_i)
     files_f = glob.glob(f"{folders[1]}/*.csv")
-    files_f = [f for f in files_f if not f.endswith("temperature.csv") and not f.endswith("qp-temperature.csv")]
+    files_f = [f for f in files_f if not f.endswith("temperature.csv") and not f.endswith(
+        "qp-temperature.csv")]
     files_f = sorted(files_f)
 
     for file_i, file_f in zip(files_i, files_f):
