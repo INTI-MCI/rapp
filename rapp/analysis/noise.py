@@ -373,7 +373,8 @@ def plot_noise_with_laser_on(output_folder, show=False):
 
     # filename = "continuous-range4V-584nm-samples10000-sps59.csv"
     # filename = "continuous-range4V-632nm-samples100000.csv"
-    filename = "output-data/2024-07-15-noise-quartz-2-cycles0-step45-samples760500/hwp68.937-rep1.csv"
+    filename = ("output-data/2024-07-15-noise-quartz-2-cycles0-step45-samples760500/"
+                "hwp68.937-rep1.csv")
 
     filepath = os.path.join(ct.WORK_DIR, filename)
 
@@ -605,10 +606,12 @@ def plot_noise_24_bit_adc(output_folder, show=False):
     print("")
     logger.info("ANALYZING ADC NOISE...")
 
-    filename = "output-data/2025-08-27-noise-measurements-high-intensity-4-minutes-cycles0.0-step45-samples5000/hwp0.0-rep1.csv"\
+    filename = ("output-data/"
+                "2025-08-27-noise-measurements-high-intensity-4-"
+                "minutes-cycles0.0-step45-samples5000/hwp0.0-rep1.csv")\
 
     filepath = Path(ct.WORK_DIR).joinpath(filename)
-    base_output_fname = Path(output_folder).joinpath(filepath.stem)
+    # base_output_fname = Path(output_folder).joinpath(filepath.stem)
 
     measurement = Measurement.from_file(filepath.as_posix())
     logger.info("Plotting raw data...")
