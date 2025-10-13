@@ -147,14 +147,16 @@ def phase_difference_from_folder(
             correlation_ph_1_temp0[0, 1]))
         logger.info("Correlation phase diffs and temperature ch 0: {}".format(
             correlation_ph_diff_temp0[0, 1]))
-        # logger.info("Correlation matrix (phase diff and t ch0): {}".format(correlation_ph_diff_temp0))
+        # logger.info("Correlation matrix (phase diff and t ch0): {}".format(
+        # correlation_ph_diff_temp0))
         logger.info("Correlation phase ch 0 and temperature ch 1: {}".format(
             correlation_ph_0_temp1[0, 1]))
         logger.info("Correlation phase ch 1 and temperature ch 1: {}".format(
             correlation_ph_1_temp1[0, 1]))
         logger.info("Correlation phase diffs and temperature ch 1: {}".format(
             correlation_ph_diff_temp1[0, 1]))
-        # logger.info("Correlation matrix (phase diff and t ch1): {}".format(correlation_ph_diff_temp1))
+        # logger.info("Correlation matrix (phase diff and t ch1): {}".format(
+        # correlation_ph_diff_temp1))
 
     if plot or show:
 
