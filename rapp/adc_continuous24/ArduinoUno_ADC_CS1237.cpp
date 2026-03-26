@@ -48,7 +48,7 @@ int32_t ArduinoUno_ADC_CS1237::readADC() {
     int previousValue = digitalRead(DOUT_DRDY);
     int newValue = digitalRead(DOUT_DRDY);
     //Wait for the DOUT_DRDY to fall LOW:
-    while (previousValue - newValue != 1){
+    while (previousValue - newValue != 1) {
         previousValue = newValue;
         newValue = digitalRead(DOUT_DRDY);
     }
@@ -71,6 +71,71 @@ int32_t ArduinoUno_ADC_CS1237::readADC() {
 
     //Check if the data is signed:
     if(result & 0x00800000) result |= 0xFF800000;
+
+    return result;
+}
+
+int32_t ArduinoUno_ADC_CS1237::readADCwProfiler() {
+//Data acquisition function - Returns int32 variable
+    unsigned long time1;
+    unsigned long time2;
+    unsigned long elapsed_time_while;
+    unsigned long max_time_while = 0;
+    unsigned long min_time_while = 4294967295;
+    if (PROFILE_CS1237 or DEBUG_CS1237) time1 = micros(); // Queda que se imprimen los tiempos si está en modo debug!
+    int previousValue = digitalRead(DOUT_DRDY);
+    int newValue = digitalRead(DOUT_DRDY);
+    //Wait for the DOUT_DRDY to fall LOW:
+    while (previousValue - newValue != 1) {
+        previousValue = newValue;
+        newValue = digitalRead(DOUT_DRDY);
+    }
+    if (PROFILE_CS1237 or DEBUG_CS1237) {
+      time2 = micros();
+      elapsed_time_while = time2 - time1;
+      if (elapsed_time_while > max_time_while) max_time_while = elapsed_time_while;
+      if (elapsed_time_while < min_time_while) min_time_while = elapsed_time_while;
+    }
+    // if (DEBUG_CS1237) {
+      //Serial.print("Elapsed time while loop in microseconds: ");
+      //Serial.println(elapsed_time_while);
+      //}
+
+    int32_t result = 0; //24-bit output data is stored in this variable
+
+    delayMicroseconds(0); //t4
+    unsigned long starttime;
+    unsigned long endtime;
+    unsigned long elapsed_time_read;
+    unsigned long max_time_read = 0;
+    unsigned long min_time_read = 4294967295;
+
+    if (PROFILE_CS1237 or DEBUG_CS1237) starttime = micros();
+    //Read the 24-bits:
+    for (int i = 0; i < 24; i++) {
+        result <<= 1;
+        result |= readBit();
+        //i = 0; MSB @ bit 23
+        //i = 1; MSB-1 @ bit 22
+        //... i = 23; LSB @ bit 0 (not shifted, just OR'd together with the result)
+    }
+
+    //Shift bit 25-26-27 as well:
+    for (uint8_t i = 0; i < 3; i++) clockCycle();
+
+    //Check if the data is signed:
+    if(result & 0x00800000) result |= 0xFF800000;
+
+    if (PROFILE_CS1237 or DEBUG_CS1237) {
+      endtime = micros();
+      elapsed_time_read = endtime - starttime;
+      if (elapsed_time_read > max_time_read) max_time_read = elapsed_time_read;
+      if (elapsed_time_read < min_time_read) min_time_read = elapsed_time_read;
+    }
+    // if (DEBUG_CS1237) {
+      //Serial.print("Elapsed time read in microseconds: ");
+      //Serial.println(elapsed_time_read);
+    //}
 
     return result;
 }

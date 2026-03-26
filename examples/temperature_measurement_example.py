@@ -29,9 +29,9 @@ while True:
         print(leido3)
         break
 print('Puerto abierto')
-cmd_req_temp = 'req-temp;1;\n'
-cmd_temp = 'temp;1;\n'
-cmd_complete = 'complete?;1;\n'
+cmd_req_temp = 'req-temp;0;\n'
+cmd_temp = 'temp;0;\n'
+cmd_complete = 'complete?;0;\n'
 # cmd_adc = CMD_TEMPLATE.format(measurement='adc?', ch0=1, ch1=1, samples=3)
 
 tiempos_mediciones = []

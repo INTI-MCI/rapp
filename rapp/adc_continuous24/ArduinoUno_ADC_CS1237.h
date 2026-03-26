@@ -1,6 +1,7 @@
 #ifndef ArduinoUno_ADC_CS1237_h
 #define ArduinoUno_ADC_CS1237_h
 #define DEBUG_CS1237 0 // Set to 0/1 to disable/enable debug messages
+#define PROFILE_CS1237 0 // Set to 0/1 to disable/enable profiler
 #define OFF_ON_SETTLING_TIME 1000
 #define REGISTER_SETTLING_TIME 350
 
@@ -22,6 +23,7 @@ class ArduinoUno_ADC_CS1237 {
         void writeBit(bool bit);
 
 		int32_t readADC();
+    int32_t readADCwProfiler();
 
 		void setRegister(int registertowrite, int valuetowrite);
         void setDefaultRegister(void);

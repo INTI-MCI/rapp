@@ -98,13 +98,14 @@ class RotaryStage(Iterator):
         """Resets position of the stage."""
         self._motion_controller.set_acceleration(ct.ROTARY_HOME_ACCELERATION, axis=self._axis)
         self._motion_controller.set_deceleration(ct.ROTARY_HOME_DECELERATION, axis=self._axis)
-        logger.info("{} - Searching HOME ".format(str(self))
-                    + "using velocity= {}  deg/s, ".format(ct.ROTARY_HOME_VELOCITY)
-                    + "acceleration= {} deg/s**2, ".format(ct.ROTARY_HOME_ACCELERATION)
-                    + "and deceleration= {}  deg/s**2...".format(ct.ROTARY_HOME_DECELERATION))
-        self._index = 0
-        self._motion_controller.reset_axis(axis=self._axis)
-        logger.info("HOME found.")
+        if self.cycles != 0:
+            logger.info("{} - Searching HOME ".format(str(self))
+                        + "using velocity= {}  deg/s, ".format(ct.ROTARY_HOME_VELOCITY)
+                        + "acceleration= {} deg/s**2, ".format(ct.ROTARY_HOME_ACCELERATION)
+                        + "and deceleration= {}  deg/s**2...".format(ct.ROTARY_HOME_DECELERATION))
+            self._index = 0
+            self._motion_controller.reset_axis(axis=self._axis)
+            logger.info("HOME found.")
         self._motion_controller.set_acceleration(self._acceleration, axis=self._axis)
         self._motion_controller.set_deceleration(self._deceleration, axis=self._axis)
 

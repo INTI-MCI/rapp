@@ -135,9 +135,6 @@ class Polarimeter:
         failures = 0
 
         # self._hwp.reset()
-        # logger.info("Waiting 5 seconds before define home")
-        # time.sleep(5)
-        # logger.info("Setting home position for HWP")
         # self._hwp.set_home(position=0)
 
         parameters = {
