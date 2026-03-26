@@ -17,47 +17,80 @@ adc = serial.Serial(serial_port, baudrate=baudrate, timeout=timeout)
 print(adc.name)
 # print(adc.baudrate)
 # print(adc.is_open)
-adc.flushInput()
+adc.reset_input_buffer()
 
 while True:
     adc.write(b'1\n')
     leido = adc.readline()
     if leido != b'':
+        leido2 = adc.readline()
+        print(leido2)
+        leido3 = adc.readline()
+        print(leido3)
         break
 print('Puerto abierto')
-cmd1 = 'req-temp?\n'
-cmd2 = 'temp?\n'
-cmd3 = 'complete?\n'
-# cmd = CMD_TEMPLATE.format(measurement='adc?', ch0=1, ch1=1, samples=3)
+cmd_req_temp = 'req-temp;0;\n'
+cmd_temp = 'temp;0;\n'
+cmd_complete = 'complete?;0;\n'
+# cmd_adc = CMD_TEMPLATE.format(measurement='adc?', ch0=1, ch1=1, samples=3)
 
-for i in range(5):
-    adc.reset_input_buffer()
-    ask = True
+tiempos_mediciones = []
 
-    adc.write(bytes(cmd1, 'utf-8'))
-    tiempo_request = time.time()
-    # time.sleep(0.5)
+# TODO: ver si agregando reset_input_buffer() a cada iteracion cambia el tiempo que tarda en estar completa la medición
 
-    adc.write(bytes(cmd2, 'utf-8'))
-    tiempo_get_temp = time.time()
-    temp = adc.read(4)
-    temperature = struct.unpack('<f', temp)[0]
-    print('Temperatura antes del ask', temperature)
-    # temp = adc.readline() #readline needs termination character from serial to work properly
-    tiempo_read = time.time()
+for j in range(1):
+    tiempos_totales = []
+    for i in range(30):
+        adc.reset_input_buffer()
+        ask = False
 
-    while ask == True:
-        adc.write(bytes(cmd3, 'utf-8'))
-        ask = adc.read(1)
-    tiempo_ask = time.time()
+        print('------------------')
+        print('Iteracion {}'.format(i))
 
-    adc.write(bytes(cmd2, 'utf-8'))
-    temp = adc.read(4)
-    print('Tiempo request-read: {}'.format(tiempo_read - tiempo_request))
-    print('Tiempo 1º get_temp-read: {}'.format(tiempo_read - tiempo_get_temp))
-    print('Tiempo request-ask: {}'.format(tiempo_ask - tiempo_request))
+        adc.write(bytes(cmd_req_temp, 'utf-8'))
+        tiempo_request = time.time()
+        # time.sleep(0.5)
 
-    temperature = struct.unpack('<f', temp)[0]
-    print('Temperatura después del ask', temperature)
-    # time.sleep(0.5)
+        adc.write(bytes(cmd_temp, 'utf-8'))
+        tiempo_get_temp = time.time()
+        temp = adc.read(4)
+        temperature = struct.unpack('<f', temp)[0]
+        print('Temperatura antes del ask', temperature)
+        # temp = adc.readline() #readline needs termination character from serial to work properly
+        tiempo_read = time.time()
+
+        while not ask:
+            time.sleep(0.6)
+            adc.write(bytes(cmd_complete, 'utf-8'))
+            ask = adc.read(1)
+            ask = bool(ask)
+            # print('Ask: ', ask)
+        tiempo_ask = time.time()
+
+        adc.write(bytes(cmd_temp, 'utf-8'))
+        temp = adc.read(4)
+        tiempo_total = tiempo_ask - tiempo_request
+        print('Tiempo entre request y read: {}'.format(tiempo_read - tiempo_request))
+        print('Tiempo entre primer get_temp y read: {}'.format(tiempo_read - tiempo_get_temp))
+        print('Tiempo entre request y ask: {}'.format(tiempo_total))
+
+        tiempos_totales.append(tiempo_total)
+
+        temperature = struct.unpack('<f', temp)[0]
+        print('Temperatura después del ask', temperature)
+        # time.sleep(0.5)
+    tiempo_promedio = sum(tiempos_totales) / len(tiempos_totales)
+    tiempos_mediciones.append(tiempo_promedio)
+
+print(tiempos_mediciones)
+print('Tiempo promedio de mediciones: {}'.format(sum(tiempos_mediciones) / len(tiempos_mediciones)))
+
+tiempos_sensor_placa_indice = [1.045606756210327, 1.0434666872024536, 1.0459917783737183, 1.0466989040374757, 1.0443415880203246, 1.0449856519699097, 1.0468235731124877, 1.0483842849731446, 1.0479555130004883, 1.0446739673614502]
+promedio_tiempos_sensor_placa_indice = sum(tiempos_sensor_placa_indice) / len(tiempos_sensor_placa_indice)
+print('Tiempo promedio sensor placa indice: {}'.format(promedio_tiempos_sensor_placa_indice))
+
+tiempos_sensor_vaina_direccion = [1.0285144567489624, 1.0274401903152466, 1.0255480766296388, 1.0290863990783692, 1.031200122833252, 1.0302689790725708, 1.0280239582061768, 1.0299288034439087, 1.0305347681045531, 1.0302460193634033]
+promedio_tiempos_sensor_vaina_direccion = sum(tiempos_sensor_vaina_direccion) / len(tiempos_sensor_vaina_direccion)
+print('Tiempo promedio sensor vaina direccion: {}'.format(promedio_tiempos_sensor_vaina_direccion))
+
 adc.close()

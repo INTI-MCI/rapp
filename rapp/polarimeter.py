@@ -73,10 +73,11 @@ FILE_HEADER = (
     "#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~#"
 )
 
-TEMP_COLUMNS = ["ANGLE", "TEMP", "HWP-POS", "REP"]
-TEMP_HEADER = "Tiempo-espera-{} s"
+# TEMP_COLUMNS = ["ANGLE", "ROOM TEMP", "QP TEMP", "HWP-POS", "REP"]
+TEMP_COLUMNS = ["ANGLE", "TEMPERATURE", "HWP-POS", "REP"]
+TEMP_HEADER = "# Tiempo-espera-{} s"
 
-TEMP_CORRECTION_FILE = "workdir/output-data/2024-11-14-temperature-correction-parameters.json"
+TEMP_CORRECTION_FILE = "examples/2025-06-19-test-temperature-correction-parameters.json"
 
 
 class Polarimeter:
@@ -87,7 +88,7 @@ class Polarimeter:
         analyzer: rotating analyzer.
         hwp: rotating half wave plate.
         data_file: handles the file writing.
-        temp_file: handles the temperature file writing.
+        room_temperature_file: handles the room temperature file writing.
         temp_correction_file: temperature correction file.
         norm_det: normalization detector.
         wait: time to wait before reconnecting after motion controller error.
@@ -96,20 +97,21 @@ class Polarimeter:
     def __init__(
         self,
         adc: ADC, analyzer: RotaryStage, hwp: RotaryStage, data_file: DataFile,
-        temp_file: DataFile = None, temp_correction_file: str = TEMP_CORRECTION_FILE,
-        norm_det: PM100 = None, wait: int = 10
+        temperature_file: DataFile = None, qp_temperature_file: DataFile = None,
+        temp_correction_file: str = TEMP_CORRECTION_FILE, norm_det: PM100 = None, wait: float = 10
     ):
         self._adc = adc
         self._analyzer = analyzer
         self._hwp = hwp
         self._data_file = data_file
-        self._temp_file = temp_file
+        self._temperature_file = temperature_file
+        self._qp_temperature_file = qp_temperature_file
         self._temp_correction_file = temp_correction_file
         self._norm_det = norm_det
         self._wait = wait
 
     def start(self, samples, chunk_size: int = 0, reps: int = 1, temp_wait: int = 60,
-              temp_correction: str = 'bias'):
+              temp_correction: str = 'linear'):
         """Collects measurements rotating the analyzer and saves them in a data file.
 
         Args:
@@ -132,7 +134,8 @@ class Polarimeter:
 
         failures = 0
 
-        self._hwp.reset()
+        # self._hwp.reset()
+        # self._hwp.set_home(position=0)
 
         parameters = {
             "position": 0,
@@ -149,30 +152,56 @@ class Polarimeter:
         }
 
         if temp_wait < 1:
-            logger.warning("Temperature wait time is too short. It will be set to 1 seconds.")
+            logger.warning("Temperature wait time is too short. It will be set to 1 second.")
             temp_wait = 1
 
-        temperature_requested = [False]
+        temperature_requested = [False, False]
 
-        schedule_request = schedule.Scheduler()
-        schedule_request.every(temp_wait).seconds.do(self.request_temperature,
-                                                     parameters_req_temperature, parameters,
-                                                     temperature_requested=temperature_requested)
+        schedule_request_0 = schedule.Scheduler()
+        schedule_request_1 = schedule.Scheduler()
 
-        schedule_read = schedule.Scheduler()
-        schedule_read.every(temp_wait).seconds.do(self.read_temperature,
-                                                  parameters_req_temperature,
-                                                  temperature_requested=temperature_requested,
-                                                  write=True)
+        schedule_request_0.every(temp_wait).seconds.do(
+            self.request_temperature,
+            channel=0,
+            parameters_req_temperature=parameters_req_temperature,
+            parameters=parameters,
+            temperature_requested=temperature_requested)
 
-        self._temp_file.open("temperature.csv")
+        schedule_request_1.every(temp_wait).seconds.do(
+            self.request_temperature,
+            channel=1,
+            parameters_req_temperature=parameters_req_temperature,
+            parameters=parameters,
+            temperature_requested=temperature_requested)
+
+        schedule_read_0 = schedule.Scheduler()
+        schedule_read_1 = schedule.Scheduler()
+
+        schedule_read_0.every(temp_wait).seconds.do(
+            self.read_temperature,
+            parameters_req_temperature=parameters_req_temperature,
+            temperature_requested=temperature_requested,
+            write=True, channel=0)
+
+        schedule_read_1.every(temp_wait).seconds.do(
+            self.read_temperature,
+            parameters_req_temperature=parameters_req_temperature,
+            temperature_requested=temperature_requested,
+            write=True, channel=1)
+
+        self._temperature_file.open("temperature.csv")
+        self._qp_temperature_file.open("qp-temperature.csv")
         for hwp_position in self._hwp:
             rep = 1
             while rep < reps + 1:
-                logger.info("HWP angle: {}°, repetition {}/{}".format(hwp_position, rep, reps))
+                logger.info(
+                    "{}repetition {}/{}".format(self._hwp.info_current_position(), rep, reps)
+                )
 
                 self._analyzer.reset()
-                self._data_file.open(self._build_data_filename(rep, hwp_position))
+                self._data_file.open(
+                    self._build_data_filename(rep, self._hwp.current_position_for_filename())
+                )
 
                 p_desc = 'rep no. {}: '.format(rep)
                 try:
@@ -183,12 +212,14 @@ class Polarimeter:
                         parameters["hwp_position"] = hwp_position
                         parameters["rep"] = rep
 
-                        schedule_read.run_pending()
+                        schedule_read_0.run_pending()
+                        schedule_read_1.run_pending()
 
                         for data_chunk in self.read_samples(samples, chunk_size):
                             self._add_data_to_file(data_chunk, position=position)
 
-                        schedule_request.run_pending()
+                        schedule_request_0.run_pending()
+                        schedule_request_1.run_pending()
 
                 except RotaryStageError as e:
                     logger.warning("Motion Controller error: {}".format(e))
@@ -230,58 +261,90 @@ class Polarimeter:
 
             yield acquired_samples
 
-    def request_temperature(self, parameters_req_temperature={}, parameters={},
-                            temperature_requested=[False]):
-        if not temperature_requested[0]:
-            temperature_requested[0] = self._adc.request_temperature()
-            logger.debug("Request temperature at: {}".format(datetime.datetime.now()))
+    def request_temperature(self, channel, parameters_req_temperature={}, parameters={},
+                            temperature_requested=[False, False]):
+        if not temperature_requested[channel]:
+            temperature_requested[channel] = self._adc.request_temperature(channel)
+            logger.debug("Request temperature for channel {} at: {}".format(
+                channel, datetime.datetime.now()))
 
             parameters_req_temperature["position_r"] = parameters["position"]
             parameters_req_temperature["hwp_position_r"] = parameters["hwp_position"]
             parameters_req_temperature["rep_r"] = parameters["rep"]
             parameters_req_temperature["temp_correction_r"] = parameters["temp_correction"]
 
-    def read_temperature(self, parameters_req_temperature={}, temperature_requested=[True],
-                         write=True):
-        if temperature_requested[0]:
-            acquired_temperature, temperature_requested[0] = self._adc.read_temperature()
-            logger.debug("Read temperature at: {}".format(datetime.datetime.now()))
+    def read_temperature(self, parameters_req_temperature={}, temperature_requested=[True, True],
+                         write=True, channel=0):
+        if temperature_requested[channel]:
+            acquired_t, temperature_requested[channel] = self._adc.read_temperature(channel)
+            logger.debug("Read temperature for channel {} at: {}".format(
+                channel, datetime.datetime.now()
+            ))
 
             if parameters_req_temperature["temp_correction_r"] == 'bias':
-                acquired_temperature = self.temperature_bias_correction(
-                    filepath=TEMP_CORRECTION_FILE, temperature=acquired_temperature
+                acquired_t = self.temperature_bias_correction(
+                    channel=channel,
+                    filepath=TEMP_CORRECTION_FILE,
+                    temperature=acquired_t
                 )
             elif parameters_req_temperature["temp_correction_r"] == 'linear':
-                acquired_temperature = self.temperature_linear_correction(
-                    filepath=TEMP_CORRECTION_FILE, temperature=acquired_temperature
+                acquired_t = self.temperature_linear_correction(
+                    channel=channel,
+                    filepath=TEMP_CORRECTION_FILE,
+                    temperature=acquired_t
                 )
 
             data = ([parameters_req_temperature["position_r"]]
-                    + [round(acquired_temperature, 4)]
+                    + [round(acquired_t, 4)]
+                    # + ["None"]
                     + [parameters_req_temperature["hwp_position_r"]]
                     + [parameters_req_temperature["rep_r"]]
                     )
-
+            # elif channel == 1:
+            #     data = ([parameters_req_temperature["position_r"]]
+            #             + []
+            #             + [round(acquired_t, 4)]
+            #             + [parameters_req_temperature["hwp_position_r"]]
+            #             + [parameters_req_temperature["rep_r"]]
+            #             )
             if write:
-                self._temp_file.add_row(data)
-            logger.debug("Temperature: {}".format(acquired_temperature))
+                logger.debug(channel)
+                if channel == 1:
+                    self._qp_temperature_file.add_row(data)
+                if channel == 0:
+                    self._temperature_file.add_row(data)
+            logger.debug("Temperature in channel {ch}: {temperature}".format(
+                ch=channel,
+                temperature=acquired_t)
+            )
 
-    def temperature_bias_correction(self, filepath=TEMP_CORRECTION_FILE, temperature=[]):
+    def temperature_bias_correction(
+            self, channel, filepath=TEMP_CORRECTION_FILE, temperature=[]):
         with open(filepath, 'r') as f:
             json_data = json.load(f)
 
-        bias = json_data['correction_parameters']['bias']
+        if channel == 0:
+            bias = json_data['correction_parameters_sensor_0']['bias']
+        elif channel == 1:
+            bias = json_data['correction_parameters_sensor_1']['bias']
         temperature = temperature[0]
         return temperature - float(bias)
 
-    def temperature_linear_correction(self, filepath=TEMP_CORRECTION_FILE, temperature=[]):
+    def temperature_linear_correction(
+            self, channel, filepath=TEMP_CORRECTION_FILE, temperature=[]):
         with open(filepath, 'r') as f:
             json_data = json.load(f)
 
-        slope = json_data['correction_parameters']['A']
-        intercept = json_data['correction_parameters']['b']
+        if channel == 0:
+            slope = json_data['correction_parameters_sensor_0']['A']
+            intercept = json_data['correction_parameters_sensor_0']['b']
+            logger.debug('parameters sensor 0: {}, {}'.format(slope, intercept))
+        elif channel == 1:
+            slope = json_data['correction_parameters_sensor_1']['A']
+            intercept = json_data['correction_parameters_sensor_1']['b']
+            logger.debug('parameters sensor 1: {}, {}'.format(slope, intercept))
         temperature = temperature[0]
-        return temperature * float(slope) + float(intercept)
+        return (temperature - float(intercept)) / float(slope)
 
     def close(self):
         self._adc.close()
@@ -303,6 +366,7 @@ class Polarimeter:
         logger.debug("Writing data to file...")
         for row in data:
             self._data_file.add_row([position] + list(row))
+            logger.debug(data)
 
     def _handle_motion_controller_error(self, hwp_position):
         logger.warning("Waiting {} seconds...".format(self._wait))
@@ -336,6 +400,7 @@ def run(
     cycles: float = 0,
     step: float = 45,
     reps: int = 1,
+    delay: float = 0,
     delay_position: float = 0,
     velocity: float = 4,
     acceleration: float = 8,
@@ -344,17 +409,18 @@ def run(
     no_ch0: bool = False,
     no_ch1: bool = False,
     prefix: str = 'test',
-    temp_correction: str = 'bias',
+    temp_correction: str = 'linear',
     temp_wait: int = 60,
     mock_esp: bool = False,
     mock_adc: bool = False,
     mock_pm100: bool = False,
     overwrite: bool = False,
+    hwp_enabled: bool = False,
     hwp_cycles: float = 0,
     hwp_step: float = 45,
     hwp_delay_position: float = 5,
     mc_wait: float = 15,
-    disable_pm100: bool = True,
+    enable_pm100: bool = True,
     work_dir: str = ct.WORK_DIR
 ):
 
@@ -374,9 +440,10 @@ def run(
     setup_log_file(log_filename)
 
     logger.info("Connecting to ESP Motion Controller...")
+    mc_use_axes = [1, 2] if hwp_enabled else [1]  # start HWP motor only if enabled
     motion_controller = ESP301.build(
         MOTION_CONTROLLER_PORT_WIN, b=MOTION_CONTROLLER_BAUDRATE,
-        useaxes=[1, 2], mock_serial=mock_esp)
+        useaxes=mc_use_axes, mock_serial=mock_esp)
 
     logger.info("Connecting Rotary Stage: Analyzer...")
     analyzer = RotaryStage(
@@ -391,9 +458,14 @@ def run(
         name='Analyzer'
     )
 
-    logger.info("Connecting Rotary Stage: HalfWavePlate...")
-    hwp = RotaryStage(
-        motion_controller, hwp_cycles, hwp_step, hwp_delay_position, axis=2, name='HalfWavePlate')
+    if hwp_enabled:
+        logger.info("Connecting Rotary Stage: HalfWavePlate...")
+    else:
+        logger.warning("HalfWavePlate disabled. Use --hwp to enable.")
+    hwp = RotaryStage.build(
+        motion_controller, hwp_cycles, hwp_step, hwp_delay_position, axis=2, name='HalfWavePlate',
+        mock=hwp_enabled
+    )
 
     logger.info("Connecting to ADC...")
     adc = ADC.build(
@@ -404,9 +476,7 @@ def run(
         mock_serial=mock_adc)
 
     pm100 = None
-    if disable_pm100:
-        logger.warning("Thorlabs PM100 disabled.")
-    else:
+    if enable_pm100:
         logger.info("Connecting to Thorlabs PM100...")
         try:
             pm100 = PM100.build(
@@ -416,6 +486,13 @@ def run(
             )
         except PM100Error:
             logger.warning("Thorlabs PM100 connection not found.")
+    else:
+        logger.info("Thorlabs PM100 disabled.")
+
+    delay = abs(delay)
+    if delay > 0:
+        logger.info("Delay start...")
+        time.sleep(delay)
 
     logger.info("Building DataFile...")
     data_file = DataFile(
@@ -425,14 +502,22 @@ def run(
 
     logger.info("Building TemperatureFile...")
     temp_header = TEMP_HEADER.format(temp_wait)
-    temp_file = DataFile(
+    temperature_file = DataFile(
+        overwrite, header=temp_header, column_names=TEMP_COLUMNS, delimiter=FILE_DELIMITER,
+        output_dir=measurement_dir
+    )
+
+    logger.info("Building QuartzPlateTemperatureFile...")
+    temp_header = TEMP_HEADER.format(temp_wait)
+    qp_temperature_file = DataFile(
         overwrite, header=temp_header, column_names=TEMP_COLUMNS, delimiter=FILE_DELIMITER,
         output_dir=measurement_dir
     )
 
     logger.info("Building Polarimeter...")
     polarimeter = Polarimeter(
-        adc, analyzer, hwp, data_file, temp_file, norm_det=pm100, wait=mc_wait
+        adc, analyzer, hwp, data_file, temperature_file, qp_temperature_file, norm_det=pm100,
+        wait=mc_wait
     )
 
     logger.info("Starting measurement...")
