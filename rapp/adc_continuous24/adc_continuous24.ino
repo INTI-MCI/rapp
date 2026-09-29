@@ -7,6 +7,8 @@
 
 unsigned long* times;
 // times[0] is total elapsed time of parse_and_read_n_samples
+// times[1, 2] = [elapsed time ch0, elapsed time ch1]
+// times[3, 4] = elapsed time serial write 32 bit in serial port for ch0 and ch1, ver si hace falta guardar esto!!
 const unsigned short int SERIAL_BAUDRATE = 57600;
 
 ArduinoUno_ADC_CS1237 adc0(13,19);// Declare the object to work with the ArduinoUno_ADC_CS1237 library functions, specifying the pins (SCLK, DATA).
@@ -131,9 +133,9 @@ void read_n_samples_from_channel(unsigned long n_samples, bool channel, bool mea
     unsigned long endtime;
     unsigned long elapsedtime;
 
-    unsigned long starttime2;
-    unsigned long endtime2;
-    unsigned long elapsedtime2;
+    // unsigned long starttime2;
+    // unsigned long endtime2;
+    // unsigned long elapsedtime2;
 
     measure_times |= PROFILE_CS1237;
 
@@ -150,24 +152,27 @@ void read_n_samples_from_channel(unsigned long n_samples, bool channel, bool mea
           if (channel) data = adc1.readADC();
           else data = adc0.readADC();
         }
-        if (DEBUG_CS1237 & measure_times) starttime2 = micros(); // Revisar qué se quiere guardar y/o imprimir
+        // if (DEBUG_CS1237 or measure_times) starttime2 = micros(); // Revisar qué se quiere guardar y/o imprimir
         serial_write_32bit(data);
-        if (DEBUG_CS1237 & measure_times) {
-          endtime2 = micros();
-          elapsedtime2 = endtime2 - starttime2; // Tal vez no tenga sentido ver esto cuando veamos tiempos guardados en times?
-          Serial.print("Elapsed time serial_write_32bit in microseconds: ");
-          Serial.println(elapsedtime2);
-        }
+        // if (DEBUG_CS1237 or measure_times) {
+        //   endtime2 = micros();
+        //   elapsedtime2 = endtime2 - starttime2; // Tal vez no tenga sentido ver esto cuando veamos tiempos guardados en times?
+        //   times[3 + (unsigned short) channel] = elapsedtime2;
+        // }
+        // if (DEBUG_CS1237) {
+        //   Serial.print("Elapsed time serial_write_32bit in microseconds: ");
+        //   Serial.println(elapsedtime2);
+        // }
         i = i + 1;
     }
 
-    if (measure_times) {
+    if (measure_times or DEBUG_CS1237) {
       endtime = micros();
       elapsedtime = endtime - starttime;
       times[1 + (unsigned short) channel] = elapsedtime;
     }
 
-    if (measure_times) {
+    if (DEBUG_CS1237) {
       Serial.print("Elapsed time per sample ch");
       Serial.print((unsigned short) channel);
       Serial.print(": ");
@@ -211,7 +216,7 @@ unsigned long parse_and_read_n_samples(String command_args, unsigned short *out_
     if (PROFILE_CS1237 or measure_times) {
       times[0] = times[1] + times[2];
     }
-    if (measure_times) {
+    if (DEBUG_CS1237) {
       Serial.print("Elapsed time per sample (avg) in microseconds: ");
       Serial.println(times[0] / (n_samples * *out_n_channels));
     }
@@ -249,7 +254,7 @@ unsigned long parse_int(String& command_args) {
 unsigned long parse_read_and_print_n_samples_dt(String command_args) {
   unsigned long n_samples = parse_int(command_args);
   unsigned long dt = parse_int(command_args);
-  unsigned long initial_time = micros();
+  // unsigned long initial_time = micros();
   for (int i = 0; i < n_samples; i++){
     int32_t data0 = adc0.readADC();
     int32_t data1 = adc1.readADC();
@@ -261,9 +266,9 @@ unsigned long parse_read_and_print_n_samples_dt(String command_args) {
     Serial.println();
     delay(dt);
   }
-  unsigned long final_time = micros();
-  unsigned long elapsed_time = final_time - initial_time;
-  return elapsed_time;
+  // unsigned long final_time = micros();
+  // unsigned long elapsed_time = final_time - initial_time;
+  // return elapsed_time;
 }
 
 float bits_to_volts(int32_t value){
@@ -320,22 +325,25 @@ void process_serial_input() {
         String command_name = input_command.substring(0,input_command.indexOf(";"));
         if (command_name == "adc") { // Command: "adc;ch0;ch1;nsamples;"
             String command_args = getArgs(input_command);
-            unsigned long elapsedtime;
+            // unsigned long elapsedtime; // Creo que no hace falta
             unsigned short n_channels;
             bool measure_times = 0;
             times = new unsigned long[N_TIMES_ADC];
 
             parse_and_read_n_samples(command_args, &n_channels, measure_times);
+
         }
         else if (command_name == "adc_n_dt") { // Command: "adc_n_dt;nsamples;dt;", dt in miliseconds
+            // This function reads n samples every dt miliseconds and prints them in serial monitor
             String command_args = getArgs(input_command);
-            unsigned long initial_time = micros();
-            unsigned long elapsed_time = parse_read_and_print_n_samples_dt(command_args);
-            unsigned long final_time = micros();
-            unsigned long elapsed_time_n = final_time - initial_time;
-            unsigned long n_samples = parse_int(command_args);
-            unsigned long dt = parse_int(command_args);
-            unsigned long time_n = (elapsed_time_n-(dt*n_samples)) / (2*1000);
+            // unsigned long initial_time = micros();
+            // unsigned long elapsed_time =
+            parse_read_and_print_n_samples_dt(command_args);
+            // unsigned long final_time = micros();
+            // unsigned long elapsed_time_n = final_time - initial_time;
+            // unsigned long n_samples = parse_int(command_args);
+            // unsigned long dt = parse_int(command_args);
+            // unsigned long time_n = (elapsed_time_n-(dt*n_samples)) / (2*1000);
             // Serial.print("Elapsed time of n samples in miliseconds: ");
             // Serial.println(time_n);
             // Serial.print("Elapsed time of each sample (avg) in miliseconds: ");

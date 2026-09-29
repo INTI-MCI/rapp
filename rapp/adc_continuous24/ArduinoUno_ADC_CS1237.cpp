@@ -10,9 +10,9 @@ void ArduinoUno_ADC_CS1237::begin(void) {
 
 //Make sure the chip is awake
     if (DEBUG_CS1237) Serial.println("Clock en 0, leyendo DOUT esperando un 1");
-    while (digitalRead(DOUT_DRDY) == 0) {} //Wait while DOUT_DRDY is low
+    while (digitalRead(DOUT_DRDY) == 0) {} // Wait while DOUT_DRDY is low
     if (DEBUG_CS1237) Serial.println("1 recibido en DOUT, esperando un 0");
-    while (digitalRead(DOUT_DRDY) == 1) {} //Wait while DOUT_DRDY is high
+    while (digitalRead(DOUT_DRDY) == 1) {} // Wait while DOUT_DRDY is high
 
     if (DEBUG_CS1237) Serial.println("0 recibido, comienza delay");
     delay(OFF_ON_SETTLING_TIME);
@@ -75,27 +75,21 @@ int32_t ArduinoUno_ADC_CS1237::readADC() {
     return result;
 }
 
-int32_t ArduinoUno_ADC_CS1237::readADCwProfiler() {
-//Data acquisition function - Returns int32 variable
-    unsigned long time1;
-    unsigned long time2;
-    unsigned long elapsed_time_while;
-    unsigned long max_time_while = 0;
-    unsigned long min_time_while = 4294967295;
-    if (PROFILE_CS1237 or DEBUG_CS1237) time1 = micros(); // Queda que se imprimen los tiempos si está en modo debug!
+int32_t ArduinoUno_ADC_CS1237::readADCwProfiler() { // TODO: cuando esté listo el profiler, ver si en modo debug conviene usar esta funcion en lugar de readADC
+//Data acquisition function with profiler - Returns int32 variable and elapsed times
+    time1_DRDY = micros();
     int previousValue = digitalRead(DOUT_DRDY);
     int newValue = digitalRead(DOUT_DRDY);
     //Wait for the DOUT_DRDY to fall LOW:
     while (previousValue - newValue != 1) {
         previousValue = newValue;
+        // Tiene sentido agregar espera acá??, ver despues de probar con adcs?
         newValue = digitalRead(DOUT_DRDY);
     }
-    if (PROFILE_CS1237 or DEBUG_CS1237) {
-      time2 = micros();
-      elapsed_time_while = time2 - time1;
-      if (elapsed_time_while > max_time_while) max_time_while = elapsed_time_while;
-      if (elapsed_time_while < min_time_while) min_time_while = elapsed_time_while;
-    }
+    time2_DRDY = micros();
+    elapsed_time_DRDY = time2_DRDY - time1_DRDY;
+    if (elapsed_time_DRDY > max_time_DRDY) max_time_DRDY = elapsed_time_DRDY; // Si hay espera en el while, dividir por la espera
+    if (elapsed_time_DRDY < min_time_DRDY) min_time_DRDY = elapsed_time_DRDY; // Si hay espera en el while, dividir por la espera
     // if (DEBUG_CS1237) {
       //Serial.print("Elapsed time while loop in microseconds: ");
       //Serial.println(elapsed_time_while);
@@ -104,17 +98,15 @@ int32_t ArduinoUno_ADC_CS1237::readADCwProfiler() {
     int32_t result = 0; //24-bit output data is stored in this variable
 
     delayMicroseconds(0); //t4
-    unsigned long starttime;
-    unsigned long endtime;
-    unsigned long elapsed_time_read;
-    unsigned long max_time_read = 0;
-    unsigned long min_time_read = 4294967295;
 
-    if (PROFILE_CS1237 or DEBUG_CS1237) starttime = micros();
+    time1_read = micros();
     //Read the 24-bits:
     for (int i = 0; i < 24; i++) {
         result <<= 1;
+        time1_bit = micros();
         result |= readBit();
+        time2_bit = micros();
+        elapsed_time_readBit[i] = time2_bit - time1_bit;
         //i = 0; MSB @ bit 23
         //i = 1; MSB-1 @ bit 22
         //... i = 23; LSB @ bit 0 (not shifted, just OR'd together with the result)
@@ -126,18 +118,21 @@ int32_t ArduinoUno_ADC_CS1237::readADCwProfiler() {
     //Check if the data is signed:
     if(result & 0x00800000) result |= 0xFF800000;
 
-    if (PROFILE_CS1237 or DEBUG_CS1237) {
-      endtime = micros();
-      elapsed_time_read = endtime - starttime;
-      if (elapsed_time_read > max_time_read) max_time_read = elapsed_time_read;
-      if (elapsed_time_read < min_time_read) min_time_read = elapsed_time_read;
-    }
+    time2_read = micros();
+    elapsed_time_read = time2_read - time1_read;
+    if (elapsed_time_read > max_time_read) max_time_read = elapsed_time_read;
+    if (elapsed_time_read < min_time_read) min_time_read = elapsed_time_read;
+
     // if (DEBUG_CS1237) {
       //Serial.print("Elapsed time read in microseconds: ");
       //Serial.println(elapsed_time_read);
     //}
 
     return result;
+}
+
+struct ArduinoUno_ADC_CS1237::getProfiler() {
+    return profiler;
 }
 
 void ArduinoUno_ADC_CS1237::setRegister(int registertowrite, int valuetowrite) {
@@ -414,20 +409,15 @@ int ArduinoUno_ADC_CS1237::getSCLK(){
 }
 
 //-------------------------------------------------------------------------------------------------------------
-//This is valid for Arduino Uno, make sure you adjust it for your own MCU based on its clock speed.  
-#define DELAY_455_NS asm volatile ("nop\n\t" "nop\n\t" "nop\n\t")
-//In Arduino Uno: 1 / 16 MHz = 62.5 ns (1 cycle time of the MCU)
-//3 NOP is 3 x 62.5 ns = 187.5 ns
+// This is valid for Arduino Uno, make sure you adjust it for your own MCU based on its clock speed.
+#define DELAY_455_NS asm volatile ("nop\n\t" "nop\n\t" "nop\n\t" "nop\n\t" "nop\n\t" "nop\n\t")
+// In Arduino Uno: 1 / 16 MHz = 62.5 ns (1 cycle time of the MCU)
+// 6 NOP is 6 x 62.5 ns = 375 ns
+// This may need to be fine-tuned based on the actual execution time
+// Adjust the number of "nop" based on the calculated value
+// However, always refer to the clock cycle of your chosen MCU!!!
 
-void ArduinoUno_ADC_CS1237::customDelay455ns() 
-{
-  // Adjust the number of cycles based on the calculated value
-  // This may need to be fine-tuned based on the actual execution time
-  for (int i = 0; i < 2; ++i) // 455 ns/ 187.5 ns = 2.4. Since 455 is a minimum req, I increased to 10. There's no max value...
-  {
+void ArduinoUno_ADC_CS1237::customDelay455ns() {
     DELAY_455_NS;
-  }
-  //So actually, this delay is more like 1875 ns. But it seems to work well. It is stable.
-  //However, always refer to the clock cycle of your chosen MCU!!!
 }
 //--------------------------------------------------------------------------------------------------
