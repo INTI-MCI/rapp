@@ -48,13 +48,13 @@ def wait_for_connection(self):
         output = self.readline()
         end = time.time()
         elapsed_time = end - start
-        print('output: ', output)
+        # print('output: ', output)
         if output == b'yes\r\n':
             line1 = self.readline()
             # self.reset_input_buffer()
-            print("Line 1 left in input buffer: {}".format(line1))
-            line2 = self.readline()
-            print("Line 2 left in input buffer: {}".format(line2))
+            # print("Line 1 left in input buffer: {}".format(line1))
+            # line2 = self.readline()
+            # print("Line 2 left in input buffer: {}".format(line2))
             # if self.in_waiting():
             #     print("Connection opened, buffer: {}".format(self.inWaiting()))
             #     self.reset_input_buffer()
@@ -145,8 +145,35 @@ def _read_bits(self):
 def bits_to_volts(value):
         return value * (1240/2**23) / 1000
 
+def read_profiler(self, ch0=0, ch1=0):
+    times_ino = [] # Times que se miden a nivel del .ino
+    for i in range(3):
+        times_byte = self.read(4)
+        times_int = int.from_bytes(times_byte, byteorder='big', signed=False)
+        times_ino.append(times_int)
 
-def main(n_samples=1, ch0=1, ch1=1, total_samples=10):
+    profiler0 = []  # [elapsed_DRDY, min_DRDY, max_DRDY, elapsed_read, min_read, max_read]
+    profiler1 = []
+    if ch0:
+        for i in range(6):
+            profiled_time = self.read(4)
+            prof_time_int = int.from_bytes(profiled_time, byteorder='big', signed=False)
+            profiler0.append(prof_time_int)
+    if ch1:
+        for i in range(6):
+            profiled_time = self.read(4)
+            prof_time_int = int.from_bytes(profiled_time, byteorder='big', signed=False)
+            profiler1.append(prof_time_int)
+
+    return times_ino, profiler0, profiler1
+
+
+def main(n_samples=1, ch0=1, ch1=1, total_samples=2, profile=1):
+    # n_samples: cantidad de muestras que se piden
+    # ch0 y ch1 dicen si se pide o no ese canal
+    # total_samples: cantidad de veces que se piden las n_samples 
+    # Si profile es 1, pide e imprime los datos del profiler
+
     print("Instantiating ADC...")
     adc = get_serial_connection(ADC_WIN_DEVICE, baudrate=ADC_BAUDRATE, timeout=ADC_TIMEOUT)
     # adc = ADC(resolve_adc_device(), timeout_open=ADC_TIMEOUT_OPEN)#, baudrate=ADC_BAUDRATE, timeout=ADC_TIMEOUT)
@@ -155,7 +182,7 @@ def main(n_samples=1, ch0=1, ch1=1, total_samples=10):
         adc.close()
         return
     else:
-        print("Connection opened.")
+        # print("Connection opened.")
         # buf = adc.readline()
         # print(buf)
         adc.reset_input_buffer()
@@ -182,10 +209,43 @@ def main(n_samples=1, ch0=1, ch1=1, total_samples=10):
                 # datos1.append(channel1)
                 datos1.append(bits_to_volts(int.from_bytes(channel1, byteorder='big', signed=True)))
 
-            print("{} = ({})".format('CH0', datos0)) if ch0 else None
+            print("{} = ({})".format('CH0', datos0), end=' ') if ch0 else None
             print("{} = ({})".format('CH1', datos1)) if ch1 else None
 
-            time.sleep(0.25)
+            if profile:
+                adc.write(bytes("profiled_times?\n", 'utf-8'))
+                
+                times, profiler0, profiler1 = read_profiler(adc, ch0, ch1)
+
+                # print('times[1] = {}'.format(times[1]))
+                # print('times[2] = {}'.format(times[2]))
+                # print('times[0] = {}'.format(times[0]))
+                
+                # print('Suma de times[1] y times[2] = {}'.format(times[1] + times[2]))
+                
+                diferencia = times[0]-(times[1] + times[2])
+                print('Diferencia entre times[0] y la suma = {}'.format(diferencia))
+
+                # La suma de times 1 y 2 no siempre da como resultado times 0
+                # Da algunos valores que parecen repetirse: 0, -4294901760, -671088668, -1174405148,
+                # -1815281664, -3487694848, -469893120, -3633447454, -3089104896
+
+                # profiler0 es [elapsed_DRDY, min_DRDY, max_DRDY, elapsed_read, min_read, max_read]
+                if ch0:
+                    print('Profiler ch0')
+                    print('DRDY: elapsed = {}, Min = {}, Max = {}'.format(profiler0[0], profiler0[1], profiler0[2]))
+                    print('read: elapsed = {}, Min = {}, Max = {}'.format(profiler0[3], profiler0[4], profiler0[5]))
+                if ch1:
+                    print('Profiler ch1')
+                    print('DRDY: elapsed = {}, Min = {}, Max = {}'.format(profiler1[0], profiler1[1], profiler1[2]))
+                    print('read: elapsed = {}, Min = {}, Max = {}'.format(profiler1[3], profiler1[4], profiler1[5]))
+                # A veces el mínimo da mas grande que el máximo (??)
+
+                print('--------------')
+
+                # adc.reset_input_buffer() # Probé si con esto mejoraba pero parece ser lo mismo
+
+            time.sleep(0.2)
 
         adc.close()
 
