@@ -131,7 +131,7 @@ int32_t ArduinoUno_ADC_CS1237::readADCwProfiler() { // TODO: cuando esté listo 
     return result;
 }
 
-struct ArduinoUno_ADC_CS1237::getProfiler() {
+ArduinoUno_ADC_CS1237::ProfilerTimes ArduinoUno_ADC_CS1237::getProfiler() const {
     return profiler;
 }
 
