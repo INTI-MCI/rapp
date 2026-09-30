@@ -77,6 +77,10 @@ int32_t ArduinoUno_ADC_CS1237::readADC() {
 
 int32_t ArduinoUno_ADC_CS1237::readADCwProfiler() { // TODO: cuando esté listo el profiler, ver si en modo debug conviene usar esta funcion en lugar de readADC
 //Data acquisition function with profiler - Returns int32 variable and elapsed times
+    unsigned long time1_DRDY; // Tiempos de espera a que cambie el pin DOUT_DRDY
+    unsigned long time2_DRDY;
+    unsigned long time1_read; // Tiempos de lectura de los 24 bits
+    unsigned long time2_read;
     time1_DRDY = micros();
     int previousValue = digitalRead(DOUT_DRDY);
     int newValue = digitalRead(DOUT_DRDY);
@@ -87,9 +91,9 @@ int32_t ArduinoUno_ADC_CS1237::readADCwProfiler() { // TODO: cuando esté listo 
         newValue = digitalRead(DOUT_DRDY);
     }
     time2_DRDY = micros();
-    elapsed_time_DRDY = time2_DRDY - time1_DRDY;
-    if (elapsed_time_DRDY > max_time_DRDY) max_time_DRDY = elapsed_time_DRDY; // Si hay espera en el while, dividir por la espera
-    if (elapsed_time_DRDY < min_time_DRDY) min_time_DRDY = elapsed_time_DRDY; // Si hay espera en el while, dividir por la espera
+    profiler.elapsed_time_DRDY = time2_DRDY - time1_DRDY;
+    if (profiler.elapsed_time_DRDY > profiler.max_time_DRDY) profiler.max_time_DRDY = profiler.elapsed_time_DRDY; // Si hay espera en el while, dividir por la espera
+    if (profiler.elapsed_time_DRDY < profiler.min_time_DRDY) profiler.min_time_DRDY = profiler.elapsed_time_DRDY; // Si hay espera en el while, dividir por la espera
     // if (DEBUG_CS1237) {
       //Serial.print("Elapsed time while loop in microseconds: ");
       //Serial.println(elapsed_time_while);
@@ -103,10 +107,7 @@ int32_t ArduinoUno_ADC_CS1237::readADCwProfiler() { // TODO: cuando esté listo 
     //Read the 24-bits:
     for (int i = 0; i < 24; i++) {
         result <<= 1;
-        time1_bit = micros();
         result |= readBit();
-        time2_bit = micros();
-        elapsed_time_readBit[i] = time2_bit - time1_bit;
         //i = 0; MSB @ bit 23
         //i = 1; MSB-1 @ bit 22
         //... i = 23; LSB @ bit 0 (not shifted, just OR'd together with the result)
@@ -119,9 +120,9 @@ int32_t ArduinoUno_ADC_CS1237::readADCwProfiler() { // TODO: cuando esté listo 
     if(result & 0x00800000) result |= 0xFF800000;
 
     time2_read = micros();
-    elapsed_time_read = time2_read - time1_read;
-    if (elapsed_time_read > max_time_read) max_time_read = elapsed_time_read;
-    if (elapsed_time_read < min_time_read) min_time_read = elapsed_time_read;
+    profiler.elapsed_time_read = time2_read - time1_read;
+    if (profiler.elapsed_time_read > profiler.max_time_read) profiler.max_time_read = profiler.elapsed_time_read;
+    if (profiler.elapsed_time_read < profiler.min_time_read) profiler.min_time_read = profiler.elapsed_time_read;
 
     // if (DEBUG_CS1237) {
       //Serial.print("Elapsed time read in microseconds: ");

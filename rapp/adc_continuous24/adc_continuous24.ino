@@ -323,7 +323,7 @@ void send_profiled_times() {
   ArduinoUno_ADC_CS1237::ProfilerTimes profiler0 = adc0.getProfiler();
   ArduinoUno_ADC_CS1237::ProfilerTimes profiler1 = adc1.getProfiler();
 
-  Serial.write(times, sizeof(unsigned long) * 3); // Send times[0], times[1], times[2]
+  Serial.write((uint8_t*)times, sizeof(unsigned long) * 3); // Send times[0], times[1], times[2]
   Serial.write((uint8_t*)&profiler0, sizeof(profiler0));
   Serial.write((uint8_t*)&profiler1, sizeof(profiler1));
 }

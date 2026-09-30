@@ -25,6 +25,15 @@ class ArduinoUno_ADC_CS1237 {
 		int32_t readADC();
         int32_t readADCwProfiler();
 
+        struct __attribute__((packed)) ProfilerTimes{
+        unsigned long elapsed_time_DRDY;
+        unsigned long max_time_DRDY = 0;
+        unsigned long min_time_DRDY = 4294967295;
+        unsigned long elapsed_time_read;
+        unsigned long max_time_read = 0;
+        unsigned long min_time_read = 4294967295;
+		};
+
         ProfilerTimes getProfiler() const;
 
 		void setRegister(int registertowrite, int valuetowrite);
@@ -39,22 +48,6 @@ class ArduinoUno_ADC_CS1237 {
 
     private:
 		void customDelay455ns();
-
-		struct __attribute__((packed)) ProfilerTimes{
-        unsigned long time1_DRDY; // Tiempos de espera a que cambie el pin DOUT_DRDY
-        unsigned long time2_DRDY;
-        unsigned long elapsed_time_DRDY;
-        unsigned long max_time_DRDY = 0;
-        unsigned long min_time_DRDY = 4294967295;
-        unsigned long time1_read; // Tiempos de lectura de los 24 bits
-        unsigned long time2_read;
-        unsigned long elapsed_time_read;
-        unsigned long max_time_read = 0;
-        unsigned long min_time_read = 4294967295;
-        unsigned long time1_bit; // Tiempos de lectura de cada bit
-        unsigned long time2_bit;
-        unsigned long elapsed_time_readBit[24];
-		};
         
         ProfilerTimes profiler; // Profiler times in microseconds
 
