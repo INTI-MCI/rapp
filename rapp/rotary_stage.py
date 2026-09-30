@@ -45,15 +45,17 @@ class RotaryStage(Iterator):
         self._acceleration = acceleration
         self._deceleration = deceleration
         self._axis = axis
-
         self._name = name
 
-        self._positions = self._generate_positions()
-        self.motor_on()
-
-        logger.info("{} - Positions: {}.".format(str(self), self._positions))
-
         self._index = 0
+
+        self._prepare_rotations()
+
+    @classmethod
+    def build(cls, mock=False, **kwargs):
+        if mock:
+            return RotaryStageMock(**kwargs)
+        return cls(**kwargs)
 
     def __str__(self):
         return "{} - {}".format(type(self).__name__, self._name)
@@ -77,11 +79,17 @@ class RotaryStage(Iterator):
         else:
             raise StopIteration
 
+    def _prepare_rotations(self):
+        self._positions = self._generate_positions()
+        self.motor_on()
+
+        logger.info("{} - Positions: {}.".format(str(self), self._positions))
+
     def _generate_positions(self):
         end = 360 * math.copysign(1, self.step)
 
         if self.cycles == 0:
-            initial_position = self._motion_controller.get_position()
+            initial_position = self._motion_controller.get_position(axis=self._axis)
             return [initial_position]
 
         return np.arange(0, end * self.cycles + self.step, self.step, dtype=float)
@@ -90,13 +98,14 @@ class RotaryStage(Iterator):
         """Resets position of the stage."""
         self._motion_controller.set_acceleration(ct.ROTARY_HOME_ACCELERATION, axis=self._axis)
         self._motion_controller.set_deceleration(ct.ROTARY_HOME_DECELERATION, axis=self._axis)
-        logger.info("{} - Searching HOME ".format(str(self))
-                    + "using velocity= {}  deg/s, ".format(ct.ROTARY_HOME_VELOCITY)
-                    + "acceleration= {} deg/s**2, ".format(ct.ROTARY_HOME_ACCELERATION)
-                    + "and deceleration= {}  deg/s**2...".format(ct.ROTARY_HOME_DECELERATION))
-        self._index = 0
-        self._motion_controller.reset_axis(axis=self._axis)
-        logger.info("HOME found.")
+        if self.cycles != 0:
+            logger.info("{} - Searching HOME ".format(str(self))
+                        + "using velocity= {}  deg/s, ".format(ct.ROTARY_HOME_VELOCITY)
+                        + "acceleration= {} deg/s**2, ".format(ct.ROTARY_HOME_ACCELERATION)
+                        + "and deceleration= {}  deg/s**2...".format(ct.ROTARY_HOME_DECELERATION))
+            self._index = 0
+            self._motion_controller.reset_axis(axis=self._axis)
+            logger.info("HOME found.")
         self._motion_controller.set_acceleration(self._acceleration, axis=self._axis)
         self._motion_controller.set_deceleration(self._deceleration, axis=self._axis)
 
@@ -129,3 +138,46 @@ class RotaryStage(Iterator):
         self._motion_controller.set_deceleration(self._deceleration, axis=self._axis)
 
         self._motion_controller.check_errors()
+
+    def info_current_position(self):
+        return f"{self._name} angle: {self.current_position()}°, "
+
+    def current_position_for_filename(self):
+        return self.current_position()
+
+    def current_position(self):
+        if self._index == 0:
+            return self._motion_controller.get_position(axis=self._axis)
+        elif 1 <= self._index <= len(self._positions):
+            self._positions[self._index - 1]
+        else:
+            raise ValueError("Index out of range.")
+
+
+class RotaryStageMock(RotaryStage):
+    def __init__(self, **kwargs):
+        super().__init__(**kwargs)
+
+    def _prepare_rotations(self):
+        self._positions = [self._motion_controller.get_position(axis=self._axis)]
+
+    def __next__(self):
+        if self._index < len(self._positions):
+            position = self._positions[self._index]
+            self._index += 1
+
+            return position
+        else:
+            raise StopIteration
+
+    def reset(self):
+        self._index = 0
+
+    def set_home(self, position):
+        logger.info("set_home ignored.")
+
+    def motor_on(self):
+        logger.info("motor_on ignored.")
+
+    def current_position_for_filename(self):
+        return None

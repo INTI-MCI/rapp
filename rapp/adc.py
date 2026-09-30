@@ -30,6 +30,13 @@ GAINS = {
     GAIN_SIXTEEN: (0.256, 0.0078125),
 }
 
+PGA = {
+    1: (1.24, 1240/2**23),
+    2: (0.62, 620/2**23),
+    64: (0.019375, 19.375/2**23),
+    128: (0.0096875, 9.6875/2**23)
+}
+
 MESSAGE_CHANNELS = "Both ch0 and ch1 are False. Please set at least one of them as True."
 MESSAGE_SAMPLES = "You must ask for a positive number of samples... Got {}"
 
@@ -43,7 +50,7 @@ class ADC:
 
     Args:
         connection: a serial connection to the AD.
-        gain: the gain to use. One of [GAIN_TWOTHIRDS, GAIN_ONE, ...].
+        gain: the gain to use. One of GAINS for 16 bit adc or PGA for 24 bit adc.
         ch0: if true, measures the channel 0.
         ch1: if true, measures the channel 1.
         in_bytes: if true, assumes incoming data is in bytes.
@@ -59,11 +66,12 @@ class ADC:
     PORT = '/dev/ttyACM0'
     BAUDRATE = 57600
     TIMEOUT = 2
-    TIMEOUT_OPEN = 5
+    TIMEOUT_OPEN = 7
 
     SAMPLE_RATE = 840
+    SAMPLE_RATE_24 = 640
 
-    def __init__(self, serial, gain=GAIN_ONE, ch0=True, ch1=True, in_bytes=True, progressbar=True,
+    def __init__(self, serial, gain=1, ch0=True, ch1=True, in_bytes=True, progressbar=True,
                  timeout_open=TIMEOUT_OPEN):
         self._serial = serial
         self._in_bytes = in_bytes
@@ -72,11 +80,10 @@ class ADC:
         self.progressbar = ch0 != ch1
         self.timeout_open = timeout_open
         self.temperature_requested = False
-        self.max_V, self._multiplier_mV = GAINS[gain]  # 5, 10/2**24 to try 24 bit ADC
+        self.max_V, self._multiplier_mV = PGA[gain]  # TODO: add adc config
 
         if not (ch0 or ch1):
             raise ADCError(MESSAGE_CHANNELS)
-
         # Arduino resets when a new serial connection is made.
         # We need to wait, otherwise we don't receive anything.
         self.wait_for_connection()
@@ -122,6 +129,9 @@ class ADC:
             end = time.time()
             elapsed_time = end - start
             if output == b'yes\r\n':
+                line = self._serial.readline()
+                logger.info("Data in input buffer after making connection: {}".format(line))
+                self._serial.reset_input_buffer()  # TODO: check if this is necessary
                 break
             elif output == b'no\r\n':
                 pass
@@ -155,10 +165,10 @@ class ADC:
             raise ADCError(MESSAGE_SAMPLES.format(n_samples))
 
         if flush:  # Clear input buffer. Otherwise messes up values at the beginning.
-            self._serial.flushInput()
+            self._serial.reset_input_buffer()
 
         cmd = ADC.CMD_TEMPLATE.format(
-            measurement='adc?', ch0=int(self._ch0), ch1=int(self._ch1), samples=n_samples
+            measurement='adc', ch0=int(self._ch0), ch1=int(self._ch1), samples=n_samples
         )
         logger.debug("ADC command: {}".format(cmd))
 
@@ -176,32 +186,33 @@ class ADC:
 
         return data
 
-    def request_temperature(self, flush=True):
+    def request_temperature(self, channel, flush=True):
         """Requests temperature measurements
 
                 Args:
                     flush: if true, flushes input from the serial port before taking measurements.
+                    channel: channel 0 - Room temperature, channel 1 - Quartz plate temperature
                 """
         if flush:  # Clear input buffer. Otherwise, messes up values at the beginning.
-            self._serial.flushInput()
+            self._serial.reset_input_buffer()
 
-        cmd = "req-temp?\n"
+        cmd = f"req-temp;{channel};\n"
         logger.debug("ADC command: {}".format(cmd))
 
         self._serial.write(bytes(cmd, 'utf-8'))
         temperature_requested = True
         return temperature_requested
 
-    def read_temperature(self):
+    def read_temperature(self, channel=0):  # TODO: ver si saco el valor por default de channel
         """Reads temperature measurements
 
                 Args:
-                    temperature_requested:
+                    channel: channel 0 - Room temperature, channel 1 - Quartz plate temperature
 
                 Returns:
                     the value as a list  [temp].
                 """
-        cmd = "temp?\n"
+        cmd = f"temp;{channel};\n"
         logger.debug("ADC command: {}".format(cmd))
 
         self._serial.write(bytes(cmd, 'utf-8'))
@@ -217,7 +228,7 @@ class ADC:
 
     def measurement_time(self, samples):
         """Returns the time (in seconds) a measurement will take for given number of samples."""
-        return samples * self.active_channels() / self.SAMPLE_RATE
+        return samples * self.active_channels() / self.SAMPLE_RATE_24
 
     def close(self):
         self._serial.close()
@@ -240,8 +251,9 @@ class ADC:
 
     def _read_bits(self):
         if self._in_bytes:
-            return int.from_bytes(self._serial.read(2), byteorder='big', signed=True)
-            # .read(4) for 24 bit ADC
+            bytes_data = self._serial.read(4)  # .read(2) for 16 bit ADC TODO: add adc config
+            logger.debug('Data in bytes = %s', bytes_data)
+            return int.from_bytes(bytes_data, byteorder='big', signed=True)
         else:
             return int(self._serial.readline().decode().strip())
 

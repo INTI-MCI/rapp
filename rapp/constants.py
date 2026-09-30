@@ -13,6 +13,7 @@ LABEL_STEP = "Paso del rotador [°]"
 LABEL_N_CYCLES = "N° de ciclos de rotador"
 LABEL_FREQUENCY = "Frecuencia [Hz]"
 LABEL_COUNTS = "Cuentas"
+LABEL_REP = "Repeticiones"
 LABEL_N_SAMPLE = "N° de muestra"
 LABEL_N_SAMPLES = "N° de muestras por ángulo"
 LABEL_PHI_ERR = "RMSE [°]"
@@ -22,6 +23,7 @@ LABEL_RADIANS = "Fase [rad]"
 LABEL_PSD = "PSD [V² / Hz]"
 LABEL_MOTION_ACCURACY = "Exactitud del rotador (uniforme) [°]"
 LABEL_MOTION_REPEATABILITY = "Repetibilidad unidireccional (std, normal) [°]"
+LABEL_TEMP = "Temperatura [°C]"
 
 ENCONDIG = "iso-8859-1"
 
@@ -29,8 +31,8 @@ ANALYZER_MIN_STEP = 0.001
 ANALYZER_UNCERTAINTY = 0.06
 
 ROTARY_HOME_VELOCITY = 4
-ROTARY_HOME_ACCELERATION = 8
-ROTARY_HOME_DECELERATION = 8
+ROTARY_HOME_ACCELERATION = 4
+ROTARY_HOME_DECELERATION = 4
 
 HELP_VERBOSE = "if true, set log level to DEBUG."
 HELP_SHOW = "if true, show the plot."
