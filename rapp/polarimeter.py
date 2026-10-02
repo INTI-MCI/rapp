@@ -417,10 +417,10 @@ def run(
     overwrite: bool = False,
     hwp_enabled: bool = False,
     hwp_cycles: float = 0,
-    hwp_step: float = 45,
+    hwp_step: float = 0,
     hwp_delay_position: float = 5,
     mc_wait: float = 15,
-    enable_pm100: bool = True,
+    enable_pm100: bool = False,
     work_dir: str = ct.WORK_DIR
 ):
 
@@ -457,14 +457,19 @@ def run(
         axis=1,
         name='Analyzer'
     )
-
+    logger.info([hwp_enabled])
     if hwp_enabled:
         logger.info("Connecting Rotary Stage: HalfWavePlate...")
     else:
         logger.warning("HalfWavePlate disabled. Use --hwp to enable.")
-    hwp = RotaryStage.build(
-        motion_controller, hwp_cycles, hwp_step, hwp_delay_position, axis=2, name='HalfWavePlate',
-        mock=hwp_enabled
+    logger.info([hwp_enabled])
+    # hwp = RotaryStage.build(
+    #    motion_controller, cycles=hwp_cycles, step=hwp_step, delay_position=hwp_delay_position,
+    #    axis=2, name='HalfWavePlate'#, mock=hwp_enabled
+    # )
+    hwp = RotaryStage(
+        motion_controller, cycles=hwp_cycles, step=hwp_step, delay_position=hwp_delay_position,
+        axis=2, name='HalfWavePlate'
     )
 
     logger.info("Connecting to ADC...")

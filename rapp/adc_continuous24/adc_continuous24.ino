@@ -14,7 +14,7 @@ const unsigned short int SERIAL_BAUDRATE = 57600;
 ArduinoUno_ADC_CS1237 adc0(13,19);// Declare the object to work with the ArduinoUno_ADC_CS1237 library functions, specifying the pins (SCLK, DATA).
 ArduinoUno_ADC_CS1237 adc1(11, 9);
 
-const byte register_to_write = 0b01010000; // CH 0 input, PGA = 1, DRATE = 640 Hz, VREF = DISABLED
+const byte register_to_write = 0b01110000; // CH 0 input, PGA = 1, DRATE = 640 Hz, VREF = DISABLED
 
 const int dataPin0 = 4;   // Pin where room temperature sensors 1-Wire bus is connected
 OneWire oneWire0(dataPin0);
@@ -133,18 +133,21 @@ void read_n_samples_from_channel(unsigned long n_samples, bool channel, bool mea
     unsigned long endtime;
     unsigned long elapsedtime;
 
-    // unsigned long starttime2;
-    // unsigned long endtime2;
-    // unsigned long elapsedtime2;
+    unsigned long endtime2;
+    unsigned long starttime2;
+    unsigned long elapsedtime2;
 
     measure_times |= PROFILE_CS1237;
 
-    if (measure_times) starttime = micros();
+    if (measure_times){
+      starttime = micros();
+      times[3 + (unsigned short) channel] = 0; // Initialize the elapsed time for serial write for this channel
+    }
     int32_t data = 0;
 
     unsigned long i = 0;
     while (i < n_samples) {
-        if (measure_times) {
+        if (PROFILE_CS1237) {
           if (channel) data = adc1.readADCwProfiler();
           else data = adc0.readADCwProfiler();
         }
@@ -152,17 +155,17 @@ void read_n_samples_from_channel(unsigned long n_samples, bool channel, bool mea
           if (channel) data = adc1.readADC();
           else data = adc0.readADC();
         }
-        // if (DEBUG_CS1237 or measure_times) starttime2 = micros(); // Revisar qué se quiere guardar y/o imprimir
+        if (DEBUG_CS1237 or measure_times) starttime2 = micros(); // Revisar qué se quiere guardar y/o imprimir
         serial_write_32bit(data);
-        // if (DEBUG_CS1237 or measure_times) {
-        //   endtime2 = micros();
-        //   elapsedtime2 = endtime2 - starttime2; // Tal vez no tenga sentido ver esto cuando veamos tiempos guardados en times?
-        //   times[3 + (unsigned short) channel] = elapsedtime2;
-        // }
-        // if (DEBUG_CS1237) {
-        //   Serial.print("Elapsed time serial_write_32bit in microseconds: ");
-        //   Serial.println(elapsedtime2);
-        // }
+        if (DEBUG_CS1237 or measure_times) {
+          endtime2 = micros();
+          elapsedtime2 = endtime2 - starttime2;
+          times[3 + (unsigned short) channel] += elapsedtime2;
+        }
+        if (DEBUG_CS1237) {
+          Serial.print("Elapsed time serial_write_32bit in microseconds: ");
+          Serial.println(elapsedtime2);
+        }
         i = i + 1;
     }
 
@@ -319,11 +322,14 @@ String getArgs(String in_command) {
     return command_arguments;
 }
 
+void send_measured_times() {
+  Serial.write((uint8_t*)times, sizeof(unsigned long) * 5); // Send times[0-4]
+}
+
 void send_profiled_times() {
   ArduinoUno_ADC_CS1237::ProfilerTimes profiler0 = adc0.getProfiler();
   ArduinoUno_ADC_CS1237::ProfilerTimes profiler1 = adc1.getProfiler();
 
-  Serial.write((uint8_t*)times, sizeof(unsigned long) * 3); // Send times[0], times[1], times[2]
   Serial.write((uint8_t*)&profiler0, sizeof(profiler0));
   Serial.write((uint8_t*)&profiler1, sizeof(profiler1));
 }
@@ -336,7 +342,7 @@ void process_serial_input() {
             String command_args = getArgs(input_command);
             // unsigned long elapsedtime; // Creo que no hace falta
             unsigned short n_channels;
-            bool measure_times = 0;
+            bool measure_times = 1;
             times = new unsigned long[N_TIMES_ADC];
 
             parse_and_read_n_samples(command_args, &n_channels, measure_times);
@@ -390,6 +396,9 @@ void process_serial_input() {
         else if (command_name == "sps?") {
             String command_args = getArgs(input_command);
             measure_SPS(command_args);
+        }
+        else if (command_name == "measured_times?") {
+            send_measured_times();
         }
         else if (command_name == "profiled_times?") {
             send_profiled_times();

@@ -53,7 +53,7 @@ class RotaryStage(Iterator):
 
     @classmethod
     def build(cls, mock=False, **kwargs):
-        if mock:
+        if not mock:
             return RotaryStageMock(**kwargs)
         return cls(**kwargs)
 
