@@ -173,7 +173,7 @@ def read_profiler(self, ch0=0, ch1=0):
     return profiler0, profiler1
 
 
-def main(n_samples=300, ch0=1, ch1=1, total_samples=1, profile=False):
+def main(n_samples=128, ch0=1, ch1=1, total_samples=1, profile=True):
     # n_samples: cantidad de muestras que se piden
     # ch0 y ch1 dicen si se pide o no ese canal
     # total_samples: cantidad de veces que se piden las n_samples 
@@ -195,6 +195,7 @@ def main(n_samples=300, ch0=1, ch1=1, total_samples=1, profile=False):
         # time.sleep(5)
         # buf2 = adc.readline()
         # print(buf2)
+        # adc.write(bytes("adc_register;01010000;", encoding='utf-8'))
         for j in range(total_samples):
             adc.write(bytes(CMD_TEMPLATE.format(measurement='adc', ch0=ch0, ch1=ch1, samples=n_samples).encode('utf-8')))
             # adc.write(bytes('adc_n_dt;{};500;\n'.format(n_samples).encode('utf-8')))

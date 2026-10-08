@@ -38,6 +38,7 @@ ADC_PORT_LINUX = '/dev/ttyACM0'
 
 ADC_BAUDRATE = 57600
 ADC_TIMEOUT = 2
+ADC_WRITE_TIMEOUT = 2
 ADC_TIMEOUT_OPEN = 5
 
 THORLABS_PM100_VISA_LINUX = "USB0::4883::32889::P1000529::0::INSTR"
@@ -474,7 +475,7 @@ def run(
 
     logger.info("Connecting to ADC...")
     adc = ADC.build(
-        resolve_adc_port(), baudrate=ADC_BAUDRATE, timeout=ADC_TIMEOUT,
+        resolve_adc_port(), baudrate=ADC_BAUDRATE, timeout=ADC_TIMEOUT, write_timeout=ADC_WRITE_TIMEOUT,
         timeout_open=ADC_TIMEOUT_OPEN,
         ch0=not no_ch0,
         ch1=not no_ch1,

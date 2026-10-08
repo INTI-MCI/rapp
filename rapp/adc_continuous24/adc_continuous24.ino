@@ -14,7 +14,7 @@ const unsigned short int SERIAL_BAUDRATE = 57600;
 ArduinoUno_ADC_CS1237 adc0(13,19);// Declare the object to work with the ArduinoUno_ADC_CS1237 library functions, specifying the pins (SCLK, DATA).
 ArduinoUno_ADC_CS1237 adc1(11, 9);
 
-const byte register_to_write = 0b01110000; // CH 0 input, PGA = 1, DRATE = 640 Hz, VREF = DISABLED
+const byte register_to_write = 0b01110000; // CH 0 input, PGA = 1, DRATE = 1280 Hz, VREF = DISABLED
 
 const int dataPin0 = 4;   // Pin where room temperature sensors 1-Wire bus is connected
 OneWire oneWire0(dataPin0);
@@ -342,7 +342,7 @@ void process_serial_input() {
             String command_args = getArgs(input_command);
             // unsigned long elapsedtime; // Creo que no hace falta
             unsigned short n_channels;
-            bool measure_times = 1;
+            bool measure_times = 0;
             times = new unsigned long[N_TIMES_ADC];
 
             parse_and_read_n_samples(command_args, &n_channels, measure_times);

@@ -19,14 +19,14 @@ void ArduinoUno_ADC_CS1237::begin(void) {
     if (DEBUG_CS1237) Serial.println("Fin del delay");
 }
 
-void ArduinoUno_ADC_CS1237::clockCycle() {
+inline __attribute__((always_inline)) void ArduinoUno_ADC_CS1237::clockCycle() {
     digitalWrite(SCLK, HIGH);
     customDelay455ns(); //t5
     digitalWrite(SCLK, LOW);
     customDelay455ns(); //t5
 }
 
-void ArduinoUno_ADC_CS1237::writeBit(bool bit) {
+inline __attribute__((always_inline)) void ArduinoUno_ADC_CS1237::writeBit(bool bit) {
     digitalWrite(SCLK, HIGH);
     digitalWrite(DOUT_DRDY, bit); //Write the bit value into DOUT_DRDY pin
     customDelay455ns(); //t6
@@ -34,7 +34,7 @@ void ArduinoUno_ADC_CS1237::writeBit(bool bit) {
     customDelay455ns(); //t5
 }
 
-bool ArduinoUno_ADC_CS1237::readBit() {
+inline __attribute__((always_inline)) bool ArduinoUno_ADC_CS1237::readBit() {
     digitalWrite(SCLK, HIGH);
     customDelay455ns(); //t6
     bool single_bit = digitalRead(DOUT_DRDY); //Read the value from DOUT_DRDY
@@ -411,14 +411,14 @@ int ArduinoUno_ADC_CS1237::getSCLK(){
 
 //-------------------------------------------------------------------------------------------------------------
 // This is valid for Arduino Uno, make sure you adjust it for your own MCU based on its clock speed.
-#define DELAY_455_NS asm volatile ("nop\n\t" "nop\n\t" "nop\n\t" "nop\n\t" "nop\n\t" "nop\n\t")
+#define DELAY_455_NS asm volatile ("")
 // In Arduino Uno: 1 / 16 MHz = 62.5 ns (1 cycle time of the MCU)
-// 6 NOP is 6 x 62.5 ns = 375 ns
+// 1 NOP is 62.5 ns
 // This may need to be fine-tuned based on the actual execution time
-// Adjust the number of "nop" based on the calculated value
+// Adjust the number of "nop" based on the calculated value ("nop\n\t" "nop\n\t" "nop\n\t")
 // However, always refer to the clock cycle of your chosen MCU!!!
 
-void ArduinoUno_ADC_CS1237::customDelay455ns() {
+inline __attribute__((always_inline)) void ArduinoUno_ADC_CS1237::customDelay455ns() {
     DELAY_455_NS;
 }
 //--------------------------------------------------------------------------------------------------

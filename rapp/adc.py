@@ -66,10 +66,11 @@ class ADC:
     PORT = '/dev/ttyACM0'
     BAUDRATE = 57600
     TIMEOUT = 2
+    ADC_WRITE_TIMEOUT = 2
     TIMEOUT_OPEN = 7
 
     SAMPLE_RATE = 840
-    SAMPLE_RATE_24 = 640
+    SAMPLE_RATE_24 = 1280
 
     def __init__(self, serial, gain=1, ch0=True, ch1=True, in_bytes=True, progressbar=True,
                  timeout_open=TIMEOUT_OPEN):
@@ -89,7 +90,8 @@ class ADC:
         self.wait_for_connection()
 
     @classmethod
-    def build(cls, port=PORT, baudrate=BAUDRATE, timeout=TIMEOUT, mock_serial=False, **kwargs):
+    def build(cls, port=PORT, baudrate=BAUDRATE, timeout=TIMEOUT, write_timeout=ADC_WRITE_TIMEOUT,
+               mock_serial=False, **kwargs):
         """Builds an ADC object.
 
         Args:
@@ -108,7 +110,8 @@ class ADC:
         else:
             serial_connection = cls.get_serial_connection(port,
                                                           baudrate=baudrate,
-                                                          timeout=timeout)
+                                                          timeout=timeout,
+                                                          write_timeout=write_timeout)
 
         return cls(serial_connection, **kwargs)
 
@@ -124,7 +127,10 @@ class ADC:
         elapsed_time = 0
         queries = 0
         while elapsed_time < self.timeout_open:
-            self._serial.write(b'ready?\n')
+            try:
+                self._serial.write(b'ready?\n')
+            except serial.SerialTimeoutException as e:
+                raise ADCError("Timeout while writing to serial port: {}".format(e))
             output = self._serial.readline()
             end = time.time()
             elapsed_time = end - start
@@ -172,7 +178,10 @@ class ADC:
         )
         logger.debug("ADC command: {}".format(cmd))
 
-        self._serial.write(bytes(cmd, 'utf-8'))
+        try:
+            self._serial.write(bytes(cmd, 'utf-8'))
+        except serial.SerialTimeoutException as e:
+            raise ADCError("Timeout while writing to serial port: {}".format(e))
 
         none_array = np.full(n_samples, None)
 
@@ -199,7 +208,11 @@ class ADC:
         cmd = f"req-temp;{channel};\n"
         logger.debug("ADC command: {}".format(cmd))
 
-        self._serial.write(bytes(cmd, 'utf-8'))
+        try:
+            self._serial.write(bytes(cmd, 'utf-8'))
+        except serial.SerialTimeoutException as e:
+            raise ADCError("Timeout while writing to serial port: {}".format(e))
+
         temperature_requested = True
         return temperature_requested
 
@@ -215,7 +228,10 @@ class ADC:
         cmd = f"temp;{channel};\n"
         logger.debug("ADC command: {}".format(cmd))
 
-        self._serial.write(bytes(cmd, 'utf-8'))
+        try:
+            self._serial.write(bytes(cmd, 'utf-8'))
+        except serial.SerialTimeoutException as e:
+            raise ADCError("Timeout while writing to serial port: {}".format(e))
 
         temp = self._read_data(1, name='Temperature')
         logger.debug("Temperature without correction = {}".format(temp[0]))
@@ -252,6 +268,8 @@ class ADC:
     def _read_bits(self):
         if self._in_bytes:
             bytes_data = self._serial.read(4)  # .read(2) for 16 bit ADC TODO: add adc config
+            if len(bytes_data) != 4:
+                raise ADCError("Expected 4 bytes, got {} bytes.".format(len(bytes_data)))
             logger.debug('Data in bytes = %s', bytes_data)
             return int.from_bytes(bytes_data, byteorder='big', signed=True)
         else:
