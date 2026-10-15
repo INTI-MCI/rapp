@@ -185,8 +185,18 @@ class ADC:
 
         none_array = np.full(n_samples, None)
 
-        ch0 = self._read_data(n_samples, name='CH0') if self._ch0 else none_array
-        ch1 = self._read_data(n_samples, name='CH1') if self._ch1 else none_array
+        if self._ch0:
+            ch0 = self._read_data(n_samples, name='CH0')
+            if len(ch0) != n_samples:
+                return None
+        else: 
+            ch0 = none_array
+        if self._ch1:
+            ch1 = self._read_data(n_samples, name='CH1')
+            if len(ch1) != n_samples:
+                return None
+        else:
+            ch1 = none_array
 
         data = list(zip(ch0, ch1))
 
@@ -256,7 +266,10 @@ class ADC:
         if name == 'CH0' or name == 'CH1':
             for _ in track(range(n_samples), description=desc, disable=not self.progressbar):
                 try:
-                    data.append(self._bits_to_volts(self._read_bits()))
+                    measurement = self._bits_to_volts(self._read_bits())
+                    if measurement == None:
+                        continue
+                    data.append(measurement)
                 except (ValueError, UnicodeDecodeError) as e:
                     logger.warning("Error while reading from ADC: {}".format(e))
 
@@ -267,15 +280,27 @@ class ADC:
 
     def _read_bits(self):
         if self._in_bytes:
-            bytes_data = self._serial.read(4)  # .read(2) for 16 bit ADC TODO: add adc config
+            bytes_data = b""
+            for _ in range(3):
+                try: 
+                    bytes_data += self._serial.read(4 - len(bytes_data))
+                    #bytes_data = self._serial.read(4)  # .read(2) for 16 bit ADC TODO: add adc config
+                except serial.SerialException as e:
+                    raise ADCError(f"Error while reading from serial port: {e}") from e
+                if len(bytes_data) == 4:
+                    break
+
             if len(bytes_data) != 4:
-                raise ADCError("Expected 4 bytes, got {} bytes.".format(len(bytes_data)))
+                logger.warning("ADCError: Expected 4 bytes, got {} bytes.".format(len(bytes_data)))
+                return None
             logger.debug('Data in bytes = %s', bytes_data)
             return int.from_bytes(bytes_data, byteorder='big', signed=True)
         else:
             return int(self._serial.readline().decode().strip())
 
     def _bits_to_volts(self, value):
+        if value == None:
+            return None
         return value * self._multiplier_mV / 1000
 
     def _read_float(self):

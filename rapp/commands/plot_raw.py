@@ -3,7 +3,7 @@ from rapp import constants as ct
 from rapp.analysis import raw
 
 
-HELP_PLOT_ROW = "Tool for plotting raw measurements."
+HELP_PLOT_RAW = "Tool for plotting raw measurements."
 
 HELP_FILEPATH = 'file containing the measurements.'
 HELP_TEMPERATURE = 'if true, plots temperature along repetitions.'
@@ -15,12 +15,12 @@ EPILOG = "Example: {}".format(EXAMPLE)
 
 
 def add_to_subparsers(subparsers):
-    p = subparsers.add_parser("plot_raw", help=HELP_PLOT_ROW, epilog=EPILOG)
+    p = subparsers.add_parser("plot_raw", help=HELP_PLOT_RAW, epilog=EPILOG)
     p.add_argument('filepath', type=str, help=HELP_FILEPATH)
     p.add_argument('-t', '--temperature', action='store_true', help=HELP_TEMPERATURE)
     p.add_argument('--no-ch0', action='store_true', help=HELP_NOCH0)
     p.add_argument('--no-ch1', action='store_true', help=HELP_NOCH1)
-    p.add_argument('-s', '--show', action='store_true', help=ct.HELP_SHOW)
+    p.add_argument('-s', '--show', action='store_true', default=True, help=ct.HELP_SHOW)
     p.add_argument('-v', '--verbose', action='store_true', help=ct.HELP_VERBOSE)
 
 

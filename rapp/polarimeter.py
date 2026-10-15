@@ -40,6 +40,7 @@ ADC_BAUDRATE = 57600
 ADC_TIMEOUT = 2
 ADC_WRITE_TIMEOUT = 2
 ADC_TIMEOUT_OPEN = 5
+ADC_RETRY = 3
 
 THORLABS_PM100_VISA_LINUX = "USB0::4883::32889::P1000529::0::INSTR"
 THORLABS_PM100_VISA_WIN = 'USB0::0x1313::0x8079::P1000529::INSTR'
@@ -135,8 +136,9 @@ class Polarimeter:
 
         failures = 0
 
-        # self._hwp.reset()
-        # self._hwp.set_home(position=0)
+        # TODO: Only if hwp-enabled
+        self._hwp.reset()
+        self._hwp.set_home(position=0)
 
         parameters = {
             "position": 0,
@@ -254,7 +256,12 @@ class Polarimeter:
             if self._norm_det is not None:
                 self._norm_det.start_measurement()
 
-            acquired_samples = self._adc.acquire(samples, flush=True)
+            for _ in range(ADC_RETRY):
+                acquired_samples = self._adc.acquire(samples, flush=True)
+                if acquired_samples is not None:
+                    break
+            if acquired_samples is None:
+                logger.error("ADC not sending samples.")
             logger.debug("Read samples at: {}".format(datetime.datetime.now()))
             if self._norm_det is not None:
                 normalization_value = self._norm_det.fetch_measurement()

@@ -149,7 +149,7 @@ class RotaryStage(Iterator):
         if self._index == 0:
             return self._motion_controller.get_position(axis=self._axis)
         elif 1 <= self._index <= len(self._positions):
-            self._positions[self._index - 1]
+            return self._positions[self._index - 1]
         else:
             raise ValueError("Index out of range.")
 

@@ -26,7 +26,7 @@ ADC_WAIT_TIME = 5
 CMD_TEMPLATE = "{measurement};{ch0};{ch1};{samples};\n"
 AVAILABLE_CHANNELS = ['CH0', 'CH1']
 
-PLOT_CHANNELS = True
+PLOT_CHANNELS = False
 
 _in_bytes = True
 
@@ -173,7 +173,7 @@ def read_profiler(self, ch0=0, ch1=0):
     return profiler0, profiler1
 
 
-def main(n_samples=128, ch0=1, ch1=1, total_samples=1, profile=True):
+def main(n_samples=1, ch0=1, ch1=1, total_samples=23, measure_times=False, profile=False):
     # n_samples: cantidad de muestras que se piden
     # ch0 y ch1 dicen si se pide o no ese canal
     # total_samples: cantidad de veces que se piden las n_samples 
@@ -212,10 +212,14 @@ def main(n_samples=128, ch0=1, ch1=1, total_samples=1, profile=True):
                 channel1 = adc.read(4) if ch1 else none_array1
                 datos1.append(bits_to_volts(int.from_bytes(channel1, byteorder='big', signed=True)))
 
-            mean0 = np.mean(datos0) if ch0 else None
-            mean1 = np.mean(datos1) if ch1 else None
-            print("{}. Media = {:.4e}. Std = {:.2e}. MinDif = {:.2e}. MaxDif = {:.2e}".format('CH0', np.mean(datos0), np.std(datos0), np.min(datos0) - mean0, np.max(datos0) - mean0)) if ch0 else None
-            print("{}. Media = {:.4e}. Std = {:.2e}. MinDif = {:.2e}. MaxDif = {:.2e}".format('CH1', np.mean(datos1), np.std(datos1), np.min(datos1) - mean1, np.max(datos1) - mean1)) if ch1 else None
+            if n_samples > 1:
+                mean0 = np.mean(datos0) if ch0 else None
+                mean1 = np.mean(datos1) if ch1 else None
+                print("{}. Media = {:.4e}. Std = {:.2e}. MinDif = {:.2e}. MaxDif = {:.2e}".format('CH0', np.mean(datos0), np.std(datos0), np.min(datos0) - mean0, np.max(datos0) - mean0)) if ch0 else None
+                print("{}. Media = {:.4e}. Std = {:.2e}. MinDif = {:.2e}. MaxDif = {:.2e}".format('CH1', np.mean(datos1), np.std(datos1), np.min(datos1) - mean1, np.max(datos1) - mean1)) if ch1 else None
+            else:
+                print("CH0: {} | CH1: {}".format(datos0, datos1))
+                time.sleep(0.2)
 
             if PLOT_CHANNELS:
                 fig, axs = plt.subplots(2, 2, figsize=(12, 8))
@@ -237,14 +241,15 @@ def main(n_samples=128, ch0=1, ch1=1, total_samples=1, profile=True):
                 axs[1, 1].set_ylabel('Frequency')
                 plt.show()
 
-            adc.write(bytes("measured_times?\n", 'utf-8'))
-            times = read_times(adc)
+            if measure_times:
+                adc.write(bytes("measured_times?\n", 'utf-8'))
+                times = read_times(adc)
 
-            print('Channel 0 time = {} us. Sample rate = {:.0f} sps'.format(times[1], n_samples / (times[1] / 1e6)))
-            print('Channel 1 time = {} us. Sample rate = {:.0f} sps'.format(times[2], n_samples / (times[2] / 1e6)))
-            print('Send channel 0 data time per sample = {:.2f} us'.format(times[3] / n_samples))
-            print('Send channel 1 data time per sample = {:.2f} us'.format(times[4] / n_samples))
-            print('Total = {} us'.format(times[0]))
+                print('Channel 0 time = {} us. Sample rate = {:.0f} sps'.format(times[1], n_samples / (times[1] / 1e6)))
+                print('Channel 1 time = {} us. Sample rate = {:.0f} sps'.format(times[2], n_samples / (times[2] / 1e6)))
+                print('Send channel 0 data time per sample = {:.2f} us'.format(times[3] / n_samples))
+                print('Send channel 1 data time per sample = {:.2f} us'.format(times[4] / n_samples))
+                print('Total = {} us'.format(times[0]))
 
             if profile:
                 adc.write(bytes("profiled_times?\n", 'utf-8'))
