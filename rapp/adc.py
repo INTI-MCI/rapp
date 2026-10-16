@@ -12,7 +12,7 @@ from rapp.mocks import SerialMock
 logger = logging.getLogger(__name__)
 
 MAXV = 4.096
-BITS = 16
+BITS = 16  # TODO: Check usages
 
 GAIN_TWOTHIRDS = 23
 GAIN_ONE = 1
@@ -21,20 +21,33 @@ GAIN_FOUR = 4
 GAIN_EIGHT = 8
 GAIN_SIXTEEN = 16
 
-GAINS = {
-    GAIN_TWOTHIRDS: (6.144, 0.1875),
-    GAIN_ONE: (4.096, 0.125),
-    GAIN_TWO: (2.048, 0.0625),
-    GAIN_FOUR: (1.024, 0.03125),
-    GAIN_EIGHT: (0.512, 0.015625),
-    GAIN_SIXTEEN: (0.256, 0.0078125),
-}
+ADC_USED = {
+    "CS_1237": {
+        'BITS': 24,
+        'GAINS': {
+            1: (1.24, 1240/2**23),
+            2: (0.62, 620/2**23),
+            64: (0.019375, 19.375/2**23),
+            128: (0.0096875, 9.6875/2**23)
+        }
 
-PGA = {
-    1: (1.24, 1240/2**23),
-    2: (0.62, 620/2**23),
-    64: (0.019375, 19.375/2**23),
-    128: (0.0096875, 9.6875/2**23)
+    },
+    "ADS_1115": {
+        'BITS': 16,
+        'GAINS': {
+            GAIN_TWOTHIRDS: (6.144, 0.1875),
+            GAIN_ONE: (4.096, 0.125),
+            GAIN_TWO: (2.048, 0.0625),
+            GAIN_FOUR: (1.024, 0.03125),
+            GAIN_EIGHT: (0.512, 0.015625),
+            GAIN_SIXTEEN: (0.256, 0.0078125)}
+    },
+    "ADS_1232": {  # TODO: Ver si están bien los rangos (xej, el 1: es +- 2.5 V)
+        1: (5, 5000/2**23),
+        2: (2.5, 2500/2**23),
+        64: (0.078, 78/2**23),
+        128: (0.039, 39/2**23),
+    }
 }
 
 MESSAGE_CHANNELS = "Both ch0 and ch1 are False. Please set at least one of them as True."
@@ -72,7 +85,7 @@ class ADC:
     SAMPLE_RATE = 840
     SAMPLE_RATE_24 = 1280
 
-    def __init__(self, serial, gain=1, ch0=True, ch1=True, in_bytes=True, progressbar=True,
+    def __init__(self, serial, adc_used, gain=1, ch0=True, ch1=True, in_bytes=True, progressbar=True,
                  timeout_open=TIMEOUT_OPEN):
         self._serial = serial
         self._in_bytes = in_bytes
@@ -81,7 +94,8 @@ class ADC:
         self.progressbar = ch0 != ch1
         self.timeout_open = timeout_open
         self.temperature_requested = False
-        self.max_V, self._multiplier_mV = PGA[gain]  # TODO: add adc config
+        self.bits = ADC_USED[adc_used]["BITS"]
+        self.max_V, self._multiplier_mV = ADC_USED[adc_used]["GAINS"][gain]
 
         if not (ch0 or ch1):
             raise ADCError(MESSAGE_CHANNELS)
@@ -153,11 +167,12 @@ class ADC:
             "Connection opened in {} seconds with {} queries.".format(elapsed_time, queries)
         )
 
-    def acquire(self, n_samples, flush=True):
+    def acquire(self, n_samples, resolution, flush=True):
         """Acquires voltage measurements.
 
         Args:
             n_samples: number of samples to acquire.
+            resolution: bits resolution of ADC used in voltage measurements.
             flush: if true, flushes input from the serial port before taking measurements.
 
         Returns:
@@ -186,13 +201,13 @@ class ADC:
         none_array = np.full(n_samples, None)
 
         if self._ch0:
-            ch0 = self._read_data(n_samples, name='CH0')
+            ch0 = self._read_data(n_samples, resolution, name='CH0')
             if len(ch0) != n_samples:
                 return None
         else:
             ch0 = none_array
         if self._ch1:
-            ch1 = self._read_data(n_samples, name='CH1')
+            ch1 = self._read_data(n_samples, resolution, name='CH1')
             if len(ch1) != n_samples:
                 return None
         else:
@@ -259,14 +274,14 @@ class ADC:
     def close(self):
         self._serial.close()
 
-    def _read_data(self, n_samples, name=''):
+    def _read_data(self, n_samples, resolution=24, name=''):
         data = []
         desc = "Measuring {}:".format(name)
 
         if name == 'CH0' or name == 'CH1':
             for _ in track(range(n_samples), description=desc, disable=not self.progressbar):
                 try:
-                    measurement = self._bits_to_volts(self._read_bits())
+                    measurement = self._bits_to_volts(self._read_bits(resolution))
                     if measurement is None:
                         break
                     data.append(measurement)
@@ -278,23 +293,33 @@ class ADC:
 
         return data
 
-    def _read_bits(self):
+    def _read_bits(self, resolution):
         if self._in_bytes:
             bytes_data = b""
+            n_bytes = 0
+            byte_order = 'little'
+            if resolution == 24:
+                n_bytes = 4
+                byte_order = 'big'
+            if resolution == 16:
+                n_bytes = 2
+                byte_order = 'little'
+            else:
+                logger.error("Resolution not implemented")
+
             for _ in range(3):
                 try:
-                    bytes_data += self._serial.read(4 - len(bytes_data))
-                    # .read(2) for 16 bit ADC TODO: add adc config
+                    bytes_data += self._serial.read(n_bytes - len(bytes_data))
                 except serial.SerialException as e:
                     raise ADCError(f"Error while reading from serial port: {e}") from e
-                if len(bytes_data) == 4:
+                if len(bytes_data) == n_bytes:
                     break
 
-            if len(bytes_data) != 4:
-                logger.warning("ADCError: Expected 4 bytes, got {} bytes.".format(len(bytes_data)))
+            if len(bytes_data) != n_bytes:
+                logger.warning("ADCError: Expected {} bytes, got {} bytes.".format(n_bytes, len(bytes_data)))
                 return None
             logger.debug('Data in bytes = %s', bytes_data)
-            return int.from_bytes(bytes_data, byteorder='big', signed=True)
+            return int.from_bytes(bytes_data, byteorder=byte_order, signed=True)
         else:
             return int(self._serial.readline().decode().strip())
 
