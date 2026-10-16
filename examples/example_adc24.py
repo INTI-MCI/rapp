@@ -1,6 +1,7 @@
 import sys
 import time
 import serial
+import struct
 import numpy as np
 from matplotlib import pyplot as plt
 
@@ -118,6 +119,11 @@ def acquire(self, n_samples, _ch0=True, _ch1=True, flush=True):
         print("({}, {}) = ({}, {})".format('CH0', 'CH1', ch0, ch1))
 
     return data
+
+
+def _read_float(self):
+    read_value = self._serial.read(4)
+    return struct.unpack('<f', read_value)[0]
 
 
 def _read_data(self, n_samples, name=''):
