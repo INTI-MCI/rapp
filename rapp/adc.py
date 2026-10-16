@@ -268,7 +268,7 @@ class ADC:
                 try:
                     measurement = self._bits_to_volts(self._read_bits())
                     if measurement == None:
-                        continue
+                        break
                     data.append(measurement)
                 except (ValueError, UnicodeDecodeError) as e:
                     logger.warning("Error while reading from ADC: {}".format(e))

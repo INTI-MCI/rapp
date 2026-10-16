@@ -30,15 +30,15 @@ def main():
             #  hwp_enabled=True, hwp_cycles=0.1, hwp_step=0.1, hwp_delay_position=0.5)
     e5 = dict(cycles=1, step=1, samples=134, reps=20, velocity=4, acceleration=4, deceleration=4)
     e6 = dict(cycles=1, step=1, samples=169, reps=50, velocity=2)
-    experimentos = [e2]
-    tiempo_inicial_de_espera = 0  # tiempo de espera en segundos
+    experimentos = [e2, e3]
+    tiempo_inicial_de_espera = 30  # tiempo de espera en segundos
     parametros_en_dirname = False
 
     logger.info("Inicio: tiempo de espera de {} segundos".format(tiempo_inicial_de_espera))
     time.sleep(tiempo_inicial_de_espera)  # tiempo de espera en segundos
     logger.info("Fin del tiempo de espera. Iniciando experimentos...")
     # basename = "phase-diff-with-quartz-perkin-elmer-retrorreflexion"  # Acordarse de guardar!!
-    basename = "test-no-saturation"#"riao2026-hwp-cs1237"  # Acordarse de guardar!!
+    basename = "riao2026-hwp-cs1237-2"  # Acordarse de guardar!!
     for i, exp in enumerate(experimentos, 1):
         logger.info("EXPERIMENTO {}: {}".format(i, exp))
         prefix = f"{basename}-{i}"
