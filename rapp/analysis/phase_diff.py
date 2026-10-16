@@ -264,8 +264,8 @@ def phase_difference_from_folder(
 
 
 def phase_difference_from_file(
-    filepath, method, norm=False, fill_none=False, plot=False, show=False, correlation=False, **kwargs
-):
+    filepath, method, norm=False, fill_none=False, plot=False, show=False, correlation=False,
+      **kwargs):
     logger.info("Calculating phase difference for {}...".format(filepath))
 
     measurement = Measurement.from_file(filepath, fill_none=fill_none)

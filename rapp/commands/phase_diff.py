@@ -34,7 +34,7 @@ def add_to_subparsers(subparsers):
     p.add_argument('--norm', action='store_true', help=HELP_NORM)
     p.add_argument('--normplot', action='store_true', help=HELP_NORMPLOT)
     p.add_argument('-corr', '--correlation', action='store_true', help=HELP_CORRELATION)
-    p.add_argument('-s','--show', action='store_true', help=ct.HELP_SHOW)
+    p.add_argument('-s', '--show', action='store_true', help=ct.HELP_SHOW)
     p.add_argument('--plot', action='store_true', help=HELP_PLOT)
     p.add_argument('-i', '--instantaneous', action='store_true', help=HELP_INSTANTANEOUS)
 

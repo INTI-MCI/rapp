@@ -256,10 +256,11 @@ class Polarimeter:
             if self._norm_det is not None:
                 self._norm_det.start_measurement()
 
-            for _ in range(ADC_RETRY):
+            for try_n in range(ADC_RETRY):
                 acquired_samples = self._adc.acquire(samples, flush=True)
                 if acquired_samples is not None:
                     break
+                logger.warning(f"Try #{try_n} of acquisition failed.")
             if acquired_samples is None:
                 logger.error("ADC not sending samples.")
             logger.debug("Read samples at: {}".format(datetime.datetime.now()))
@@ -482,7 +483,8 @@ def run(
 
     logger.info("Connecting to ADC...")
     adc = ADC.build(
-        resolve_adc_port(), baudrate=ADC_BAUDRATE, timeout=ADC_TIMEOUT, write_timeout=ADC_WRITE_TIMEOUT,
+        resolve_adc_port(), baudrate=ADC_BAUDRATE, timeout=ADC_TIMEOUT,
+        write_timeout=ADC_WRITE_TIMEOUT,
         timeout_open=ADC_TIMEOUT_OPEN,
         ch0=not no_ch0,
         ch1=not no_ch1,

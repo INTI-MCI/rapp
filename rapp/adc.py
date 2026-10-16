@@ -91,7 +91,7 @@ class ADC:
 
     @classmethod
     def build(cls, port=PORT, baudrate=BAUDRATE, timeout=TIMEOUT, write_timeout=ADC_WRITE_TIMEOUT,
-               mock_serial=False, **kwargs):
+              mock_serial=False, **kwargs):
         """Builds an ADC object.
 
         Args:
@@ -189,7 +189,7 @@ class ADC:
             ch0 = self._read_data(n_samples, name='CH0')
             if len(ch0) != n_samples:
                 return None
-        else: 
+        else:
             ch0 = none_array
         if self._ch1:
             ch1 = self._read_data(n_samples, name='CH1')
@@ -267,7 +267,7 @@ class ADC:
             for _ in track(range(n_samples), description=desc, disable=not self.progressbar):
                 try:
                     measurement = self._bits_to_volts(self._read_bits())
-                    if measurement == None:
+                    if measurement is None:
                         break
                     data.append(measurement)
                 except (ValueError, UnicodeDecodeError) as e:
@@ -282,9 +282,9 @@ class ADC:
         if self._in_bytes:
             bytes_data = b""
             for _ in range(3):
-                try: 
+                try:
                     bytes_data += self._serial.read(4 - len(bytes_data))
-                    #bytes_data = self._serial.read(4)  # .read(2) for 16 bit ADC TODO: add adc config
+                    # .read(2) for 16 bit ADC TODO: add adc config
                 except serial.SerialException as e:
                     raise ADCError(f"Error while reading from serial port: {e}") from e
                 if len(bytes_data) == 4:
@@ -299,7 +299,7 @@ class ADC:
             return int(self._serial.readline().decode().strip())
 
     def _bits_to_volts(self, value):
-        if value == None:
+        if value is None:
             return None
         return value * self._multiplier_mV / 1000
 
