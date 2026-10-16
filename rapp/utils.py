@@ -1,4 +1,5 @@
 import os
+import re
 import sys
 import json
 import math
@@ -123,3 +124,25 @@ def progressbar(it, desc="", size=100, step=1, out=sys.stdout, enable=True):
                 last_time = show(i + 1)
     if enable:
         print("", file=out, flush=True)
+
+
+def sort_files_by_rep(files):
+    """
+    Sort a list of filenames according to the number of rep in their name.
+
+    Parameters
+    ----------
+    files : list
+        List of filenames.
+
+    Returns
+    -------
+    sorted_files : list
+        Sorted list of filenames.
+    """
+    nums = []
+    for file in files:
+        rep_num = re.search(r'rep(\d+)', file).groups()[0]
+        nums.append(int(rep_num))
+    sorted_files = [file for _, file in sorted(zip(nums, files))]
+    return sorted_files
