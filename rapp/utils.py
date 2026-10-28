@@ -5,6 +5,7 @@ import json
 import math
 import shutil
 import decimal
+import numpy as np
 
 from time import time
 from functools import wraps
@@ -146,3 +147,27 @@ def sort_files_by_rep(files):
         nums.append(int(rep_num))
     sorted_files = [file for _, file in sorted(zip(nums, files))]
     return sorted_files
+
+
+def sort_files_by_hwp_and_rep(files):
+    hwp_positions = []
+    max_rep = 0
+    for file in files:
+        hwp_position, rep = re.search(r'(?:hwp(\d+\.\d+)-)?rep(\d+)', file).groups()
+        hwp_position = float(hwp_position)
+        rep = int(rep)
+        if hwp_position not in hwp_positions:
+            hwp_positions.append(float(hwp_position))
+        max_rep = max(max_rep, int(rep))
+    hwp_positions = sorted(hwp_positions)
+    sorted_files = np.empty((len(hwp_positions), max_rep), dtype=object)
+    for file in files:
+        hwp_position, rep = re.search(r'(?:hwp(\d+\.\d+)-)?rep(\d+)', file).groups()
+        hwp_position = float(hwp_position)
+        rep = int(rep)
+        if hwp_position is None:
+            row = 0
+        else:
+            row = hwp_positions.index(float(hwp_position))
+        sorted_files[row, rep-1] = file
+    return sorted_files, hwp_positions, max_rep

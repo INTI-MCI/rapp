@@ -282,7 +282,7 @@ class Measurement:
         return self._data[COLUMN_ANGLE]
 
 
-def process_temperature_data(filepath, filename, raise_error=True):
+def process_temperature_data(filepath, filename, hwp_position, raise_error=True):
     if os.path.isdir(filepath):
         filepath = os.path.join(filepath, "{}.csv".format(filename))
 
@@ -294,6 +294,7 @@ def process_temperature_data(filepath, filename, raise_error=True):
     else:
         return None
 
+    temperature = temperature[temperature['HWP-POS'] == hwp_position]
     n_reps = temperature[COLUMN_REP].max()
     mean_temps = np.zeros(n_reps)
     max_temps = np.zeros(n_reps)
