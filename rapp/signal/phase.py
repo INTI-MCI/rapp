@@ -159,19 +159,17 @@ def sine_fit(
             y_sigma = y_sigma[mask]
 
     if method in ['NLS', 'WNLS']:
-        def curve_fit_two_sines_with_harmonics(x, *p):
-            return models.two_sines_with_harmonics(x, n_harmonics_ch0, n_harmonics_ch1, cut_signals_index, *p)
         if n_harmonics_ch0 == n_harmonics_ch1:
             if len(p0) == 6:
                 model = models.two_sines
             else:
                 model = models.two_sines_same_harmonics
-            model_args = partial(model, cut=cut_signals_index)
         else:
-            model_args = curve_fit_two_sines_with_harmonics
+            model = partial(models.two_sines_with_harmonics, n_harmonics_ch0=n_harmonics_ch0, n_harmonics_ch1=n_harmonics_ch1, cut=cut_signals_index)
+        model_cut = partial(model, cut=cut_signals_index)
 
         popt, pcov = curve_fit(
-            model_args, xs, ys,
+            model_cut, xs, ys,
             p0=p0,
             sigma=y_sigma,
             absolute_sigma=abs_sigma,
@@ -179,7 +177,7 @@ def sine_fit(
         )
 
         us = np.sqrt(np.diag(pcov))
-        fity = model_args(fitx, *popt)
+        fity = model(fitx, *popt)
 
         return popt, us, fitx, fity
 

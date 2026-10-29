@@ -67,7 +67,7 @@ def two_diff_distorted_sines(x12, A1s: tuple, A2s: tuple, phi1s: tuple, deltas: 
     return np.hstack([s1, s2])
 
 
-def two_sines_with_harmonics(x, n_harmonics_ch0, n_harmonics_ch1, cut, *p):
+def two_sines_with_harmonics(x, *p, n_harmonics_ch0=1, n_harmonics_ch1=1, cut=None):
     n_ch0 = int(n_harmonics_ch0)
     n_ch1 = int(n_harmonics_ch1)
     A1s = p[0:n_ch0]
