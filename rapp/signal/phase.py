@@ -1,14 +1,13 @@
 import logging
+from functools import partial
 
 import numpy as np
-
 from scipy import signal
-from scipy.optimize import curve_fit, dual_annealing
 from scipy.odr import ODR, Model, RealData
+from scipy.optimize import curve_fit, dual_annealing
 
-from rapp.utils import round_to_n_with_uncertainty
 import rapp.signal.models as models
-
+from rapp.utils import round_to_n_with_uncertainty
 
 PHASE_DIFFERENCE_METHODS = ['COSINE', 'HILBERT', 'WNLS', 'NLS', 'ODR', 'DFT', 'XCORR', 'ANNEAL']
 MIN_SIGMA_CURVE_FIT = 1e-3
@@ -144,23 +143,35 @@ def DFT(s1, s2, xs=None, period=2*np.pi):
 
 def sine_fit(
     xs, ys, p0=None, x_sigma=None, y_sigma=None, abs_sigma=True, bounds=None, method='NLS',
-        n_harmonics_ch0=None, n_harmonics_ch1=None,
+        n_harmonics_ch0=None, n_harmonics_ch1=None, lower_clipping_limit_percentage=None,
 ):
+    assert lower_clipping_limit_percentage is None or 0 <= lower_clipping_limit_percentage <= 1
+    cut_signals_index = len(xs) // 2
     fitx = xs
+    if lower_clipping_limit_percentage is not None:
+        mask = ys > lower_clipping_limit_percentage * np.max(ys)
+        xs = xs[mask]
+        ys = ys[mask]
+        cut_signals_index = np.sum(mask[:cut_signals_index])
+        if x_sigma is not None and isinstance(x_sigma, np.ndarray):
+            x_sigma = x_sigma[mask]
+        if y_sigma is not None and isinstance(y_sigma, np.ndarray):
+            y_sigma = y_sigma[mask]
 
     if method in ['NLS', 'WNLS']:
         def curve_fit_two_sines_with_harmonics(x, *p):
-            return models.two_sines_with_harmonics(x, n_harmonics_ch0, n_harmonics_ch1, *p)
+            return models.two_sines_with_harmonics(x, n_harmonics_ch0, n_harmonics_ch1, cut_signals_index, *p)
         if n_harmonics_ch0 == n_harmonics_ch1:
             if len(p0) == 6:
                 model = models.two_sines
             else:
                 model = models.two_sines_same_harmonics
+            model_args = partial(model, cut=cut_signals_index)
         else:
-            model = curve_fit_two_sines_with_harmonics
+            model_args = curve_fit_two_sines_with_harmonics
 
         popt, pcov = curve_fit(
-            model, xs, ys,
+            model_args, xs, ys,
             p0=p0,
             sigma=y_sigma,
             absolute_sigma=abs_sigma,
@@ -168,7 +179,7 @@ def sine_fit(
         )
 
         us = np.sqrt(np.diag(pcov))
-        fity = model(fitx, *popt)
+        fity = model_args(fitx, *popt)
 
         return popt, us, fitx, fity
 
@@ -231,6 +242,7 @@ def phase_difference(
     n_harmonics=1,
     n_harmonics_ch0=0,
     n_harmonics_ch1=0,
+    **kwargs
 ) -> PhaseDifferenceResult:
     """Computes phase difference between two harmonic signals (xs, s1) and (xs, s2)."""
 
@@ -303,6 +315,7 @@ def phase_difference(
             x12, s12,
             x_sigma=x_sigma, y_sigma=s12_sigma, method=method, p0=p0, abs_sigma=abs_sigma,
             bounds=bounds, n_harmonics_ch0=n_harmonics_ch0, n_harmonics_ch1=n_harmonics_ch1,
+            **kwargs
         )
 
         total = len(fitx)

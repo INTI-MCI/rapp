@@ -43,6 +43,8 @@ def phase_difference_from_folder(
 
     # for rep, filepath in enumerate(files):
     for (hwp_position, rep), filepath in np.ndenumerate(files):
+        if rep == 0 and len(hwp_pos) > 1:
+            logger.info("Processing hwp position {}...".format(hwp_pos[hwp_position]))
         if appended_measurements is None or rep % appended_measurements == 0:
             measurement = Measurement.from_file(filepath, fill_none=fill_none)
         else:
