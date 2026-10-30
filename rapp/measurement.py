@@ -1,14 +1,15 @@
-import re
 import logging
 import os
-
-import pandas as pd
-import numpy as np
+import re
+from pathlib import Path
 from typing import TypeVar
 
+import numpy as np
+import pandas as pd
+
 from rapp import constants as ct
-from rapp.signal.phase import phase_difference, get_index_for_periodization
 from rapp.signal import signal
+from rapp.signal.phase import get_index_for_periodization, phase_difference
 
 logger = logging.getLogger(__name__)
 
@@ -33,9 +34,11 @@ REGEX_NUMBER_AFTER_WORD = r"(?<={word})-?\d+(?:\.\d+)?"
 
 
 def parse_input_parameters_from_filepath(filepath):
-    cycles_find = re.findall(REGEX_NUMBER_AFTER_WORD.format(word="cycles"), filepath)
-    step_find = re.findall(REGEX_NUMBER_AFTER_WORD.format(word="step"), filepath)
-    samples_find = re.findall(REGEX_NUMBER_AFTER_WORD.format(word="samples"), filepath)
+    if isinstance(filepath, str):
+        filepath = Path(filepath)
+    cycles_find = re.findall(REGEX_NUMBER_AFTER_WORD.format(word="cycles"), filepath.name)
+    step_find = re.findall(REGEX_NUMBER_AFTER_WORD.format(word="step"), filepath.name)
+    samples_find = re.findall(REGEX_NUMBER_AFTER_WORD.format(word="samples"), filepath.name)
 
     cycles = cycles_find[0] if cycles_find else 0
     step = step_find[0] if step_find else 0
@@ -88,12 +91,14 @@ class Measurement:
                 data[COLUMN_CH1] = data[COLUMN_CH0]
 
         """Search for a temperature.csv file within the same folder"""
-        temperature_file = os.path.join(os.path.dirname(filepath), "temperature.csv")
-        if os.path.exists(temperature_file):
+        if isinstance(filepath, str):
+            filepath = Path(filepath)
+        temperature_file = filepath.parent / "temperature.csv"
+        if temperature_file.exists():
             temperature = pd.read_csv(temperature_file, sep=sep, skip_blank_lines=True,
                                       comment='#', encoding=ct.ENCONDIG)
-            if 'rep' in filepath:
-                rep = int(re.findall(REGEX_NUMBER_AFTER_WORD.format(word="rep"), filepath)[0])
+            if 'rep' in filepath.name:
+                rep = int(re.findall(REGEX_NUMBER_AFTER_WORD.format(word="rep"), filepath.name)[0])
                 temperature = temperature[temperature[COLUMN_REP] == rep]
         else:
             temperature = None
@@ -282,11 +287,11 @@ class Measurement:
         return self._data[COLUMN_ANGLE]
 
 
-def process_temperature_data(filepath, filename, hwp_position, raise_error=True):
-    if os.path.isdir(filepath):
-        filepath = os.path.join(filepath, "{}.csv".format(filename))
+def process_temperature_data(filepath: Path, filename, hwp_position, raise_error=True):
+    if filepath.is_dir():
+        filepath = filepath / "{}.csv".format(filename)
 
-    if os.path.exists(filepath):
+    if filepath.exists():
         temperature = pd.read_csv(filepath, sep=DELIMITER, skip_blank_lines=True,
                                   comment='#', encoding=ct.ENCONDIG)
     elif raise_error:

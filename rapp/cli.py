@@ -58,7 +58,6 @@ class CLI:
         rh = RichHandler(level="NOTSET")
         rh.setFormatter(logging.Formatter(self.LOG_FORMAT))
 
-
         logging.basicConfig(level=self._logging_level, format=self.LOG_FORMAT, handlers=[rh])
 
         for module in self.SUPRESS_LOG:

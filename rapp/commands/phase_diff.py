@@ -1,7 +1,8 @@
-import os
+import logging
+from pathlib import Path
+
 from rapp import constants as ct
 from rapp.analysis import phase_diff
-
 
 HELP_PHASE_DIFF = 'Tool for calculating phase difference from single polarimeter measurement.'
 
@@ -42,12 +43,14 @@ def add_to_subparsers(subparsers):
 
 
 def run(filepath, appended_measurements=None, instantaneous=False, **kwargs):
+    filepath = Path(filepath)
+
     if instantaneous:
-        if os.path.isdir(filepath):
+        if filepath.is_dir():
             ValueError("Cannot plot instantaneous phase difference from folder.")
         phase_diff.instantaneous_phase_difference(filepath, **kwargs)
         return
-    if os.path.isdir(filepath):
+    if filepath.is_dir():
         phase_diff.phase_difference_from_folder(
             filepath, appended_measurements=appended_measurements, **kwargs)
         return

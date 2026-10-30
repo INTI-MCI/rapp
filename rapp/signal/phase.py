@@ -168,12 +168,12 @@ def sine_fit(
             model = partial(models.two_sines_with_harmonics, n_harmonics_ch0=n_harmonics_ch0, n_harmonics_ch1=n_harmonics_ch1, cut=cut_signals_index)
         model_cut = partial(model, cut=cut_signals_index)
 
-        popt, pcov = curve_fit(
+        popt, pcov, infodict, mesg, ier = curve_fit(
             model_cut, xs, ys,
             p0=p0,
             sigma=y_sigma,
             absolute_sigma=abs_sigma,
-            bounds=bounds,
+            bounds=bounds, full_output=True
         )
 
         us = np.sqrt(np.diag(pcov))
@@ -284,8 +284,8 @@ def phase_difference(
         if s1_sigma is not None and s2_sigma is not None:
             s12_sigma = np.hstack([s1_sigma, s2_sigma])
 
-        phase_lower_bound = np.deg2rad(-180)
-        phase_upper_bound = np.deg2rad(180)
+        phase_lower_bound = -np.inf if fix_range else np.deg2rad(-180)
+        phase_upper_bound = np.inf if fix_range else np.deg2rad(180)
 
         max_amplitude1 = np.max(s1)
         max_amplitude2 = np.max(s2)
@@ -305,7 +305,9 @@ def phase_difference(
         )
 
         if p0 is None:
-            p0 = (np.array(bounds[0]) + np.array(bounds[1])) / 2.0
+            p0 = np.zeros(2 * n_harmonics + 2)
+            mask_good_pp0 = np.isfinite(bounds[0]) & np.isfinite(bounds[1])
+            p0[mask_good_pp0] = (np.array(bounds[0])[mask_good_pp0] + np.array(bounds[1])[mask_good_pp0]) / 2.0
         elif len(p0) != 2 * n_harmonics_ch0 + 2 * n_harmonics_ch1 + 2:
             raise ValueError("Wrong number of parameters.")
 
@@ -325,17 +327,20 @@ def phase_difference(
 
         phi1 = popt[n_harmonics]
         phi1_u = us[n_harmonics]
+        if abs(phi1) > np.pi and fix_range:
+            phi1 = (phi1 % np.pi) * -1
 
         logger.debug("φ1 = ({} ± {})°".format(np.rad2deg(phi1), np.rad2deg(phi1_u)))
 
         phase_diff = popt[n_harmonics + n_harmonics_ch0]
         phase_diff_u = us[n_harmonics + n_harmonics_ch0]
 
-        # if abs(phase_diff) > np.pi and fix_range:
-        #    phase_diff = (phase_diff % np.pi) * -1
-
         phi2 = phi1 + phase_diff
         phi2_u = np.sqrt(phase_diff_u ** 2 + phi1_u ** 2)
+        if abs(phi2) > np.pi and fix_range:
+            phi2 = (phi2 % np.pi) * -1
+        if abs(phase_diff) > np.pi and fix_range:
+            phase_diff = (phase_diff % np.pi) * -1
 
         logger.debug("φ2 = ({} ± {})°".format(np.rad2deg(phi2), np.rad2deg(phi2_u)))
 

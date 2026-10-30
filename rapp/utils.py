@@ -1,14 +1,15 @@
-import os
-import re
-import sys
+import decimal
 import json
 import math
+import os
+import re
 import shutil
-import decimal
-import numpy as np
-
-from time import time
+import sys
 from functools import wraps
+from pathlib import Path
+from time import time
+
+import numpy as np
 
 
 def json_load(path) -> dict:
@@ -150,10 +151,16 @@ def sort_files_by_rep(files):
 
 
 def sort_files_by_hwp_and_rep(files):
+    assert isinstance(files, list) and all(isinstance(file, Path) for file in files)
     hwp_positions = []
     max_rep = 0
+    mask_files = np.ones((len(files),), dtype=bool)
     for file in files:
-        hwp_position, rep = re.search(r'(?:hwp(\d+\.\d+)-)?rep(\d+)', file).groups()
+        output_re = re.search(r'(?:hwp(\d+\.\d+)-)?rep(\d+)', file.name)
+        if output_re is None:
+            mask_files[files.index(file)] = False
+            continue
+        hwp_position, rep = output_re.groups()
         hwp_position = float(hwp_position)
         rep = int(rep)
         if hwp_position not in hwp_positions:
@@ -161,8 +168,9 @@ def sort_files_by_hwp_and_rep(files):
         max_rep = max(max_rep, int(rep))
     hwp_positions = sorted(hwp_positions)
     sorted_files = np.empty((len(hwp_positions), max_rep), dtype=object)
+    files = np.array(files)[mask_files]
     for file in files:
-        hwp_position, rep = re.search(r'(?:hwp(\d+\.\d+)-)?rep(\d+)', file).groups()
+        hwp_position, rep = re.search(r'(?:hwp(\d+\.\d+)-)?rep(\d+)', file.name).groups()
         hwp_position = float(hwp_position)
         rep = int(rep)
         if hwp_position is None:
