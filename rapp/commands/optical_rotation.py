@@ -13,7 +13,7 @@ HELP_AVG_OR = (
 HELP_HWP = 'whether the measurement was done with a half wave plate (default: %(default)s).'
 
 
-EXAMPLE = "rapp or data/28-12-2023/hwp0 data/28-12-2023/hwp29/"
+EXAMPLE = "rapp OR data/28-12-2023/hwp0 data/28-12-2023/hwp29/"
 EPILOG = "Example: {}".format(EXAMPLE)
 
 
@@ -22,8 +22,8 @@ def add_to_subparsers(subparsers):
     p.add_argument('folder1', type=str, help=HELP_FOLDER_WITHOUT_SAMPLE)
     p.add_argument('folder2', type=str, help=HELP_FOLDER_WITH_SAMPLE)
     p.add_argument('--method', type=str, default='NLS', help=HELP_METHOD)
-    p.add_argument('--avg-or', action='store_true', help=HELP_AVG_OR)
-    p.add_argument('--hwp', action='store_true', help=HELP_HWP)
+    # p.add_argument('--avg-or', action='store_true', help=HELP_AVG_OR)
+    # p.add_argument('--hwp', action='store_true', help=HELP_HWP)
     p.add_argument('-v', '--verbose', action='store_true', help=ct.HELP_VERBOSE)
 
 

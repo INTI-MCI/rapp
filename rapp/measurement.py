@@ -1,13 +1,15 @@
-import re
 import logging
-
-import pandas as pd
-import numpy as np
+import os
+import re
+from pathlib import Path
 from typing import TypeVar
 
+import numpy as np
+import pandas as pd
+
 from rapp import constants as ct
-from rapp.signal.phase import phase_difference, get_index_for_periodization
 from rapp.signal import signal
+from rapp.signal.phase import get_index_for_periodization, phase_difference
 
 logger = logging.getLogger(__name__)
 
@@ -21,6 +23,9 @@ COLUMN_CH1 = 'CH1'
 COLUMN_CH2 = 'NORM'
 COLUMN_ANGLE = 'ANGLE'
 ALLOWED_COLUMNS = [COLUMN_ANGLE, COLUMN_CH0, COLUMN_CH1, COLUMN_CH2]
+COLUMN_TEMP = 'TEMPERATURE'
+COLUMN_REP = 'REP'
+ALLOWED_COLUMNS_TEMP = [COLUMN_ANGLE, COLUMN_TEMP, 'HWP-POS', COLUMN_REP]
 
 DELIMITER = ","
 PARAMETER_STRING = "cycles={}, step={}°, samples={}."
@@ -29,9 +34,11 @@ REGEX_NUMBER_AFTER_WORD = r"(?<={word})-?\d+(?:\.\d+)?"
 
 
 def parse_input_parameters_from_filepath(filepath):
-    cycles_find = re.findall(REGEX_NUMBER_AFTER_WORD.format(word="cycles"), filepath)
-    step_find = re.findall(REGEX_NUMBER_AFTER_WORD.format(word="step"), filepath)
-    samples_find = re.findall(REGEX_NUMBER_AFTER_WORD.format(word="samples"), filepath)
+    if isinstance(filepath, str):
+        filepath = Path(filepath)
+    cycles_find = re.findall(REGEX_NUMBER_AFTER_WORD.format(word="cycles"), filepath.name)
+    step_find = re.findall(REGEX_NUMBER_AFTER_WORD.format(word="step"), filepath.name)
+    samples_find = re.findall(REGEX_NUMBER_AFTER_WORD.format(word="samples"), filepath.name)
 
     cycles = cycles_find[0] if cycles_find else 0
     step = step_find[0] if step_find else 0
@@ -49,8 +56,9 @@ class Measurement:
     Args:
         data: the data of the measurement.
     """
-    def __init__(self, data: pd.DataFrame, cycles=None, step=None, samples=None):
+    def __init__(self, data: pd.DataFrame, cycles=None, step=None, samples=None, temperature=None):
         self._data = data
+        self._temperature = temperature
 
         self._cycles = cycles
         self._step = step
@@ -66,6 +74,7 @@ class Measurement:
             filepath,
             sep=sep, skip_blank_lines=True, comment='#', encoding=ct.ENCONDIG
         )
+        logger.debug("File columns: {}.".format(data.columns))
 
         if not set(data.columns).issubset(ALLOWED_COLUMNS):
             raise ValueError(
@@ -81,7 +90,20 @@ class Measurement:
             if data[COLUMN_CH1].isnull().values.any():
                 data[COLUMN_CH1] = data[COLUMN_CH0]
 
-        return cls(data, **parse_input_parameters_from_filepath(filepath))
+        """Search for a temperature.csv file within the same folder"""
+        if isinstance(filepath, str):
+            filepath = Path(filepath)
+        temperature_file = filepath.parent / "temperature.csv"
+        if temperature_file.exists():
+            temperature = pd.read_csv(temperature_file, sep=sep, skip_blank_lines=True,
+                                      comment='#', encoding=ct.ENCONDIG)
+            if 'rep' in filepath.name:
+                rep = int(re.findall(REGEX_NUMBER_AFTER_WORD.format(word="rep"), filepath.name)[0])
+                temperature = temperature[temperature[COLUMN_REP] == rep]
+        else:
+            temperature = None
+
+        return cls(data, **parse_input_parameters_from_filepath(filepath), temperature=temperature)
 
     @classmethod
     def simulate(
@@ -251,3 +273,41 @@ class Measurement:
 
         m2._data[COLUMN_ANGLE] += angles[last_multiple_index - 1] + float(self._step)
         self._data = pd.concat([self._data, m2._data], ignore_index=True)
+
+    @property
+    def temperature(self):
+        return self._temperature[COLUMN_TEMP] if self._temperature is not None else None
+
+    @property
+    def angle_temp(self):
+        return self._temperature[COLUMN_ANGLE] if self._temperature is not None else None
+
+    @property
+    def angles(self):
+        return self._data[COLUMN_ANGLE]
+
+
+def process_temperature_data(filepath: Path, filename, hwp_position, raise_error=True):
+    if filepath.is_dir():
+        filepath = filepath / "{}.csv".format(filename)
+
+    if filepath.exists():
+        temperature = pd.read_csv(filepath, sep=DELIMITER, skip_blank_lines=True,
+                                  comment='#', encoding=ct.ENCONDIG)
+    elif raise_error:
+        ValueError("Temperature file does not exist.")
+    else:
+        return None
+
+    temperature = temperature[temperature['HWP-POS'] == hwp_position]
+    n_reps = temperature[COLUMN_REP].max()
+    mean_temps = np.zeros(n_reps)
+    max_temps = np.zeros(n_reps)
+    min_temps = np.zeros(n_reps)
+
+    for i in range(n_reps):
+        mean_temps[i] = temperature[temperature[COLUMN_REP] == i+1][COLUMN_TEMP].mean()
+        max_temps[i] = temperature[temperature[COLUMN_REP] == i+1][COLUMN_TEMP].max()
+        min_temps[i] = temperature[temperature[COLUMN_REP] == i+1][COLUMN_TEMP].min()
+
+    return mean_temps, max_temps, min_temps
