@@ -69,6 +69,7 @@ def phase_difference_from_folder(
             results[hwp_position].append(res)
 
     for j, result in enumerate(results):
+        logger.info("Showing results for hwp position {}...".format(hwp_pos[j]))
         phase_diffs = []
         uncertainties = []
         mses = []
