@@ -1,14 +1,13 @@
-import os
-import logging
 import glob
+import logging
+import os
+from pathlib import Path
 
-import numpy as np
-
-from matplotlib import pyplot as plt
-from scipy.optimize import curve_fit  # noqa
-from scipy.special import gamma
-from scipy.signal import hilbert
 import matplotlib as mpl
+import numpy as np
+from matplotlib import pyplot as plt
+from scipy.signal import hilbert
+from scipy.special import gamma
 
 from rapp import constants as ct
 from rapp.analysis.plot import Plot
@@ -20,6 +19,14 @@ mpl.rcParams.update(mpl.rcParamsDefault)
 logger = logging.getLogger(__name__)
 
 FORMAT = "png"
+LOG_FILE_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+
+
+def setup_log_file(filepath):
+    formatter = logging.Formatter(LOG_FILE_FORMAT)
+    fh = logging.FileHandler(filepath, mode='w')
+    fh.setFormatter(formatter)
+    logger.addHandler(fh)
 
 
 def sine(xs, a, phi, c):
@@ -27,13 +34,14 @@ def sine(xs, a, phi, c):
 
 
 def phase_difference_from_folder(
-    folder, method, norm=False, fill_none=False, appended_measurements=None,
+    folder: Path, method, norm=False, fill_none=False, appended_measurements=None,
     correlation=False, plot=False, show=False, **kwargs
 ):
+    directory_log = folder.parent if folder.is_file() else folder
+    setup_log_file(directory_log / "phase_diff.log")
     logger.info("Calculating phase difference for {}...".format(folder))
 
-    files = sorted([os.path.join(folder, x) for x in os.listdir(folder) if x.endswith("csv") and
-                    x != "temperature.csv" and x != "qp-temperature.csv"])
+    files = sorted([folder / x for x in folder.glob('*.csv')])
     if not files:
         raise ValueError("Folder does not contain measurements!")
 
@@ -43,6 +51,8 @@ def phase_difference_from_folder(
 
     # for rep, filepath in enumerate(files):
     for (hwp_position, rep), filepath in np.ndenumerate(files):
+        if rep == 0 and len(hwp_pos) > 1:
+            logger.info("Processing hwp position {}...".format(hwp_pos[hwp_position]))
         if appended_measurements is None or rep % appended_measurements == 0:
             measurement = Measurement.from_file(filepath, fill_none=fill_none)
         else:
@@ -59,6 +69,7 @@ def phase_difference_from_folder(
             results[hwp_position].append(res)
 
     for j, result in enumerate(results):
+        logger.info("Showing results for hwp position {}...".format(hwp_pos[j]))
         phase_diffs = []
         uncertainties = []
         mses = []
@@ -265,7 +276,7 @@ def phase_difference_from_folder(
 
 
 def phase_difference_from_file(
-        filepath, method, norm=False, fill_none=False, plot=False, show=False, correlation=False,
+        filepath: Path, method, norm=False, fill_none=False, plot=False, show=False, correlation=False,
         **kwargs):
     logger.info("Calculating phase difference for {}...".format(filepath))
 
@@ -274,7 +285,7 @@ def phase_difference_from_file(
 
     filename = None
     if plot or show:
-        filename = "{}.{}".format(os.path.basename(filepath)[:-4], FORMAT)
+        filename = "{}.{}".format(filepath.stem, FORMAT)
 
     phase_difference(measurement, method, norm=norm, filename=filename, show=show, **kwargs)
 
@@ -421,10 +432,9 @@ def plot_phase_difference(phase_diff_result, work_dir=ct.WORK_DIR, filename=None
 
 
 def instantaneous_phase_difference(
-    filepath, norm=False, fill_none=False, plot=False, show=False, **kwargs
+    filepath: Path, norm=False, fill_none=False, plot=False, show=False, **kwargs
 ):
-    folders = [os.path.join(filepath, f) for f in os.listdir(filepath) if os.path.isdir(
-        os.path.join(filepath, f))]
+    folders = [filepath / f for f in filepath.iterdir() if f.is_dir()]
     if len(folders) != 2:
         ValueError("Folder {} does not contain two folders.".format(filepath))
     files_i = glob.glob(f"{folders[0]}/*.csv")

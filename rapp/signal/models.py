@@ -5,12 +5,11 @@ def sine(x, a, phi, c):
     return a * np.sin(x + phi) + c
 
 
-def two_sines(x12, A1, A2, phi1, delta, C1, C2):
-    total = len(x12)
-    half = total // 2
+def two_sines(x12, A1, A2, phi1, delta, C1, C2, cut=None):
+    split_index = len(x12) // 2 if cut is None else cut
 
-    x1 = x12[0:half]
-    x2 = x12[half:total]
+    x1 = x12[0:split_index]
+    x2 = x12[split_index:]
 
     s1 = sine(x1, A1, phi1, C1)
     s2 = sine(x2, A2, phi1 + delta, C2)
@@ -23,12 +22,11 @@ def two_sines_model(P, x):
     return two_sines(x, *P)
 
 
-def two_distorted_sines(x12, A1s, A2s, phi1s, deltas, C1, C2):
-    total = len(x12)
-    half = total // 2
+def two_distorted_sines(x12, A1s, A2s, phi1s, deltas, C1, C2, cut=None):
+    split_index = len(x12) // 2 if cut is None else cut
 
-    x1 = x12[0:half]
-    x2 = x12[half:total]
+    x1 = x12[0:split_index]
+    x2 = x12[split_index:]
 
     s1, s2 = np.zeros_like(x1), np.zeros_like(x2)
     for h, (A1, A2, phi1, delta) in enumerate(zip(A1s, A2s, phi1s, deltas)):
@@ -40,20 +38,19 @@ def two_distorted_sines(x12, A1s, A2s, phi1s, deltas, C1, C2):
     return np.hstack([s1, s2])
 
 
-def two_sines_same_harmonics(x, *p):
+def two_sines_same_harmonics(x, *p, cut=None):
     n_harmonics = int((len(p) - 2) / 4)
     parts = [p[i*n_harmonics:(i+1)*n_harmonics] for i in range(4)]
     A1s, A2s, phi1s, deltas = parts
     C1, C2 = p[-2:]
-    return two_distorted_sines(x, A1s, A2s, phi1s, deltas, C1, C2)
+    return two_distorted_sines(x, A1s, A2s, phi1s, deltas, C1, C2, cut=cut)
 
 
-def two_diff_distorted_sines(x12, A1s: tuple, A2s: tuple, phi1s: tuple, deltas: tuple, C1, C2):
-    total = len(x12)
-    half = total // 2
+def two_diff_distorted_sines(x12, A1s: tuple, A2s: tuple, phi1s: tuple, deltas: tuple, C1, C2, cut=None):
+    split_index = len(x12) // 2 if cut is None else cut
 
-    x1 = x12[0:half]
-    x2 = x12[half:total]
+    x1 = x12[0:split_index]
+    x2 = x12[split_index:]
 
     s1, s2 = np.zeros_like(x1), np.zeros_like(x2)
     for h, (A1, phi1) in enumerate(zip(A1s, phi1s)):
@@ -70,7 +67,7 @@ def two_diff_distorted_sines(x12, A1s: tuple, A2s: tuple, phi1s: tuple, deltas: 
     return np.hstack([s1, s2])
 
 
-def two_sines_with_harmonics(x, n_harmonics_ch0, n_harmonics_ch1, *p):
+def two_sines_with_harmonics(x, *p, n_harmonics_ch0=1, n_harmonics_ch1=1, cut=None):
     n_ch0 = int(n_harmonics_ch0)
     n_ch1 = int(n_harmonics_ch1)
     A1s = p[0:n_ch0]
@@ -78,7 +75,7 @@ def two_sines_with_harmonics(x, n_harmonics_ch0, n_harmonics_ch1, *p):
     phi1s = p[n_ch0+n_ch1:(2*n_ch0)+n_ch1]
     deltas = p[(2*n_ch0)+n_ch1:2*(n_ch0+n_ch1)]
     C1, C2 = p[-2:]
-    return two_diff_distorted_sines(x, A1s, A2s, phi1s, deltas, C1, C2)
+    return two_diff_distorted_sines(x, A1s, A2s, phi1s, deltas, C1, C2, cut=cut)
 
 
 def two_sines_with_harmonics_objective(p, *args):

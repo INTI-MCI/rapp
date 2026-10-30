@@ -1,7 +1,8 @@
-import os
+import logging
+from pathlib import Path
+
 from rapp import constants as ct
 from rapp.analysis import phase_diff
-
 
 HELP_PHASE_DIFF = 'Tool for calculating phase difference from single polarimeter measurement.'
 
@@ -17,6 +18,7 @@ HELP_NORMPLOT = 'whether to normalize channels in plot to make 1 the maximum.'
 HELP_CORRELATION = 'if true, prints correlation between phase difference and temperature.'
 HELP_PLOT = "if true, renders plots and saved them."
 HELP_INSTANTANEOUS = "if true, plots instantaneous phase difference."
+HELP_LOW_CLIP = "ignore samples below this clip percentage value for sine fit with NLS or similar."
 EXAMPLE = "rapp phase_diff data/sine-range4V-632nm-cycles2-step1.0-samples50.txt"
 EPILOG = "Example: {}".format(EXAMPLE)
 
@@ -37,15 +39,18 @@ def add_to_subparsers(subparsers):
     p.add_argument('-s', '--show', action='store_true', help=ct.HELP_SHOW)
     p.add_argument('--plot', action='store_true', help=HELP_PLOT)
     p.add_argument('-i', '--instantaneous', action='store_true', help=HELP_INSTANTANEOUS)
+    p.add_argument('--low-clip', type=float, default=0.0, help=HELP_LOW_CLIP, dest='lower_clipping_limit_percentage')
 
 
 def run(filepath, appended_measurements=None, instantaneous=False, **kwargs):
+    filepath = Path(filepath)
+
     if instantaneous:
-        if os.path.isdir(filepath):
+        if filepath.is_dir():
             ValueError("Cannot plot instantaneous phase difference from folder.")
         phase_diff.instantaneous_phase_difference(filepath, **kwargs)
         return
-    if os.path.isdir(filepath):
+    if filepath.is_dir():
         phase_diff.phase_difference_from_folder(
             filepath, appended_measurements=appended_measurements, **kwargs)
         return
