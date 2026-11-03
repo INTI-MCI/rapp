@@ -165,7 +165,8 @@ def sine_fit(
             else:
                 model = models.two_sines_same_harmonics
         else:
-            model = partial(models.two_sines_with_harmonics, n_harmonics_ch0=n_harmonics_ch0, n_harmonics_ch1=n_harmonics_ch1, cut=cut_signals_index)
+            model = partial(models.two_sines_with_harmonics, n_harmonics_ch0=n_harmonics_ch0,
+                            n_harmonics_ch1=n_harmonics_ch1, cut=cut_signals_index)
         model_cut = partial(model, cut=cut_signals_index)
 
         popt, pcov, infodict, mesg, ier = curve_fit(

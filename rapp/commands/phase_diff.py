@@ -1,4 +1,3 @@
-import logging
 from pathlib import Path
 
 from rapp import constants as ct
