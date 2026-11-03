@@ -41,6 +41,9 @@ ADC_TIMEOUT = 2
 ADC_WRITE_TIMEOUT = 2
 ADC_TIMEOUT_OPEN = 5
 ADC_RETRY = 3
+ADC_NAME = ['ADS_1115', 'CS_1237', 'ADS_1232']
+ADC_INDEX = 0
+
 
 THORLABS_PM100_VISA_LINUX = "USB0::4883::32889::P1000529::0::INSTR"
 THORLABS_PM100_VISA_WIN = 'USB0::0x1313::0x8079::P1000529::INSTR'
@@ -138,7 +141,7 @@ class Polarimeter:
 
         # TODO: Only if hwp-enabled
         self._hwp.reset()
-        self._hwp.set_home(position=0)
+        # self._hwp.set_home(position=0)
 
         parameters = {
             "position": 0,
@@ -218,7 +221,7 @@ class Polarimeter:
                         schedule_read_0.run_pending()
                         schedule_read_1.run_pending()
 
-                        for data_chunk in self.read_samples(samples, chunk_size, resolution=self._adc.bits):
+                        for data_chunk in self.read_samples(samples, chunk_size=chunk_size):
                             self._add_data_to_file(data_chunk, position=position)
 
                         schedule_request_0.run_pending()
@@ -241,12 +244,11 @@ class Polarimeter:
 
         return failures
 
-    def read_samples(self, samples: int, resolution: int, chunk_size=0):
+    def read_samples(self, samples: int, chunk_size=0):
         """Reads samples in chunks at current position.
 
         Args:
             samples: number of samples to read.
-            resolution: resolution of ADC used in voltage measurements.
             chunk_size: reads data in chunks of this size. If 0, no chunks are used.
         """
         n_samples = [samples]
@@ -258,7 +260,7 @@ class Polarimeter:
                 self._norm_det.start_measurement()
 
             for try_n in range(ADC_RETRY):
-                acquired_samples = self._adc.acquire(samples, resolution, flush=True)
+                acquired_samples = self._adc.acquire(samples, flush=True)
                 if acquired_samples is not None:
                     break
                 logger.warning(f"Try #{try_n} of acquisition failed.")
@@ -490,7 +492,7 @@ def run(
         ch0=not no_ch0,
         ch1=not no_ch1,
         mock_serial=mock_adc,
-        adc_used='CS_1237',
+        adc_used=ADC_NAME[ADC_INDEX],
         gain=1)
 
     pm100 = None
