@@ -21,7 +21,7 @@ GAIN_FOUR = 4
 GAIN_EIGHT = 8
 GAIN_SIXTEEN = 16
 
-ADC_USED = {
+SUPPORTED_ADCS = {
     "CS_1237": {
         'BITS': 24,
         'N_BYTES': 4,
@@ -98,10 +98,10 @@ class ADC:
         self.progressbar = ch0 != ch1
         self.timeout_open = timeout_open
         self.temperature_requested = False
-        self.bits = ADC_USED[adc_used]["BITS"]
-        self.max_V, self._multiplier_mV = ADC_USED[adc_used]["GAINS"][gain]
-        self._n_bytes = ADC_USED[adc_used]["N_BYTES"]
-        self._byte_order = ADC_USED[adc_used]["BYTE_ORDER"]
+        self.bits = SUPPORTED_ADCS[adc_used]["BITS"]
+        self.max_V, self._multiplier_mV = SUPPORTED_ADCS[adc_used]["GAINS"][gain]
+        self._n_bytes = SUPPORTED_ADCS[adc_used]["N_BYTES"]
+        self._byte_order = SUPPORTED_ADCS[adc_used]["BYTE_ORDER"]
 
         if not (ch0 or ch1):
             raise ADCError(MESSAGE_CHANNELS)

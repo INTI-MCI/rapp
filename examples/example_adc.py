@@ -4,12 +4,14 @@ import logging
 from rapp.adc import ADC
 from rapp.utils import timing
 
-ADC_WIN_DEVICE = 'COM4'
+ADC_WIN_DEVICE = 'COM3'
 ADC_LINUX_DEVICE = '/dev/ttyACM0'
 ADC_BAUDRATE = 57600
 ADC_TIMEOUT = 1  # seconds
 ADC_MULTIPLIER_mV = 0.125
+ADC_USED = "ADS_1115"
 
+SAMPLES=20
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -38,7 +40,7 @@ def resolve_adc_device():
 
 def continuous_run(channel, n_samples, dt_mus):
     print("Instantiating ADC...")
-    adc = ADC.build(resolve_adc_device(), baudrate=ADC_BAUDRATE, timeout=ADC_TIMEOUT, adc_used="ADS_1115",
+    adc = ADC.build(resolve_adc_device(), baudrate=ADC_BAUDRATE, timeout=ADC_TIMEOUT, adc_used=ADC_USED,
                     ch0=True, ch1=True)
 
 
@@ -51,7 +53,7 @@ def continuous_run(channel, n_samples, dt_mus):
 
 def single_run(n_samples, ch0, ch1):
     print("Instantiating ADC...")
-    adc = ADC.build(resolve_adc_device(), baudrate=ADC_BAUDRATE, timeout=ADC_TIMEOUT, adc_used="ADS_1115",
+    adc = ADC.build(resolve_adc_device(), baudrate=ADC_BAUDRATE, timeout=ADC_TIMEOUT, adc_used=ADC_USED,
                     ch0=ch0, ch1=ch1)
 
     print("Acquiring...")
@@ -63,8 +65,8 @@ def single_run(n_samples, ch0, ch1):
     for d in data:
         print("{} = {}".format(channels_names_tuple, d))
 
-    print("Samples per second: {}".format(sps))
-    print("Number of measurements: {}".format(len(data)))
+    #print("Samples per second: {}".format(sps))
+    #print("Number of measurements: {}".format(len(data)))
 
     adc.close()
 

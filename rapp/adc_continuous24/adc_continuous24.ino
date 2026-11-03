@@ -187,7 +187,6 @@ void request_temp(String channel) {
     bool ch = parse_bool(channel);
     if (ch) sensorDS18B20_1.requestTemperatures();
     else sensorDS18B20_0.requestTemperatures();
-    
 }
 
 float read_temp(String channel) {
@@ -340,7 +339,6 @@ void process_serial_input() {
         String command_name = input_command.substring(0,input_command.indexOf(";"));
         if (command_name == "adc") { // Command: "adc;ch0;ch1;nsamples;"
             String command_args = getArgs(input_command);
-            // unsigned long elapsedtime; // Creo que no hace falta
             unsigned short n_channels;
             bool measure_times = 0;
             times = new unsigned long[N_TIMES_ADC];

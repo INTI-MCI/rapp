@@ -36,6 +36,18 @@ DeviceAddress plateTemp = {0x90, 0x01, 0x55, 0x05, 0x7F, 0xA5, 0xA5, 0x66};
 //DeviceAddress plateTemp = {0x5C, 0x01, 0x55, 0x05, 0x7F, 0xA5, 0xA5, 0x66};
 //DeviceAddress plateTemp = {0x6C, 0x01, 0x55, 0x05, 0x7F, 0xA5, 0xA5, 0x66};
 
+const int dataPin0 = 4;   // Pin where room temperature sensors 1-Wire bus is connected
+OneWire oneWire0(dataPin0);
+DallasTemperature sensorDS18B20_0(&oneWire0);
+DeviceAddress roomTemp = {0x28, 0xCF, 0x42, 0x76, 0xE0, 0x01, 0x3C, 0x70};
+
+const int dataPin1 = 5;   // Pin where quartz plate temperature sensors 1-Wire bus is connected
+OneWire oneWire1(dataPin1);
+DallasTemperature sensorDS18B20_1(&oneWire1);
+//Falta averiguar la dirección del otro sensor!!
+
+DeviceAddress plateTemp = {0x90, 0x01, 0x55, 0x05, 0x7F, 0xA5, 0xA5, 0x66};
+
 void setup(void) {
     Serial.begin(SERIAL_BAUDRATE);
 
@@ -124,7 +136,6 @@ void request_temp(String channel) {
     bool ch = parse_bool(channel);
     if (ch) sensorDS18B20_1.requestTemperatures();
     else sensorDS18B20_0.requestTemperatures();
-    
 }
 
 float read_temp(String channel) {
@@ -308,7 +319,7 @@ void process_serial_input() {
         } else if (command_name == "req-temp") { // Command: "req-temp;channel;"
             String command_args = getArgs(input_command);
             request_temp(command_args);
-        }else if (command_name == "temp") { // Command: "temp;channel;"
+        } else if (command_name == "temp") { // Command: "temp;channel;"
             String command_args = getArgs(input_command);
             read_and_send_temp(command_args);
         } else if (command_name == "ready?") {
