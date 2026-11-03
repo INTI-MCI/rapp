@@ -24,6 +24,8 @@ GAIN_SIXTEEN = 16
 ADC_USED = {
     "CS_1237": {
         'BITS': 24,
+        'N_BYTES': 4,
+        'BYTE_ORDER': 'big',
         'GAINS': {
             1: (1.24, 1240/2**23),
             2: (0.62, 620/2**23),
@@ -34,6 +36,8 @@ ADC_USED = {
     },
     "ADS_1115": {
         'BITS': 16,
+        'N_BYTES': 2,
+        'BYTE_ORDER': 'big',  # little or big
         'GAINS': {
             GAIN_TWOTHIRDS: (6.144, 0.1875),
             GAIN_ONE: (4.096, 0.125),
@@ -96,6 +100,8 @@ class ADC:
         self.temperature_requested = False
         self.bits = ADC_USED[adc_used]["BITS"]
         self.max_V, self._multiplier_mV = ADC_USED[adc_used]["GAINS"][gain]
+        self._n_bytes = ADC_USED[adc_used]["N_BYTES"]
+        self._byte_order = ADC_USED[adc_used]["BYTE_ORDER"]
 
         if not (ch0 or ch1):
             raise ADCError(MESSAGE_CHANNELS)
@@ -167,12 +173,11 @@ class ADC:
             "Connection opened in {} seconds with {} queries.".format(elapsed_time, queries)
         )
 
-    def acquire(self, n_samples, resolution, flush=True):
+    def acquire(self, n_samples, flush=True):
         """Acquires voltage measurements.
 
         Args:
             n_samples: number of samples to acquire.
-            resolution: bits resolution of ADC used in voltage measurements.
             flush: if true, flushes input from the serial port before taking measurements.
 
         Returns:
@@ -201,13 +206,13 @@ class ADC:
         none_array = np.full(n_samples, None)
 
         if self._ch0:
-            ch0 = self._read_data(n_samples, resolution, name='CH0')
+            ch0 = self._read_data(n_samples, name='CH0')
             if len(ch0) != n_samples:
                 return None
         else:
             ch0 = none_array
         if self._ch1:
-            ch1 = self._read_data(n_samples, resolution, name='CH1')
+            ch1 = self._read_data(n_samples, name='CH1')
             if len(ch1) != n_samples:
                 return None
         else:
@@ -274,14 +279,14 @@ class ADC:
     def close(self):
         self._serial.close()
 
-    def _read_data(self, n_samples, resolution=24, name=''):
+    def _read_data(self, n_samples, name=''):
         data = []
         desc = "Measuring {}:".format(name)
 
         if name == 'CH0' or name == 'CH1':
             for _ in track(range(n_samples), description=desc, disable=not self.progressbar):
                 try:
-                    measurement = self._bits_to_volts(self._read_bits(resolution))
+                    measurement = self._bits_to_volts(self._read_bits())
                     if measurement is None:
                         break
                     data.append(measurement)
@@ -293,33 +298,23 @@ class ADC:
 
         return data
 
-    def _read_bits(self, resolution):
+    def _read_bits(self):
         if self._in_bytes:
             bytes_data = b""
-            n_bytes = 0
-            byte_order = 'little'
-            if resolution == 24:
-                n_bytes = 4
-                byte_order = 'big'
-            if resolution == 16:
-                n_bytes = 2
-                byte_order = 'little'
-            else:
-                logger.error("Resolution not implemented")
 
             for _ in range(3):
                 try:
-                    bytes_data += self._serial.read(n_bytes - len(bytes_data))
+                    bytes_data += self._serial.read(self._n_bytes - len(bytes_data))
                 except serial.SerialException as e:
                     raise ADCError(f"Error while reading from serial port: {e}") from e
-                if len(bytes_data) == n_bytes:
+                if len(bytes_data) == self._n_bytes:
                     break
 
-            if len(bytes_data) != n_bytes:
-                logger.warning("ADCError: Expected {} bytes, got {} bytes.".format(n_bytes, len(bytes_data)))
+            if len(bytes_data) != self._n_bytes:
+                logger.warning("ADCError: Expected {} bytes, got {} bytes.".format(self._n_bytes, len(bytes_data)))
                 return None
             logger.debug('Data in bytes = %s', bytes_data)
-            return int.from_bytes(bytes_data, byteorder=byte_order, signed=True)
+            return int.from_bytes(bytes_data, byteorder=self._byte_order, signed=True)
         else:
             return int(self._serial.readline().decode().strip())
 
@@ -332,3 +327,36 @@ class ADC:
         read_value = self._serial.read(4)
         logger.debug("Temperature in bytes = {}".format(read_value))
         return struct.unpack('<f', read_value)[0]
+
+    def print_read_n_every_dt(self, channel, n_samples, dt_mus, flush=True):
+        """Prints the values acquired by the ADC.
+
+        Args:
+            channel: channel to acquire.
+            n_samples: number of samples to acquire.
+            dt_mus: time between samples in microseconds.
+            flush: if true, flushes input from the serial port before taking measurements.
+        """
+        if n_samples <= 0:
+            raise ADCError(MESSAGE_SAMPLES.format(n_samples))
+
+        if flush:  # Clear input buffer. Otherwise messes up values at the beginning.
+            self._serial.reset_input_buffer()
+
+        cmd = "get_n_every_dt;{channel};{samples};{dt_mus};\n".format(channel=channel, samples=n_samples, dt_mus=dt_mus)
+        logger.debug("ADC command: {}".format(cmd))
+
+        try:
+            self._serial.write(bytes(cmd, 'utf-8'))
+        except serial.SerialTimeoutException as e:
+            raise ADCError("Timeout while writing to serial port: {}".format(e))
+        times = np.zeros(n_samples)
+
+        for n in range(n_samples):
+            times[n] = time.time()
+            measurement = self._bits_to_volts(self._read_bits())
+            if measurement is None:
+                break
+            logger.info(f"{n}: {measurement}")
+        mean_dt_us = np.mean(np.diff(times)) * 1e6
+        return mean_dt_us

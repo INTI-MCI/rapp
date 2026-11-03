@@ -1,9 +1,13 @@
 #include <Wire.h>
-#include <Adafruit_ADS1X15.h>
+// #include <Adafruit_ADS1X15.h>
 #include <OneWire.h>
 #include <DallasTemperature.h>
+#include "OpenAds1115.h"
 
-Adafruit_ADS1115 ads;
+#define N_TIMES_ADC 10
+#define MAX_DELAY_US 16383
+
+OpenADS1115 ads;
 unsigned long* times;
 // times[0] is total elapsed time of parse_and_read_n_samples
 // times[1, 2] = [elapsed time ch0, elapsed time ch1]
@@ -44,7 +48,11 @@ void setup(void) {
     // ads.setGain(GAIN_SIXTEEN);    // +/- 0.256V  1 bit = 0.0078125mV
 
     ads.setDataRate(RATE_ADS1115_860SPS);
-    ads.begin();
+    bool success = ads.begin();
+    if (!success) {
+        Serial.println("ADS1115 not connected");
+        while (1);
+    }
 
     // When we don't use terminator character, this helps to reduce the parseInt() delay.
     // Instead of setting this, for an optimal result is better to ALWAYS use terminator character.
@@ -212,6 +220,80 @@ void send_measured_times() {
   Serial.write((uint8_t*)times, sizeof(unsigned long) * 5); // Send times[0-4]
 }
 
+void serialWriteHex(const uint8_t *buffer, size_t length) {
+    for (size_t i = 0; i < length; i++) {
+        Serial.print("0x");
+        
+        // Si el valor es menor a 16 (0x10), imprimimos un '0' a la izquierda 
+        // para mantener siempre el formato de 2 dígitos (ej: 0x0F en vez de 0xF)
+        if (buffer[i] < 16) {
+            Serial.print("0");
+        }
+        
+        // Imprimimos el valor en formato hexadecimal en mayúsculas (o minúsculas si prefieres)
+        Serial.print(buffer[i], HEX);
+        
+        // Añadimos un espacio entre cada byte (opcional)
+        if (i < length - 1) {
+            Serial.print(" ");
+        }
+    }
+    Serial.println(); // Salto de línea al terminar de enviar todos los bytes
+}
+
+void serialWriteBinary(const uint8_t *buffer, size_t length) {
+    for (size_t i = 0; i < length; i++) {
+        Serial.print("0b");
+        
+        // Recorremos los 8 bits de cada byte desde el más significativo (7) al menos (0)
+        for (int bit = 7; bit >= 0; bit--) {
+            // Evaluamos si el bit actual está en 1 o 0 usando una máscara y desplazamiento
+            if ((buffer[i] >> bit) & 1) {
+                Serial.print("1");
+            } else {
+                Serial.print("0");
+            }
+        }
+        
+        // Añadimos un espacio entre cada byte para que sea legible
+        if (i < length - 1) {
+            Serial.print(" ");
+        }
+    }
+    Serial.println(); // Salto de línea al terminar
+}
+
+void send_ads1115_config_register(){
+    uint16_t config_register = ads.open_readConfigRegister();
+    serialWriteHex((uint8_t*)&config_register, sizeof(config_register));
+    serialWriteBinary((uint8_t*)&config_register, sizeof(config_register));
+}
+
+void get_n_every_dt(String command_args) {
+    unsigned long channel = parse_int(command_args);
+    unsigned long n_samples = parse_int(command_args);
+    unsigned long dt = parse_int(command_args);
+
+    ads.startADCReading(MUX_BY_CHANNEL[channel], ADS_READING_MODE_CONTINUOUS);
+    delay(ADS_READING_DELAY);
+    short data = 0;
+    uint32_t use_delay = max(dt, ADS_CONTINUOUS_MODE_DELAY_MUS);
+    bool use_delay_in_ms = false;
+    if (use_delay > MAX_DELAY_US)
+        use_delay_in_ms = true;
+        use_delay = use_delay / 1000;  // Convert microseconds to milliseconds for delay()
+
+    for (uint32_t i = 0; i < n_samples; i++) {
+        data = ads.getLastConversionResults();
+        serial_write_short(data);
+        if (use_delay_in_ms) {
+            delay(use_delay);
+        } else {
+            delayMicroseconds(use_delay);
+        }
+    }
+}
+
 void process_serial_input() {
     if (Serial.available() > 0) {
         String input_command = Serial.readStringUntil('\n');
@@ -242,7 +324,13 @@ void process_serial_input() {
         }
         else if (command_name == "measured_times?") {
             send_measured_times();
-        }else {
+        } else if (command_name == "ads1115_register?") {
+            Serial.println("Config register de ADS1115...");
+            send_ads1115_config_register();
+        } else if (command_name == "get_n_every_dt") {
+            String command_args = getArgs(input_command); // Command: "get_n_every_dt;channel;nsamples;dt_mus;"
+            get_n_every_dt(command_args);
+        } else {
             Serial.println("Comando no reconocido");
         }
     }

@@ -262,7 +262,7 @@ def phase_difference_from_folder(
             plot.add_data(uncertainties, errors, color='k', alpha=0.7)
             plot.save(filename="errors-vs-uncertainties.png")
             plot.close()
-    
+
             if mses:
                 plot = Plot(ylabel="Error (°)", xlabel="MSE (°)", folder=output_folder)
                 plot.add_data(mses, errors, color='k', alpha=0.7)
