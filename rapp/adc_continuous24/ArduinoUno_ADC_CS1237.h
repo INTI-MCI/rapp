@@ -1,6 +1,6 @@
 #ifndef ArduinoUno_ADC_CS1237_h
 #define ArduinoUno_ADC_CS1237_h
-#define DEBUG_CS1237 0 // Set to 0/1 to disable/enable debug messages
+#define DEBUG 0 // Set to 0/1 to disable/enable debug messages
 #define PROFILE_CS1237 0 // Set to 0/1 to disable/enable profiler
 #define OFF_ON_SETTLING_TIME 1000
 #define REGISTER_SETTLING_TIME 350
@@ -11,6 +11,8 @@
 #include <WProgram.h>
 #endif
 
+#include "Profiling.h"
+
 class ArduinoUno_ADC_CS1237 {
     public:
         ArduinoUno_ADC_CS1237(uint8_t CLOCK, uint8_t DATA) // Constructor. (SCLK pin, DATA pin)
@@ -18,21 +20,8 @@ class ArduinoUno_ADC_CS1237 {
 		
 		void begin(void);
 
-        void clockCycle();
-        bool readBit();
-        void writeBit(bool bit);
-
 		int32_t readADC();
         int32_t readADCwProfiler();
-
-        struct __attribute__((packed)) ProfilerTimes{
-        unsigned long elapsed_time_DRDY;
-        unsigned long max_time_DRDY = 0;
-        unsigned long min_time_DRDY = 4294967295;
-        unsigned long elapsed_time_read;
-        unsigned long max_time_read = 0;
-        unsigned long min_time_read = 4294967295;
-		};
 
         ProfilerTimes getProfiler() const;
 
@@ -47,7 +36,10 @@ class ArduinoUno_ADC_CS1237 {
         int getSCLK();
 
     private:
+        void clockCycle();
 		void customDelay455ns();
+        bool readBit();
+        void writeBit(bool bit);
         
         ProfilerTimes profiler; // Profiler times in microseconds
 

@@ -9,14 +9,14 @@ void ArduinoUno_ADC_CS1237::begin(void) {
     digitalWrite(SCLK, LOW); //Pull it LOW
 
 //Make sure the chip is awake
-    if (DEBUG_CS1237) Serial.println("Clock en 0, leyendo DOUT esperando un 1");
+    if (DEBUG) Serial.println("Clock en 0, leyendo DOUT esperando un 1");
     while (digitalRead(DOUT_DRDY) == 0) {} // Wait while DOUT_DRDY is low
-    if (DEBUG_CS1237) Serial.println("1 recibido en DOUT, esperando un 0");
+    if (DEBUG) Serial.println("1 recibido en DOUT, esperando un 0");
     while (digitalRead(DOUT_DRDY) == 1) {} // Wait while DOUT_DRDY is high
 
-    if (DEBUG_CS1237) Serial.println("0 recibido, comienza delay");
+    if (DEBUG) Serial.println("0 recibido, comienza delay");
     delay(OFF_ON_SETTLING_TIME);
-    if (DEBUG_CS1237) Serial.println("Fin del delay");
+    if (DEBUG) Serial.println("Fin del delay");
 }
 
 inline __attribute__((always_inline)) void ArduinoUno_ADC_CS1237::clockCycle() {
@@ -132,7 +132,7 @@ int32_t ArduinoUno_ADC_CS1237::readADCwProfiler() { // TODO: cuando esté listo 
     return result;
 }
 
-ArduinoUno_ADC_CS1237::ProfilerTimes ArduinoUno_ADC_CS1237::getProfiler() const {
+ProfilerTimes ArduinoUno_ADC_CS1237::getProfiler() const {
     return profiler;
 }
 
@@ -276,7 +276,7 @@ void ArduinoUno_ADC_CS1237::setRegister(int registertowrite, int valuetowrite) {
 
     clockCycle(); //Send the 37th SCLK pulse
 
-    if (DEBUG_CS1237) {
+    if (DEBUG) {
     Serial.print("Registro que se va a escribir: ");
     printSerialByte(register_value);
     }
@@ -312,7 +312,7 @@ void ArduinoUno_ADC_CS1237::setFullRegister(byte register_to_write) {
     //bit 7   : Reserved, don't touch. If needed, set to 0
     //----------------------------------------------------------
 
-    if (DEBUG_CS1237) Serial.println("Registro que se va a escribir: "+ String(register_to_write, BIN));
+    if (DEBUG) Serial.println("Registro que se va a escribir: "+ String(register_to_write, BIN));
 
     //Shift out 27 (24+3) bits:
     ADCreading = readADC(); //32-bit variable that stores the whole ADC reading

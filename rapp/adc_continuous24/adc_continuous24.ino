@@ -1,4 +1,9 @@
-#include "ArduinoUno_ADC_CS1237.h"
+#define ADC_ADS1232 1
+#define ADC_CS1237 2
+
+#define ADC_ACTIVO ADC_CS1237
+#include "adcs_manager.h"
+#include "Profiling.h"
 #include <Wire.h>
 #include <OneWire.h>
 #include <DallasTemperature.h>
@@ -10,11 +15,6 @@ unsigned long* times;
 // times[1, 2] = [elapsed time ch0, elapsed time ch1]
 // times[3, 4] = elapsed time serial write 32 bit in serial port for ch0 and ch1, ver si hace falta guardar esto!!
 const unsigned short int SERIAL_BAUDRATE = 57600;
-
-ArduinoUno_ADC_CS1237 adc0(13,19);// Declare the object to work with the ArduinoUno_ADC_CS1237 library functions, specifying the pins (SCLK, DATA).
-ArduinoUno_ADC_CS1237 adc1(11, 9);
-
-const byte register_to_write = 0b01110000; // CH 0 input, PGA = 1, DRATE = 1280 Hz, VREF = DISABLED
 
 const int dataPin0 = 4;   // Pin where room temperature sensors 1-Wire bus is connected
 OneWire oneWire0(dataPin0);
@@ -33,7 +33,7 @@ DeviceAddress plateTemp = {0x90, 0x01, 0x55, 0x05, 0x7F, 0xA5, 0xA5, 0x66};
 void setup(void) {
     Serial.begin(SERIAL_BAUDRATE);
 
-    if (DEBUG_CS1237) {
+    if (DEBUG) {
     Serial.println();
     serial_log("Comienzo de adc_continuous24::setup.");
     }
@@ -41,18 +41,18 @@ void setup(void) {
     adc0.begin();
     adc1.begin();
 
-    if (DEBUG_CS1237) {
-    serial_log("adc0.begin completado.");
-    Serial.println("Pin de DOUT_DRDY: " + String(adc0.getDOUT_DRDY()));
-    Serial.println("Pin de SCLK: " + String(adc0.getSCLK()));
-    Serial.print("Antes de setear, ");
-    adc0.read_and_printRegister();
+    if (DEBUG) {
+      serial_log("adc0.begin completado.");
+      Serial.println("Pin de DOUT_DRDY: " + String(adc0.getDOUT_DRDY()));
+      Serial.println("Pin de SCLK: " + String(adc0.getSCLK()));
+      Serial.print("Antes de setear, ");
+      adc0.read_and_printRegister();
     }
 
     adc0.setFullRegister(register_to_write);
     adc1.setFullRegister(register_to_write);
 
-    if (DEBUG_CS1237) {
+    if (DEBUG) {
     serial_log("Registro actualizado.");
     adc0.read_and_printRegister();
     }
@@ -82,7 +82,7 @@ void serial_write_24bit(int32_t data) {
     buffer[0] = data >> 16;
     buffer[1] = (data >> 8) & 0xFF;
     buffer[2] = data & 0xFF;
-    if (DEBUG_CS1237) {
+    if (DEBUG) {
     Serial.print(buffer[0], BIN);
     Serial.print(buffer[1], BIN);
     Serial.println(buffer[2], BIN);
@@ -98,20 +98,20 @@ void serial_write_32bit(int32_t data) {
     buffer[2] = (data >> 8) & 0xFF;
     buffer[3] = data & 0xFF;
 
-    if (DEBUG_CS1237) {
-    serial_print_byte_bin(buffer[0]);
-    Serial.print(' ');
-    serial_print_byte_bin(buffer[1]);
-    Serial.print(' ');
-    serial_print_byte_bin(buffer[2]);
-    Serial.print(' ');
-    serial_print_byte_bin(buffer[3]);
-    //int32_t data_signed = data;
-    char float_str[10];
-    char data_signed_str[60];
-    dtostrf((float) data/83886.08, 5, 2, float_str);
-    sprintf(data_signed_str, " ( %ld , %s %%)", data, float_str);
-    Serial.print(data_signed_str);
+    if (DEBUG) {
+      serial_print_byte_bin(buffer[0]);
+      Serial.print(' ');
+      serial_print_byte_bin(buffer[1]);
+      Serial.print(' ');
+      serial_print_byte_bin(buffer[2]);
+      Serial.print(' ');
+      serial_print_byte_bin(buffer[3]);
+      //int32_t data_signed = data;
+      char float_str[10];
+      char data_signed_str[60];
+      dtostrf((float) data/83886.08, 5, 2, float_str);
+      sprintf(data_signed_str, " ( %ld , %s %%)", data, float_str);
+      Serial.print(data_signed_str);
     }
     else Serial.write(buffer, 4);
 }
@@ -137,7 +137,7 @@ void read_n_samples_from_channel(unsigned long n_samples, bool channel, bool mea
     unsigned long starttime2;
     unsigned long elapsedtime2;
 
-    measure_times |= PROFILE_CS1237;
+    measure_times |= PROFILE;
 
     if (measure_times){
       starttime = micros();
@@ -147,7 +147,7 @@ void read_n_samples_from_channel(unsigned long n_samples, bool channel, bool mea
 
     unsigned long i = 0;
     while (i < n_samples) {
-        if (PROFILE_CS1237) {
+        if (PROFILE) {
           if (channel) data = adc1.readADCwProfiler();
           else data = adc0.readADCwProfiler();
         }
@@ -155,27 +155,27 @@ void read_n_samples_from_channel(unsigned long n_samples, bool channel, bool mea
           if (channel) data = adc1.readADC();
           else data = adc0.readADC();
         }
-        if (DEBUG_CS1237 or measure_times) starttime2 = micros(); // Revisar qué se quiere guardar y/o imprimir
+        if (DEBUG or measure_times) starttime2 = micros(); // Revisar qué se quiere guardar y/o imprimir
         serial_write_32bit(data);
-        if (DEBUG_CS1237 or measure_times) {
+        if (DEBUG or measure_times) {
           endtime2 = micros();
           elapsedtime2 = endtime2 - starttime2;
           times[3 + (unsigned short) channel] += elapsedtime2;
         }
-        if (DEBUG_CS1237) {
+        if (DEBUG) {
           Serial.print("Elapsed time serial_write_32bit in microseconds: ");
           Serial.println(elapsedtime2);
         }
         i = i + 1;
     }
 
-    if (measure_times or DEBUG_CS1237) {
+    if (measure_times or DEBUG) {
       endtime = micros();
       elapsedtime = endtime - starttime;
       times[1 + (unsigned short) channel] = elapsedtime;
     }
 
-    if (DEBUG_CS1237) {
+    if (DEBUG) {
       Serial.print("Elapsed time per sample ch");
       Serial.print((unsigned short) channel);
       Serial.print(": ");
@@ -200,7 +200,7 @@ float read_temp(String channel) {
 void read_and_send_temp(String channel) {
   writable_float temp;
   temp.f = read_temp(channel);
-  if (DEBUG_CS1237) Serial.println(temp.f);
+  if (DEBUG) Serial.println(temp.f);
   else Serial.write(temp.bytes, 4);
 }
 
@@ -215,10 +215,10 @@ unsigned long parse_and_read_n_samples(String command_args, unsigned short *out_
     unsigned long n_samples = parse_int(command_args);
     read_n_samples(n_samples, ch0, ch1, measure_times);
     *out_n_channels = (unsigned short) ch0 + (unsigned short) ch1;
-    if (PROFILE_CS1237 or measure_times) {
+    if (PROFILE or measure_times) {
       times[0] = times[1] + times[2];
     }
-    if (DEBUG_CS1237) {
+    if (DEBUG) {
       Serial.print("Elapsed time per sample (avg) in microseconds: ");
       Serial.println(times[0] / (n_samples * *out_n_channels));
     }
@@ -326,8 +326,8 @@ void send_measured_times() {
 }
 
 void send_profiled_times() {
-  ArduinoUno_ADC_CS1237::ProfilerTimes profiler0 = adc0.getProfiler();
-  ArduinoUno_ADC_CS1237::ProfilerTimes profiler1 = adc1.getProfiler();
+  ProfilerTimes profiler0 = adc0.getProfiler();
+  ProfilerTimes profiler1 = adc1.getProfiler();
 
   Serial.write((uint8_t*)&profiler0, sizeof(profiler0));
   Serial.write((uint8_t*)&profiler1, sizeof(profiler1));
