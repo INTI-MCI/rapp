@@ -11,8 +11,6 @@ ADC_TIMEOUT = 1  # seconds
 ADC_MULTIPLIER_mV = 0.125
 ADC_USED = "ADS_1115"
 
-SAMPLES=20
-
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -23,7 +21,7 @@ def handshake(adc):
     # adc.write(bytes(str(0), 'utf-8'))
     for i in range(50):
         data = adc.readline().decode().strip()
-        print(data)
+        logger.info(data)
 
 
 @timing
@@ -63,10 +61,10 @@ def single_run(n_samples, ch0, ch1):
     channels_names_tuple = ('CH0', 'CH1')
 
     for d in data:
-        print("{} = {}".format(channels_names_tuple, d))
+        logger.info("{} = {}".format(channels_names_tuple, d))
 
-    #print("Samples per second: {}".format(sps))
-    #print("Number of measurements: {}".format(len(data)))
+    logger.info("Samples per second: {}".format(sps))
+    logger.info("Number of measurements: {}".format(len(data)))
 
     adc.close()
 

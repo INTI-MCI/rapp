@@ -221,9 +221,7 @@ class Polarimeter:
                         schedule_read_0.run_pending()
                         schedule_read_1.run_pending()
 
-                        for data_chunk in self.read_samples(
-                            samples, resolution=self._adc.bits, chunk_size=chunk_size
-                        ):
+                        for data_chunk in self.read_samples(samples, chunk_size=chunk_size):
                             self._add_data_to_file(data_chunk, position=position)
 
                         schedule_request_0.run_pending()
@@ -246,12 +244,11 @@ class Polarimeter:
 
         return failures
 
-    def read_samples(self, samples: int, resolution: int, chunk_size=0):
+    def read_samples(self, samples: int, chunk_size=0):
         """Reads samples in chunks at current position.
 
         Args:
             samples: number of samples to read.
-            resolution: resolution of ADC used in voltage measurements.
             chunk_size: reads data in chunks of this size. If 0, no chunks are used.
         """
         n_samples = [samples]
@@ -263,7 +260,7 @@ class Polarimeter:
                 self._norm_det.start_measurement()
 
             for try_n in range(ADC_RETRY):
-                acquired_samples = self._adc.acquire(samples, resolution, flush=True)
+                acquired_samples = self._adc.acquire(samples, flush=True)
                 if acquired_samples is not None:
                     break
                 logger.warning(f"Try #{try_n} of acquisition failed.")

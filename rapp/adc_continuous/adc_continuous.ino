@@ -14,15 +14,6 @@ unsigned long* times;
 // times[3, 4] = elapsed time serial write 16/32 bit in serial port for ch0 and ch1, ver si hace falta guardar esto!!
 const unsigned short int SERIAL_BAUDRATE = 57600;
 const bool ADS_READING_MODE_CONTINUOUS = true;
-const int dataPin0 = 4;   // Pin where room temperature sensors 1-Wire bus is connected
-OneWire oneWire0(dataPin0);
-DallasTemperature sensorDS18B20_0(&oneWire0);
-DeviceAddress roomTemp = {0x28, 0xCF, 0x42, 0x76, 0xE0, 0x01, 0x3C, 0x70};
-
-const int dataPin1 = 5;   // Pin where quartz plate temperature sensors 1-Wire bus is connected
-OneWire oneWire1(dataPin1);
-DallasTemperature sensorDS18B20_1(&oneWire1);
-//Falta averiguar la dirección del otro sensor!!
 
 // ADS_READING_DELAY: Time in miliseconds we need to wait so ADC goes out of suspension.
 // Otherwise we get repeated values at the beginning of each channel.
@@ -32,9 +23,6 @@ const byte ADS_READING_DELAY = 5;
 // 600 gives ~812 SPS when using serial_write_short(), 580 gives ~855 SPS when using println().
 const unsigned long ADS_CONTINUOUS_MODE_DELAY_MUS = 600;
 
-DeviceAddress plateTemp = {0x90, 0x01, 0x55, 0x05, 0x7F, 0xA5, 0xA5, 0x66};
-//DeviceAddress plateTemp = {0x5C, 0x01, 0x55, 0x05, 0x7F, 0xA5, 0xA5, 0x66};
-//DeviceAddress plateTemp = {0x6C, 0x01, 0x55, 0x05, 0x7F, 0xA5, 0xA5, 0x66};
 
 const int dataPin0 = 4;   // Pin where room temperature sensors 1-Wire bus is connected
 OneWire oneWire0(dataPin0);
@@ -44,8 +32,6 @@ DeviceAddress roomTemp = {0x28, 0xCF, 0x42, 0x76, 0xE0, 0x01, 0x3C, 0x70};
 const int dataPin1 = 5;   // Pin where quartz plate temperature sensors 1-Wire bus is connected
 OneWire oneWire1(dataPin1);
 DallasTemperature sensorDS18B20_1(&oneWire1);
-//Falta averiguar la dirección del otro sensor!!
-
 DeviceAddress plateTemp = {0x90, 0x01, 0x55, 0x05, 0x7F, 0xA5, 0xA5, 0x66};
 
 void setup(void) {
