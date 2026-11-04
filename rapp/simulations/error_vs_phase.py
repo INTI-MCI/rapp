@@ -28,7 +28,7 @@ def run(
     reps=1,
     max_v=adc.MAXV,
     dynamic_range=0.7,
-    n_bits=(adc.BITS, 24),
+    n_bits=(10, adc.BITS, 24),
     k=0,
     noise=True,
     show=False,

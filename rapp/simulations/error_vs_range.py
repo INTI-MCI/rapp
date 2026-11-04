@@ -26,10 +26,10 @@ def run(
     show=False,
     save=True,
 ):
-    print("")
+    logger.info("")
     logger.info("PHASE DIFFERENCE VS MAX TENSION")
 
-    max_v, step_mV = adc.GAINS[adc.GAIN_ONE]
+    max_v, step_mV = adc.SUPPORTED_ADCSGAINS[adc.GAIN_ONE]
     voltages = np.linspace(max_v * 0.25, max_v, num=6)
     amplitudes = voltages / 2
     percentages = (voltages / max_v) * 100

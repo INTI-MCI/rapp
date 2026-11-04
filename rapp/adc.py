@@ -1,10 +1,9 @@
-import time
 import logging
-
-import serial
-import numpy as np
 import struct
+import time
 
+import numpy as np
+import serial
 from rich.progress import track
 
 from rapp.mocks import SerialMock

@@ -39,8 +39,8 @@ def run(
     if angle is None:
         angle = np.random.uniform(low=0, high=0.5, size=reps)
 
-    BITS = [ARDUINO_BITS, adc.BITS]
-    MAXV = [ARDUINO_MAXV, adc.MAXV]
+    BITS = [ARDUINO_BITS, adc.BITS, 24]
+    MAXV = [ARDUINO_MAXV, adc.MAXV, adc.MAXV]
 
     errors_per_bits = {}
     for bits, maxv in zip(BITS, MAXV):
