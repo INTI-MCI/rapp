@@ -1,18 +1,18 @@
 #include "ArduinoUno_ADC_ADS1232.h"
 
 void ArduinoUno_ADC_ADS1232::begin(void) {
-    ads.begin(SCLK, DOUT_DRDY, PDWN, SPEED);
+    ads.begin(pinDOUT_DRDY, pinSCLK, pinPDWN, pinSPEED, _speed);
 }
 
-int32_t ArduinoUno_ADC_ADS1232::readADC() {
-    int32_t value;
+long ArduinoUno_ADC_ADS1232::readADC() {
+    long value = 0;
     ads.read(value);
     return value;
 }
 
-int32_t ArduinoUno_ADC_ADS1232::readADCwProfiler() {
+long ArduinoUno_ADC_ADS1232::readADCwProfiler() {
     uint32_t start = micros();
-    int32_t value;
+    long value = 0;
     ads.read(value);
     profiler.elapsed_time_read = micros() - start;
     if (profiler.elapsed_time_read > profiler.max_time_read) profiler.max_time_read = profiler.elapsed_time_read;
@@ -25,19 +25,19 @@ ProfilerTimes ArduinoUno_ADC_ADS1232::getProfiler() const {
 }
 
 int ArduinoUno_ADC_ADS1232::getDOUT_DRDY(){
-  return DOUT_DRDY;
+  return pinDOUT_DRDY;
 }
 
 int ArduinoUno_ADC_ADS1232::getSCLK(){
-  return SCLK;
+  return pinSCLK;
 }
 
 int ArduinoUno_ADC_ADS1232::getPDWN(){
-  return PDWN;
+  return pinPDWN;
 }
 
 int ArduinoUno_ADC_ADS1232::getSPEED(){
-  return SPEED;
+  return pinSPEED;
 }
 
 void ArduinoUno_ADC_ADS1232::setRegister(int registertowrite, int valuetowrite){

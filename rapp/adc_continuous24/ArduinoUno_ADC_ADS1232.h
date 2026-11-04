@@ -18,12 +18,12 @@
 class ArduinoUno_ADC_ADS1232 {
     public:
         ArduinoUno_ADC_ADS1232(uint8_t CLOCK, uint8_t DATA, uint8_t PDWN, uint8_t SPEED) // Constructor. (SCLK pin, DATA pin)
-            {SCLK = CLOCK; DOUT_DRDY = DATA; PDWN = PDWN; SPEED = SPEED;}
+            {pinSCLK = CLOCK; pinDOUT_DRDY = DATA; pinPDWN = PDWN; pinSPEED = SPEED;}
 		
 		void begin(void);
 
-		int32_t readADC();
-        int32_t readADCwProfiler();
+		long readADC();
+        long readADCwProfiler();
 
         ProfilerTimes getProfiler() const;
 
@@ -44,10 +44,10 @@ class ArduinoUno_ADC_ADS1232 {
         
         ProfilerTimes profiler; // Profiler times in microseconds
 
-        int DOUT_DRDY = 13; //DOUT/DRDY pin
-		int SCLK = 19; //SCLK pin
-		int PDWN = 10; //PDWN pin
-		int SPEED = 12; //SPEED pin
+        int pinDOUT_DRDY = 13; //DOUT/DRDY pin
+		int pinSCLK = 19; //SCLK pin
+		int pinPDWN = 10; //PDWN pin
+		int pinSPEED = 12; //SPEED pin
 
         Speed _speed = SLOW; // Default speed is SLOW
 };

@@ -264,11 +264,13 @@ unsigned long parse_read_and_print_n_samples_dt(String command_args) {
     int32_t data0 = adc0.readADC();
     int32_t data1 = adc1.readADC();
     Serial.print( (String) i+" : " );
-    serial_write_32bit(data0);
+    // serial_write_32bit(data0);
+    serialWriteBinary((uint8_t*)&data0, sizeof(data0));
     Serial.print(" ");
     Serial.print(bits_to_volts(data0));
     Serial.print(" | ");
-    serial_write_32bit(data1);
+    // serial_write_32bit(data1);
+    serialWriteBinary((uint8_t*)&data1, sizeof(data1));
     Serial.print(" ");
     Serial.print(bits_to_volts(data1));
     Serial.println();
@@ -334,6 +336,47 @@ void send_profiled_times() {
 
   Serial.write((uint8_t*)&profiler0, sizeof(profiler0));
   Serial.write((uint8_t*)&profiler1, sizeof(profiler1));
+}
+
+void serialWriteHex(const uint8_t *buffer, size_t length) {
+    for (size_t i = 0; i < length; i++) {
+        Serial.print("0x");
+        
+        // Si el valor es menor a 16 (0x10), imprimimos un '0' a la izquierda 
+        // para mantener siempre el formato de 2 dígitos (ej: 0x0F en vez de 0xF)
+        if (buffer[i] < 16) {
+            Serial.print("0");
+        }
+        
+        // Imprimimos el valor en formato hexadecimal en mayúsculas (o minúsculas si prefieres)
+        Serial.print(buffer[i], HEX);
+        
+        // Añadimos un espacio entre cada byte (opcional)
+        if (i < length - 1) {
+            Serial.print(" ");
+        }
+    }
+}
+
+void serialWriteBinary(const uint8_t *buffer, size_t length) {
+    for (size_t i = 0; i < length; i++) {
+        Serial.print("0b");
+        
+        // Recorremos los 8 bits de cada byte desde el más significativo (7) al menos (0)
+        for (int bit = 7; bit >= 0; bit--) {
+            // Evaluamos si el bit actual está en 1 o 0 usando una máscara y desplazamiento
+            if ((buffer[i] >> bit) & 1) {
+                Serial.print("1");
+            } else {
+                Serial.print("0");
+            }
+        }
+        
+        // Añadimos un espacio entre cada byte para que sea legible
+        if (i < length - 1) {
+            Serial.print(" ");
+        }
+    }
 }
 
 void process_serial_input() {
