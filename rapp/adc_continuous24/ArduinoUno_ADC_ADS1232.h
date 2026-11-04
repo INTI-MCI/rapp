@@ -27,12 +27,12 @@ class ArduinoUno_ADC_ADS1232 {
 
         ProfilerTimes getProfiler() const;
 
-		void setRegister(int registertowrite, int valuetowrite) {};
-        void setDefaultRegister(void) {};
-        void setFullRegister(byte register_to_write) {};
-	    int getRegister() {return 0;};
-        void read_and_printRegister() {};
-        void printSerialByte(int value) {};
+		void setRegister(int registertowrite, int valuetowrite);
+        void setDefaultRegister(void);
+        void setFullRegister(byte register_to_write);
+	    int getRegister();
+        void read_and_printRegister();
+        void printSerialByte(int value);
 
         int getDOUT_DRDY();
         int getSCLK();
@@ -48,6 +48,8 @@ class ArduinoUno_ADC_ADS1232 {
 		int SCLK = 19; //SCLK pin
 		int PDWN = 10; //PDWN pin
 		int SPEED = 12; //SPEED pin
+
+        Speed _speed = SLOW; // Default speed is SLOW
 };
 
 #endif

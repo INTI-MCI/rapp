@@ -1,7 +1,7 @@
 #define ADC_ADS1232 1
 #define ADC_CS1237 2
 
-#define ADC_ACTIVO ADC_CS1237
+#define ADC_ACTIVO ADC_ADS1232
 #include "adcs_manager.h"
 #include "Profiling.h"
 #include <Wire.h>
