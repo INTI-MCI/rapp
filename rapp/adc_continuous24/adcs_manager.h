@@ -12,6 +12,7 @@
   #define PROFILE PROFILE_ADS1232
   ArduinoUno_ADC_ADS1232 adc0(SCLK_PIN_ADC0, DOUT_DRDY_PIN_ADC0, PDWN, SPEED);
   ArduinoUno_ADC_ADS1232 adc1(SCLK_PIN_ADC1, DOUT_DRDY_PIN_ADC1, PDWN, SPEED);
+  const byte register_to_write = 0b00000000; // 00, 00, 0bXX = SLOW or FAST, 00
 #elif (ADC_ACTIVO == ADC_CS1237)
   #include "ArduinoUno_ADC_CS1237.h"
 
