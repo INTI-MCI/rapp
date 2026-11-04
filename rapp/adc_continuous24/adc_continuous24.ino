@@ -10,18 +10,21 @@
 
 #define N_TIMES_ADC 10
 
+#define PIN_TEMP_SENSOR_0 4
+#define PIN_TEMP_SENSOR_1 5
+
 unsigned long* times;
 // times[0] is total elapsed time of parse_and_read_n_samples
 // times[1, 2] = [elapsed time ch0, elapsed time ch1]
 // times[3, 4] = elapsed time serial write 32 bit in serial port for ch0 and ch1, ver si hace falta guardar esto!!
 const unsigned short int SERIAL_BAUDRATE = 57600;
 
-const int dataPin0 = 4;   // Pin where room temperature sensors 1-Wire bus is connected
+const int dataPin0 = PIN_TEMP_SENSOR_0;   // Pin where room temperature sensors 1-Wire bus is connected
 OneWire oneWire0(dataPin0);
 DallasTemperature sensorDS18B20_0(&oneWire0);
 DeviceAddress roomTemp = {0x28, 0xCF, 0x42, 0x76, 0xE0, 0x01, 0x3C, 0x70};
 
-const int dataPin1 = 5;   // Pin where quartz plate temperature sensors 1-Wire bus is connected
+const int dataPin1 = PIN_TEMP_SENSOR_1;   // Pin where quartz plate temperature sensors 1-Wire bus is connected
 OneWire oneWire1(dataPin1);
 DallasTemperature sensorDS18B20_1(&oneWire1);
 //Falta averiguar la dirección del otro sensor!!
@@ -254,23 +257,23 @@ unsigned long parse_int(String& command_args) {
 }
 
 unsigned long parse_read_and_print_n_samples_dt(String command_args) {
+  // This function reads n samples every dt miliseconds and prints them in serial monitor
   unsigned long n_samples = parse_int(command_args);
   unsigned long dt = parse_int(command_args);
-  // unsigned long initial_time = micros();
   for (int i = 0; i < n_samples; i++){
     int32_t data0 = adc0.readADC();
     int32_t data1 = adc1.readADC();
     Serial.print( (String) i+" : " );
     serial_write_32bit(data0);
-    // Serial.print(bits_to_volts(data0));
+    Serial.print(" ");
+    Serial.print(bits_to_volts(data0));
     Serial.print(" | ");
     serial_write_32bit(data1);
+    Serial.print(" ");
+    Serial.print(bits_to_volts(data1));
     Serial.println();
     delay(dt);
   }
-  // unsigned long final_time = micros();
-  // unsigned long elapsed_time = final_time - initial_time;
-  // return elapsed_time;
 }
 
 float bits_to_volts(int32_t value){
@@ -346,21 +349,9 @@ void process_serial_input() {
             parse_and_read_n_samples(command_args, &n_channels, measure_times);
 
         }
-        else if (command_name == "adc_n_dt") { // Command: "adc_n_dt;nsamples;dt;", dt in miliseconds
-            // This function reads n samples every dt miliseconds and prints them in serial monitor
+        else if (command_name == "adc_n_dt") { // Command: "adc_n_dt;nsamples;dt;", dt in miliseconds            
             String command_args = getArgs(input_command);
-            // unsigned long initial_time = micros();
-            // unsigned long elapsed_time =
             parse_read_and_print_n_samples_dt(command_args);
-            // unsigned long final_time = micros();
-            // unsigned long elapsed_time_n = final_time - initial_time;
-            // unsigned long n_samples = parse_int(command_args);
-            // unsigned long dt = parse_int(command_args);
-            // unsigned long time_n = (elapsed_time_n-(dt*n_samples)) / (2*1000);
-            // Serial.print("Elapsed time of n samples in miliseconds: ");
-            // Serial.println(time_n);
-            // Serial.print("Elapsed time of each sample (avg) in miliseconds: ");
-            // Serial.println(time_n/n_samples);
         }
         else if (command_name == "adc_register?") {
             for (uint8_t i = 0; i < 5; i++) {

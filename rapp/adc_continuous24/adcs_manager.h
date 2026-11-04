@@ -1,17 +1,19 @@
-#define SCLK_PIN_ADC0 13
-#define DOUT_DRDY_PIN_ADC0 19
-#define SCLK_PIN_ADC1 11
-#define DOUT_DRDY_PIN_ADC1 9
+#define SCLK_PIN_ADC0 6
+#define DOUT_DRDY_PIN_ADC0 7
+#define SCLK_PIN_ADC1 10
+#define DOUT_DRDY_PIN_ADC1 11
 
 #if (ADC_ACTIVO == ADC_ADS1232)
   #include "ArduinoUno_ADC_ADS1232.h"
 
-  #define PDWN 10
-  #define SPEED 12
+  #define PDWN_ADC0 2
+  #define PDWN_ADC1 8
+  #define SPEED_ADC0 3
+  #define SPEED_ADC1 9
 
   #define PROFILE PROFILE_ADS1232
-  ArduinoUno_ADC_ADS1232 adc0(SCLK_PIN_ADC0, DOUT_DRDY_PIN_ADC0, PDWN, SPEED);
-  ArduinoUno_ADC_ADS1232 adc1(SCLK_PIN_ADC1, DOUT_DRDY_PIN_ADC1, PDWN, SPEED);
+  ArduinoUno_ADC_ADS1232 adc0(SCLK_PIN_ADC0, DOUT_DRDY_PIN_ADC0, PDWN_ADC0, SPEED_ADC0);
+  ArduinoUno_ADC_ADS1232 adc1(SCLK_PIN_ADC1, DOUT_DRDY_PIN_ADC1, PDWN_ADC1, SPEED_ADC1);
   const byte register_to_write = 0b00000000; // 00, 00, 0bXX = SLOW or FAST, 00
 #elif (ADC_ACTIVO == ADC_CS1237)
   #include "ArduinoUno_ADC_CS1237.h"
