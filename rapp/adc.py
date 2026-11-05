@@ -360,3 +360,21 @@ class ADC:
             logger.info(f"{n}: {measurement}")
         mean_dt_us = np.mean(np.diff(times)) * 1e6
         return mean_dt_us
+
+    def self_calibrate(self):
+        """Sends a command to the ADC to perform self-calibration."""
+        cmd = "self_calibrate;\n"
+        logger.debug("ADC command: {}".format(cmd))
+
+        try:
+            self._serial.write(bytes(cmd, 'utf-8'))
+        except serial.SerialTimeoutException as e:
+            raise ADCError("Timeout while writing to serial port: {}".format(e))
+
+        # Read two uint16 values
+        err0 = struct.unpack('<H', self._serial.read(2))[0]
+        err1 = struct.unpack('<H', self._serial.read(2))[0]
+        if err0 != 0:
+            logger.error(f"Error during self-calibration of ADC0: {err0}")
+        if err1 != 0:
+            logger.error(f"Error during self-calibration of ADC1: {err1}")

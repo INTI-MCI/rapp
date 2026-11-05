@@ -209,6 +209,7 @@ class Polarimeter:
                     self._build_data_filename(rep, self._hwp.current_position_for_filename())
                 )
 
+                self._adc.self_calibrate()
                 p_desc = 'rep no. {}: '.format(rep)
                 try:
                     for position in track(

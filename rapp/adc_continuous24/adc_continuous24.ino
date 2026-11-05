@@ -440,6 +440,12 @@ void process_serial_input() {
         else if (command_name == "profiled_times?") {
             send_profiled_times();
         }
+        else if (command_name == "self_calibrate") {
+            ERROR_t err0 = adc0.calibrate();
+            ERROR_t err1 = adc1.calibrate();
+            Serial.write((uint8_t*)&err0, sizeof(err0));
+            Serial.write((uint8_t*)&err1, sizeof(err1));
+        }
         else {Serial.println("Comando no reconocido");}
     }
 }

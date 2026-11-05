@@ -91,3 +91,9 @@ void ArduinoUno_ADC_ADS1232::printSerialByte(int value) {
     }
     Serial.println(); // Print a newline character
 }
+
+ERROR_t ArduinoUno_ADC_ADS1232::calibrate() {
+    long value = 0;
+    ERROR_t err = ads.read(value, true); // Calibrating = true
+    return err;
+}
