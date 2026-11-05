@@ -43,8 +43,8 @@ inline __attribute__((always_inline)) bool ArduinoUno_ADC_CS1237::readBit() {
     return single_bit;
 }
 
-int32_t ArduinoUno_ADC_CS1237::readADC() {
-//Data acquisition function - Returns int32 variable
+long ArduinoUno_ADC_CS1237::readADC() {
+//Data acquisition function - Returns long variable
     int previousValue = digitalRead(DOUT_DRDY);
     int newValue = digitalRead(DOUT_DRDY);
     //Wait for the DOUT_DRDY to fall LOW:
@@ -53,7 +53,7 @@ int32_t ArduinoUno_ADC_CS1237::readADC() {
         newValue = digitalRead(DOUT_DRDY);
     }
 
-    int32_t result = 0; //24-bit output data is stored in this variable
+    long result = 0; //24-bit output data is stored in this variable
 
     delayMicroseconds(0); //t4
 
@@ -75,8 +75,8 @@ int32_t ArduinoUno_ADC_CS1237::readADC() {
     return result;
 }
 
-int32_t ArduinoUno_ADC_CS1237::readADCwProfiler() { // TODO: cuando esté listo el profiler, ver si en modo debug conviene usar esta funcion en lugar de readADC
-//Data acquisition function with profiler - Returns int32 variable and elapsed times
+long ArduinoUno_ADC_CS1237::readADCwProfiler() { // TODO: cuando esté listo el profiler, ver si en modo debug conviene usar esta funcion en lugar de readADC
+//Data acquisition function with profiler - Returns long variable and elapsed times
     unsigned long time1_DRDY; // Tiempos de espera a que cambie el pin DOUT_DRDY
     unsigned long time2_DRDY;
     unsigned long time1_read; // Tiempos de lectura de los 24 bits
@@ -99,7 +99,7 @@ int32_t ArduinoUno_ADC_CS1237::readADCwProfiler() { // TODO: cuando esté listo 
       //Serial.println(elapsed_time_while);
       //}
 
-    int32_t result = 0; //24-bit output data is stored in this variable
+    long result = 0; //24-bit output data is stored in this variable
 
     delayMicroseconds(0); //t4
 

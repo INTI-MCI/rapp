@@ -20,8 +20,8 @@ class ArduinoUno_ADC_CS1237 {
 		
 		void begin(void);
 
-		int32_t readADC();
-        int32_t readADCwProfiler();
+		long readADC();
+        long readADCwProfiler();
 
         ProfilerTimes getProfiler() const;
 
@@ -45,7 +45,7 @@ class ArduinoUno_ADC_CS1237 {
 
         int DOUT_DRDY = 13; //DOUT/DRDY pin
 		int SCLK = 19; //SCLK pin
-        int32_t ADCreading; //This variable stores the ADCreading - Can be omitted with all its relevant references!
+        long ADCreading; //This variable stores the ADCreading - Can be omitted with all its relevant references!
 		float pga_divider = 1.0; //default value = 1. This value stores the gain value
 };
 

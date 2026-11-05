@@ -80,7 +80,7 @@ void serial_write_short(short data) {
     Serial.write(buffer, 2);
 }
 
-void serial_write_24bit(int32_t data) {
+void serial_write_24bit(long data) {
     uint8_t buffer[3];
     buffer[0] = data >> 16;
     buffer[1] = (data >> 8) & 0xFF;
@@ -94,7 +94,7 @@ void serial_write_24bit(int32_t data) {
     else Serial.write(buffer, 3);
 }
 
-void serial_write_32bit(int32_t data) {
+void serial_write_32bit(long data) {
     uint8_t buffer[4];
     buffer[0] = data >> 24 & 0xFF;
     buffer[1] = (data >> 16) & 0xFF;
@@ -146,7 +146,7 @@ void read_n_samples_from_channel(unsigned long n_samples, bool channel, bool mea
       starttime = micros();
       times[3 + (unsigned short) channel] = 0; // Initialize the elapsed time for serial write for this channel
     }
-    int32_t data = 0;
+    long data = 0;
 
     unsigned long i = 0;
     while (i < n_samples) {
