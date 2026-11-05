@@ -259,27 +259,32 @@ unsigned long parse_int(String& command_args) {
 void parse_read_and_print_n_samples_dt(String command_args) {
   // This function reads n samples every dt miliseconds and prints them in serial monitor
   unsigned long n_samples = parse_int(command_args);
-  unsigned long dt = parse_int(command_args);
+  unsigned long dt_ms = parse_int(command_args);
   for (int i = 0; i < n_samples; i++){
-    int32_t data0 = adc0.readADC();
-    int32_t data1 = adc1.readADC();
+    long data0 = adc0.readADC();
+    long data1 = adc1.readADC();
     Serial.print( (String) i+" : " );
     // serial_write_32bit(data0);
     serialWriteBinary((uint8_t*)&data0, sizeof(data0));
-    Serial.print(" ");
+    Serial.print(" d");
+    Serial.print(data0);
+    Serial.print(", ");
     Serial.print(bits_to_volts(data0));
-    Serial.print(" | ");
+    Serial.print(" V | ");
     // serial_write_32bit(data1);
     serialWriteBinary((uint8_t*)&data1, sizeof(data1));
-    Serial.print(" ");
+    Serial.print(" d");
+    Serial.print(data1);
+    Serial.print(", ");
     Serial.print(bits_to_volts(data1));
+    Serial.print(" V");
     Serial.println();
-    delay(dt);
+    delay(dt_ms);
   }
 }
 
-float bits_to_volts(int32_t value){
-  return value * (1240/(2^23)) / 1000;
+float bits_to_volts(long value){
+  return (float)value * DELTA_VOLTS;
 }
         
 

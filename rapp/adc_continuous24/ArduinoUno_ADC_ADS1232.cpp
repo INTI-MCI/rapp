@@ -8,7 +8,7 @@ long ArduinoUno_ADC_ADS1232::readADC() {
     long value = 0;
     ERROR_t err = ads.read(value);
     if (err != NoERROR) {
-        value = -255 - long(err); // Return a negative value to indicate an error, with the error code encoded
+        value = -16383 - long(err); // Return a negative value to indicate an error, with the error code encoded
     }
     return value;
 }

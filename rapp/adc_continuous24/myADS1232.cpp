@@ -140,14 +140,14 @@ ERROR_t ADS1232::read(long& value, bool Calibrating)
   while(digitalRead(_pin_DOUT) != HIGH)
   {
       if(millis()-start > waitingTime) return TIMEOUT_HIGH; // Timeout waiting for HIGH
-      delay(1);
+      delayMicroseconds(20);
   }
 
   start=millis();
   while(digitalRead(_pin_DOUT) != LOW)
   {
       if(millis()-start > waitingTime) return TIMEOUT_LOW; // Timeout waiting for LOW
-      delay(1);
+      delayMicroseconds(20);
   }
   delayMicroseconds(1); // Wait for the data to settle
 
