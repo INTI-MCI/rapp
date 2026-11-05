@@ -97,3 +97,11 @@ ERROR_t ArduinoUno_ADC_ADS1232::calibrate() {
     ERROR_t err = ads.read(value, true); // Calibrating = true
     return err;
 }
+
+void ArduinoUno_ADC_ADS1232::reset_ADC() {
+    ads.power_down();
+    delay(OFF_ON_SETTLING_TIME); // Wait for the ADC to settle after power down
+    ads.power_up();
+    delay(OFF_ON_SETTLING_TIME); // Wait for the ADC to settle after power up
+    ads.begin(pinDOUT_DRDY, pinSCLK, pinPDWN, pinSPEED, _speed); // Reinitialize the ADC
+};

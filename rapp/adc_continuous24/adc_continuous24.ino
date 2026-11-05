@@ -446,6 +446,12 @@ void process_serial_input() {
             Serial.write((uint8_t*)&err0, sizeof(err0));
             Serial.write((uint8_t*)&err1, sizeof(err1));
         }
+        else if (command_name == "reset_adc") {
+            adc0.reset_ADC();
+            adc0.setFullRegister(register_to_write);
+            adc1.reset_ADC();
+            adc1.setFullRegister(register_to_write);
+        }
         else {Serial.println("Comando no reconocido");}
     }
 }

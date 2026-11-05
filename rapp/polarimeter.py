@@ -14,7 +14,7 @@ import schedule
 from rich.progress import track
 
 from rapp import constants as ct
-from rapp.adc import ADC
+from rapp.adc import ADC, ADCError
 from rapp.data_file import DataFile
 from rapp.motion_controller import ESP301
 from rapp.rotary_stage import RotaryStage, RotaryStageError
@@ -40,9 +40,9 @@ ADC_BAUDRATE = 57600
 ADC_TIMEOUT = 2
 ADC_WRITE_TIMEOUT = 2
 ADC_TIMEOUT_OPEN = 5
-ADC_RETRY = 3
+ADC_RETRY = 5
 ADC_NAME = ['ADS_1115', 'CS_1237', 'ADS_1232']
-ADC_INDEX = 0
+ADC_INDEX = 2
 
 
 THORLABS_PM100_VISA_LINUX = "USB0::4883::32889::P1000529::0::INSTR"
@@ -209,9 +209,9 @@ class Polarimeter:
                     self._build_data_filename(rep, self._hwp.current_position_for_filename())
                 )
 
-                self._adc.self_calibrate()
                 p_desc = 'rep no. {}: '.format(rep)
                 try:
+                    self._adc.self_calibrate()
                     for position in track(
                         self._analyzer, style='white', description=p_desc, disable=not analyzer_bar
                     ):
@@ -222,7 +222,10 @@ class Polarimeter:
                         schedule_read_0.run_pending()
                         schedule_read_1.run_pending()
 
-                        for data_chunk in self.read_samples(samples, chunk_size=chunk_size):
+                        data_chunks = list(
+                            self.read_samples(samples, chunk_size=chunk_size)
+                        )
+                        for data_chunk in data_chunks:
                             self._add_data_to_file(data_chunk, position=position)
 
                         schedule_request_0.run_pending()
@@ -257,16 +260,29 @@ class Polarimeter:
             n_samples = split_number_to_list(num=samples, size=chunk_size)
 
         for samples in n_samples:
-            if self._norm_det is not None:
-                self._norm_det.start_measurement()
-
             for try_n in range(ADC_RETRY):
-                acquired_samples = self._adc.acquire(samples, flush=True)
-                if acquired_samples is not None:
+                try:
+                    if self._norm_det is not None:
+                        self._norm_det.start_measurement()
+                    acquired_samples = self._adc.acquire(samples, flush=True)
+                    if acquired_samples is None:
+                        raise ADCError(
+                            "ADC acquisition returned incomplete data for {} samples.".format(
+                                samples
+                            )
+                        )
                     break
-                logger.warning(f"Try #{try_n} of acquisition failed.")
-            if acquired_samples is None:
-                logger.error("ADC not sending samples.")
+                except ADCError as e:
+                    logger.warning(
+                        "Try #%s of acquisition failed at current analyzer position: %s",
+                        try_n + 1, e
+                    )
+                    if try_n + 1 == ADC_RETRY:
+                        raise ADCError(
+                            "ADC acquisition failed after {} attempts at the current "
+                            "analyzer position.".format(ADC_RETRY)
+                        ) from e
+                    self._adc.recover()
             logger.debug("Read samples at: {}".format(datetime.datetime.now()))
             if self._norm_det is not None:
                 normalization_value = self._norm_det.fetch_measurement()
@@ -370,7 +386,7 @@ class Polarimeter:
         filename = "rep{}.csv".format(rep)
 
         if hwp_position is not None:
-            hwp_prefix = "hwp{}".format(hwp_position)
+            hwp_prefix = "hwp{:.2f}".format(hwp_position)
             filename = "{}-{}".format(hwp_prefix, filename)
 
         return filename

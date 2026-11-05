@@ -40,6 +40,7 @@ class ArduinoUno_ADC_ADS1232 {
         int getSPEED();
 
         ERROR_t calibrate();
+        void reset_ADC();
 
     private:
         ADS1232 ads; // Create an instance of the ADS1232 class

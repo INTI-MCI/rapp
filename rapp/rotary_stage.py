@@ -140,7 +140,7 @@ class RotaryStage(Iterator):
         self._motion_controller.check_errors()
 
     def info_current_position(self):
-        return f"{self._name} angle: {self.current_position()}°, "
+        return f"{self._name} angle: {self.current_position():.2f}°, "
 
     def current_position_for_filename(self):
         return self.current_position()
