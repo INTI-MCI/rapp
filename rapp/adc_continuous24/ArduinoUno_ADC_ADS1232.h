@@ -11,7 +11,7 @@
 #include <WProgram.h>
 #endif
 
-#include <ADS1232.h>
+#include "myADS1232.h"
 
 #include "Profiling.h"
 

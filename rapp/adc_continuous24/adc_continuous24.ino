@@ -256,7 +256,7 @@ unsigned long parse_int(String& command_args) {
   return value;
 }
 
-unsigned long parse_read_and_print_n_samples_dt(String command_args) {
+void parse_read_and_print_n_samples_dt(String command_args) {
   // This function reads n samples every dt miliseconds and prints them in serial monitor
   unsigned long n_samples = parse_int(command_args);
   unsigned long dt = parse_int(command_args);
