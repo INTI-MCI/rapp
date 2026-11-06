@@ -46,11 +46,16 @@ SUPPORTED_ADCS = {
             GAIN_EIGHT: (0.512, 0.015625),
             GAIN_SIXTEEN: (0.256, 0.0078125)}
     },
-    "ADS_1232": {  # TODO: Ver si están bien los rangos (xej, el 1: es +- 2.5 V)
-        1: (5, 5000/2**23),
-        2: (2.5, 2500/2**23),
-        64: (0.078, 78/2**23),
-        128: (0.039, 39/2**23),
+    "ADS_1232": {
+        'BITS': 24,
+        'N_BYTES': 4,
+        'BYTE_ORDER': 'big',
+        'GAINS': {
+            1: (2.49, 2490/2**23),
+            2: (1.25, 1250/2**23),
+            64: (0.039, 39/2**23),
+            128: (0.0235, 23.5/2**23),
+        }
     }
 }
 
@@ -59,6 +64,10 @@ MESSAGE_SAMPLES = "You must ask for a positive number of samples... Got {}"
 
 
 class ADCError(Exception):
+    pass
+
+
+class ADCRecoveryError(ADCError):
     pass
 
 
@@ -279,6 +288,17 @@ class ADC:
     def close(self):
         self._serial.close()
 
+    def recover(self):
+        """Resets the Arduino connection and calibrates the ADC after a read failure."""
+        try:
+            self._serial.dtr = False
+            time.sleep(0.1)
+            self._serial.dtr = True
+            self.wait_for_connection()
+            self.self_calibrate()
+        except (ADCError, serial.SerialException, AttributeError) as e:
+            raise ADCRecoveryError("Could not recover ADC communication: {}".format(e)) from e
+
     def _read_data(self, n_samples, name=''):
         data = []
         desc = "Measuring {}:".format(name)
@@ -300,23 +320,27 @@ class ADC:
 
     def _read_bits(self):
         if self._in_bytes:
-            bytes_data = b""
-
-            for _ in range(3):
-                try:
-                    bytes_data += self._serial.read(self._n_bytes - len(bytes_data))
-                except serial.SerialException as e:
-                    raise ADCError(f"Error while reading from serial port: {e}") from e
-                if len(bytes_data) == self._n_bytes:
-                    break
-
-            if len(bytes_data) != self._n_bytes:
-                logger.warning("ADCError: Expected {} bytes, got {} bytes.".format(self._n_bytes, len(bytes_data)))
-                return None
+            bytes_data = self._read_bytes(self._n_bytes)
             logger.debug('Data in bytes = %s', bytes_data)
             return int.from_bytes(bytes_data, byteorder=self._byte_order, signed=True)
         else:
             return int(self._serial.readline().decode().strip())
+
+    def _read_bytes(self, n_bytes):
+        bytes_data = b""
+
+        for _ in range(3):
+            try:
+                bytes_data += self._serial.read(n_bytes - len(bytes_data))
+            except serial.SerialException as e:
+                raise ADCError(f"Error while reading from serial port: {e}") from e
+            if len(bytes_data) == n_bytes:
+                return bytes_data
+
+        logger.warning(
+            "ADCError: Expected {} bytes, got {} bytes.".format(n_bytes, len(bytes_data))
+        )
+        raise ADCError("Expected {} bytes, got {} bytes.".format(n_bytes, len(bytes_data)))
 
     def _bits_to_volts(self, value):
         if value is None:
@@ -324,7 +348,7 @@ class ADC:
         return value * self._multiplier_mV / 1000
 
     def _read_float(self):
-        read_value = self._serial.read(4)
+        read_value = self._read_bytes(4)
         logger.debug("Temperature in bytes = {}".format(read_value))
         return struct.unpack('<f', read_value)[0]
 
@@ -360,3 +384,32 @@ class ADC:
             logger.info(f"{n}: {measurement}")
         mean_dt_us = np.mean(np.diff(times)) * 1e6
         return mean_dt_us
+
+    def self_calibrate(self):
+        """Sends a command to the ADC to perform self-calibration."""
+        cmd = "self_calibrate;\n"
+        logger.debug("ADC command: {}".format(cmd))
+
+        try:
+            self._serial.write(bytes(cmd, 'utf-8'))
+        except serial.SerialTimeoutException as e:
+            raise ADCError("Timeout while writing to serial port: {}".format(e))
+
+        # Read two uint16 values
+        err0 = struct.unpack('<H', self._read_bytes(2))[0]
+        err1 = struct.unpack('<H', self._read_bytes(2))[0]
+        if err0 != 0:
+            logger.error(f"Error during self-calibration of ADC0: {err0}")
+        if err1 != 0:
+            logger.error(f"Error during self-calibration of ADC1: {err1}")
+
+    def reset_ADC(self):
+        """Sends a command to the ADC to perform a reset."""
+        cmd = "reset_adc;\n"
+        logger.debug("ADC command: {}".format(cmd))
+
+        try:
+            self._serial.write(bytes(cmd, 'utf-8'))
+            self._serial.reset_input_buffer()
+        except serial.SerialTimeoutException as e:
+            raise ADCError("Timeout while writing to serial port: {}".format(e))

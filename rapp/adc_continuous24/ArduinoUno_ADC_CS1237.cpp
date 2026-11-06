@@ -9,14 +9,14 @@ void ArduinoUno_ADC_CS1237::begin(void) {
     digitalWrite(SCLK, LOW); //Pull it LOW
 
 //Make sure the chip is awake
-    if (DEBUG_CS1237) Serial.println("Clock en 0, leyendo DOUT esperando un 1");
+    if (DEBUG) Serial.println("Clock en 0, leyendo DOUT esperando un 1");
     while (digitalRead(DOUT_DRDY) == 0) {} // Wait while DOUT_DRDY is low
-    if (DEBUG_CS1237) Serial.println("1 recibido en DOUT, esperando un 0");
+    if (DEBUG) Serial.println("1 recibido en DOUT, esperando un 0");
     while (digitalRead(DOUT_DRDY) == 1) {} // Wait while DOUT_DRDY is high
 
-    if (DEBUG_CS1237) Serial.println("0 recibido, comienza delay");
+    if (DEBUG) Serial.println("0 recibido, comienza delay");
     delay(OFF_ON_SETTLING_TIME);
-    if (DEBUG_CS1237) Serial.println("Fin del delay");
+    if (DEBUG) Serial.println("Fin del delay");
 }
 
 inline __attribute__((always_inline)) void ArduinoUno_ADC_CS1237::clockCycle() {
@@ -43,8 +43,8 @@ inline __attribute__((always_inline)) bool ArduinoUno_ADC_CS1237::readBit() {
     return single_bit;
 }
 
-int32_t ArduinoUno_ADC_CS1237::readADC() {
-//Data acquisition function - Returns int32 variable
+long ArduinoUno_ADC_CS1237::readADC() {
+//Data acquisition function - Returns long variable
     int previousValue = digitalRead(DOUT_DRDY);
     int newValue = digitalRead(DOUT_DRDY);
     //Wait for the DOUT_DRDY to fall LOW:
@@ -53,7 +53,7 @@ int32_t ArduinoUno_ADC_CS1237::readADC() {
         newValue = digitalRead(DOUT_DRDY);
     }
 
-    int32_t result = 0; //24-bit output data is stored in this variable
+    long result = 0; //24-bit output data is stored in this variable
 
     delayMicroseconds(0); //t4
 
@@ -75,8 +75,8 @@ int32_t ArduinoUno_ADC_CS1237::readADC() {
     return result;
 }
 
-int32_t ArduinoUno_ADC_CS1237::readADCwProfiler() { // TODO: cuando esté listo el profiler, ver si en modo debug conviene usar esta funcion en lugar de readADC
-//Data acquisition function with profiler - Returns int32 variable and elapsed times
+long ArduinoUno_ADC_CS1237::readADCwProfiler() { // TODO: cuando esté listo el profiler, ver si en modo debug conviene usar esta funcion en lugar de readADC
+//Data acquisition function with profiler - Returns long variable and elapsed times
     unsigned long time1_DRDY; // Tiempos de espera a que cambie el pin DOUT_DRDY
     unsigned long time2_DRDY;
     unsigned long time1_read; // Tiempos de lectura de los 24 bits
@@ -99,7 +99,7 @@ int32_t ArduinoUno_ADC_CS1237::readADCwProfiler() { // TODO: cuando esté listo 
       //Serial.println(elapsed_time_while);
       //}
 
-    int32_t result = 0; //24-bit output data is stored in this variable
+    long result = 0; //24-bit output data is stored in this variable
 
     delayMicroseconds(0); //t4
 
@@ -132,7 +132,7 @@ int32_t ArduinoUno_ADC_CS1237::readADCwProfiler() { // TODO: cuando esté listo 
     return result;
 }
 
-ArduinoUno_ADC_CS1237::ProfilerTimes ArduinoUno_ADC_CS1237::getProfiler() const {
+ProfilerTimes ArduinoUno_ADC_CS1237::getProfiler() const {
     return profiler;
 }
 
@@ -276,7 +276,7 @@ void ArduinoUno_ADC_CS1237::setRegister(int registertowrite, int valuetowrite) {
 
     clockCycle(); //Send the 37th SCLK pulse
 
-    if (DEBUG_CS1237) {
+    if (DEBUG) {
     Serial.print("Registro que se va a escribir: ");
     printSerialByte(register_value);
     }
@@ -312,7 +312,7 @@ void ArduinoUno_ADC_CS1237::setFullRegister(byte register_to_write) {
     //bit 7   : Reserved, don't touch. If needed, set to 0
     //----------------------------------------------------------
 
-    if (DEBUG_CS1237) Serial.println("Registro que se va a escribir: "+ String(register_to_write, BIN));
+    if (DEBUG) Serial.println("Registro que se va a escribir: "+ String(register_to_write, BIN));
 
     //Shift out 27 (24+3) bits:
     ADCreading = readADC(); //32-bit variable that stores the whole ADC reading
