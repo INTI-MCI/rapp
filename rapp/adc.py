@@ -1,10 +1,9 @@
-import time
 import logging
-
-import serial
-import numpy as np
 import struct
+import time
 
+import numpy as np
+import serial as serial_lib
 from rich.progress import track
 
 from rapp.mocks import SerialMock
@@ -66,6 +65,8 @@ MESSAGE_SAMPLES = "You must ask for a positive number of samples... Got {}"
 class ADCError(Exception):
     pass
 
+class ADCBadCommandError(ADCError):
+    pass
 
 class ADCRecoveryError(ADCError):
     pass
@@ -100,7 +101,7 @@ class ADC:
 
     def __init__(self, serial, adc_used, gain=1, ch0=True, ch1=True, in_bytes=True, progressbar=True,
                  timeout_open=TIMEOUT_OPEN):
-        self._serial = serial
+        self._serial: serial_lib.Serial = serial
         self._in_bytes = in_bytes
         self._ch0 = ch0
         self._ch1 = ch1
@@ -147,25 +148,37 @@ class ADC:
     @staticmethod
     def get_serial_connection(*args, **kwargs):
         try:
-            return serial.Serial(*args, **kwargs)
-        except serial.serialutil.SerialException as e:
+            return serial_lib.Serial(*args, **kwargs)
+        except serial_lib.SerialException as e:
             raise ADCError("Error while making connection to serial port: {}".format(e))
+
+    def _send_command(self, cmd: str, error_message="Timeout while writing to serial port"):
+        self._serial_write(cmd, error_message)
+        line = self._serial.readline()  # Read ACK from Arduino
+        if line != b'ACK\r\n':
+            raise ADCBadCommandError("Expected 'ACK' but received '{}'".format(line))
+
+    def _serial_write(self, cmd, error_message="Timeout while writing to serial port"):
+        try:
+            if isinstance(cmd, str):
+                cmd = bytes(cmd, 'utf-8')
+            self._serial.write(cmd)
+        except serial_lib.SerialTimeoutException as e:
+            raise ADCError("{}: {}".format(error_message, e))
 
     def wait_for_connection(self):
         start = time.time()
         elapsed_time = 0
         queries = 0
         while elapsed_time < self.timeout_open:
-            try:
-                self._serial.write(b'ready?\n')
-            except serial.SerialTimeoutException as e:
-                raise ADCError("Timeout while writing to serial port: {}".format(e))
+            self._serial_write('ready?\n')
             output = self._serial.readline()
             end = time.time()
             elapsed_time = end - start
             if output == b'yes\r\n':
                 line = self._serial.readline()
-                logger.info("Data in input buffer after making connection: {}".format(line))
+                if line:
+                    logger.info("Data in input buffer after making connection: {}".format(line))
                 self._serial.reset_input_buffer()  # TODO: check if this is necessary
                 break
             elif output == b'no\r\n':
@@ -206,11 +219,7 @@ class ADC:
             measurement='adc', ch0=int(self._ch0), ch1=int(self._ch1), samples=n_samples
         )
         logger.debug("ADC command: {}".format(cmd))
-
-        try:
-            self._serial.write(bytes(cmd, 'utf-8'))
-        except serial.SerialTimeoutException as e:
-            raise ADCError("Timeout while writing to serial port: {}".format(e))
+        self._send_command(cmd)
 
         none_array = np.full(n_samples, None)
 
@@ -247,10 +256,7 @@ class ADC:
         cmd = f"req-temp;{channel};\n"
         logger.debug("ADC command: {}".format(cmd))
 
-        try:
-            self._serial.write(bytes(cmd, 'utf-8'))
-        except serial.SerialTimeoutException as e:
-            raise ADCError("Timeout while writing to serial port: {}".format(e))
+        self._send_command(cmd)
 
         temperature_requested = True
         return temperature_requested
@@ -267,10 +273,7 @@ class ADC:
         cmd = f"temp;{channel};\n"
         logger.debug("ADC command: {}".format(cmd))
 
-        try:
-            self._serial.write(bytes(cmd, 'utf-8'))
-        except serial.SerialTimeoutException as e:
-            raise ADCError("Timeout while writing to serial port: {}".format(e))
+        self._send_command(cmd)
 
         temp = self._read_data(1, name='Temperature')
         logger.debug("Temperature without correction = {}".format(temp[0]))
@@ -296,7 +299,7 @@ class ADC:
             self._serial.dtr = True
             self.wait_for_connection()
             self.self_calibrate()
-        except (ADCError, serial.SerialException, AttributeError) as e:
+        except (ADCError, serial_lib.SerialException, AttributeError) as e:
             raise ADCRecoveryError("Could not recover ADC communication: {}".format(e)) from e
 
     def _read_data(self, n_samples, name=''):
@@ -332,7 +335,7 @@ class ADC:
         for _ in range(3):
             try:
                 bytes_data += self._serial.read(n_bytes - len(bytes_data))
-            except serial.SerialException as e:
+            except serial_lib.SerialException as e:
                 raise ADCError(f"Error while reading from serial port: {e}") from e
             if len(bytes_data) == n_bytes:
                 return bytes_data
@@ -370,10 +373,7 @@ class ADC:
         cmd = "get_n_every_dt;{channel};{samples};{dt_mus};\n".format(channel=channel, samples=n_samples, dt_mus=dt_mus)
         logger.debug("ADC command: {}".format(cmd))
 
-        try:
-            self._serial.write(bytes(cmd, 'utf-8'))
-        except serial.SerialTimeoutException as e:
-            raise ADCError("Timeout while writing to serial port: {}".format(e))
+        self._send_command(cmd)
         times = np.zeros(n_samples)
 
         for n in range(n_samples):
@@ -390,10 +390,7 @@ class ADC:
         cmd = "self_calibrate;\n"
         logger.debug("ADC command: {}".format(cmd))
 
-        try:
-            self._serial.write(bytes(cmd, 'utf-8'))
-        except serial.SerialTimeoutException as e:
-            raise ADCError("Timeout while writing to serial port: {}".format(e))
+        self._send_command(cmd)
 
         # Read two uint16 values
         err0 = struct.unpack('<H', self._read_bytes(2))[0]
@@ -408,8 +405,5 @@ class ADC:
         cmd = "reset_adc;\n"
         logger.debug("ADC command: {}".format(cmd))
 
-        try:
-            self._serial.write(bytes(cmd, 'utf-8'))
-            self._serial.reset_input_buffer()
-        except serial.SerialTimeoutException as e:
-            raise ADCError("Timeout while writing to serial port: {}".format(e))
+        self._send_command(cmd)
+        self._serial.reset_input_buffer()

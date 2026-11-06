@@ -1,5 +1,6 @@
-import sys
 import logging
+import sys
+from datetime import time
 
 from rapp.adc import ADC
 from rapp.utils import timing
@@ -37,34 +38,41 @@ def resolve_adc_device():
 
 
 def continuous_run(channel, n_samples, dt_mus):
-    print("Instantiating ADC...")
+    logger.info("Instantiating ADC...")
     adc = ADC.build(resolve_adc_device(), baudrate=ADC_BAUDRATE, timeout=ADC_TIMEOUT, adc_used=ADC_USED,
                     ch0=True, ch1=True)
 
 
-    print("Acquiring...")
+    logger.info("Acquiring...")
     mean_data = adc.print_read_n_every_dt(channel, n_samples, dt_mus)
     logger.info("Mean time between samples: {} us".format(mean_data))
 
     adc.close()
 
 
-def single_run(n_samples, ch0, ch1):
-    print("Instantiating ADC...")
+def single_run(n_samples, ch0, ch1, n_runs=1, delay_between_runs=0.2):
+    channels_names_tuple = ('CH0', 'CH1')
+    logger.info("Instantiating ADC...")
     adc = ADC.build(resolve_adc_device(), baudrate=ADC_BAUDRATE, timeout=ADC_TIMEOUT, adc_used=ADC_USED,
                     ch0=ch0, ch1=ch1)
 
-    print("Acquiring...")
-    data, elapsed_time = acquire(adc, n_samples=n_samples)
-    sps = n_samples / elapsed_time
+    logger.info("Self calibrating...")
+    adc.self_calibrate()
+    logger.info("Acquiring...")
+    for i in range(n_runs):
+        data, elapsed_time = acquire(adc, n_samples=n_samples)
 
-    channels_names_tuple = ('CH0', 'CH1')
+        if data is None:
+            logger.error("No data acquired")
+            adc.close()
+            return
+        for d in data:
+            logger.info("{} = {}".format(channels_names_tuple, d))
+        time.sleep(delay_between_runs)
 
-    for d in data:
-        logger.info("{} = {}".format(channels_names_tuple, d))
-
+    sps = n_samples / elapsed_time * n_runs
     logger.info("Samples per second: {}".format(sps))
-    logger.info("Number of measurements: {}".format(len(data)))
+    logger.info("Number of measurements: {}".format(n_runs * n_samples))
 
     adc.close()
 
@@ -76,12 +84,18 @@ if __name__ == '__main__':
             ch0 = bool(int(sys.argv[3]))
             ch1 = bool(int(sys.argv[4]))
             single_run(n_samples, ch0, ch1)
+        elif sys.argv[1] == 'multi_run':
+            n_samples = int(sys.argv[2])
+            ch0 = bool(int(sys.argv[3]))
+            ch1 = bool(int(sys.argv[4]))
+            n_runs = int(sys.argv[5])
+            single_run(n_samples, ch0, ch1, n_runs=n_runs)
         elif sys.argv[1] == 'continuous_run':
             channel = int(sys.argv[2])
             n_samples = int(sys.argv[3])
             dt_mus = int(sys.argv[4])
             continuous_run(channel, n_samples, dt_mus)
     except IndexError as e:
-        print(e)
-        print("Need to pass input parameters are single_run SAMPLES, CH0, CH1; continuous_run CHANNEL, SAMPLES, DT_MUS")
-        exit(1)
+        logger.error(e)
+        logger.error("Need to pass input parameters are single_run SAMPLES, CH0, CH1; continuous_run CHANNEL, SAMPLES, DT_MUS")
+        sys.exit(1)

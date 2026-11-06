@@ -187,13 +187,25 @@ void read_n_samples_from_channel(unsigned long n_samples, bool channel, bool mea
 }
 
 void request_temp(String channel) {
-    bool ch = parse_bool(channel);
+    bool ch, err;
+    err = parse_bool(channel, ch);
+    if (err) {
+      Serial.println("Error parsing channel for request_temp");
+      return;
+    } else {
+      Serial.println("ACK");
+    }
     if (ch) sensorDS18B20_1.requestTemperatures();
     else sensorDS18B20_0.requestTemperatures();
 }
 
 float read_temp(String channel) {
-    bool ch = parse_bool(channel);
+    bool ch, err;
+    err = parse_bool(channel, ch);
+    if (err) {
+      Serial.println("Error parsing channel for read_temp");
+      return NAN;
+    }
     float temp;
     if (ch) temp = sensorDS18B20_1.getTempCByIndex(0); //sensorDS18B20_1.getTempC(plateTemp);
     else temp = sensorDS18B20_0.getTempC(roomTemp); //sensorDS18B20_0.getTempCByIndex(0);
@@ -203,6 +215,7 @@ float read_temp(String channel) {
 void read_and_send_temp(String channel) {
   writable_float temp;
   temp.f = read_temp(channel);
+  if (isnan(temp.f)) return; else Serial.println("ACK"); 
   if (DEBUG) Serial.println(temp.f);
   else Serial.write(temp.bytes, 4);
 }
@@ -213,9 +226,22 @@ void read_n_samples(unsigned long n_samples, bool ch0, bool ch1, bool measure_ti
 }
 
 unsigned long parse_and_read_n_samples(String command_args, unsigned short *out_n_channels, bool measure_times) {
-    bool ch0 = parse_bool(command_args);
-    bool ch1 = parse_bool(command_args);
-    unsigned long n_samples = parse_int(command_args);
+    bool ch0, ch1, err_ch0, err_ch1, err_n_samples;
+    unsigned long n_samples;
+    err_ch0 = parse_bool(command_args, ch0);
+    err_ch1 = parse_bool(command_args, ch1);
+    if (err_ch0 or err_ch1) {
+      Serial.println("Error parsing channels for parse_and_read_n_samples");
+      return 0;
+    } 
+    err_n_samples = parse_int(command_args, n_samples);
+    if (err_n_samples) {
+      Serial.println("Error parsing n_samples for parse_and_read_n_samples");
+      return 0;
+    } else {
+      Serial.println("ACK");
+    }
+
     read_n_samples(n_samples, ch0, ch1, measure_times);
     *out_n_channels = (unsigned short) ch0 + (unsigned short) ch1;
     if (PROFILE or measure_times) {
@@ -228,12 +254,13 @@ unsigned long parse_and_read_n_samples(String command_args, unsigned short *out_
     return n_samples;
 }
 
-bool parse_bool(String& command_args) {
+bool parse_bool(String& command_args, bool& value) {
   int ind = command_args.indexOf(";");
+  if (ind == -1) return true;
   String arg01 = command_args.substring(0, ind);
-  bool value = arg01.startsWith("1");
+  value = !arg01.startsWith("0");
   command_args = command_args.substring(ind + 1);
-  return value;
+  return false;
 }
 
 byte parse_byte(String& command_args) {
@@ -249,17 +276,32 @@ byte parse_byte(String& command_args) {
   return value;
 }
 
-unsigned long parse_int(String& command_args) {
+bool parse_int(String& command_args, unsigned long& value) {
   int ind = command_args.indexOf(";");
-  unsigned long value = command_args.substring(0, ind).toInt();
+  if (ind == -1) return true;
+  value = command_args.substring(0, ind).toInt();
   command_args = command_args.substring(ind + 1);
-  return value;
+  return false;
 }
 
 void parse_read_and_print_n_samples_dt(String command_args) {
   // This function reads n samples every dt miliseconds and prints them in serial monitor
-  unsigned long n_samples = parse_int(command_args);
-  unsigned long dt_ms = parse_int(command_args);
+  unsigned long n_samples, dt_ms;
+  bool err_n_samples, err_dt_ms;
+
+  err_n_samples = parse_int(command_args, n_samples);
+  if (err_n_samples) {
+    Serial.println("Error parsing n_samples for parse_read_and_print_n_samples_dt");
+    return;
+  }
+  err_dt_ms = parse_int(command_args, dt_ms);
+  if (err_dt_ms) {
+    Serial.println("Error parsing dt_ms for parse_read_and_print_n_samples_dt");
+    return;
+  } else {
+    Serial.println("ACK");
+  }
+
   for (int i = 0; i < n_samples; i++){
     long data0 = adc0.readADC();
     long data1 = adc1.readADC();
@@ -318,7 +360,10 @@ void toggle_led(int n) {  // Useful for debugging
 }
 
 bool is_conversion_complete(String channel) {
-  bool ch = parse_bool(channel);
+  bool err, ch;
+  err = parse_bool(channel, ch);
+  if (err) Serial.println("Error parsing channel for is_conversion_complete");
+  else Serial.println("ACK");
   bool answer;
   if (ch) answer = sensorDS18B20_1.isConversionComplete(); //sensorDS18B20_1.getTempC(plateTemp);
   else answer = sensorDS18B20_0.isConversionComplete(); //sensorDS18B20_0.getTempCByIndex(0);
@@ -397,11 +442,12 @@ void process_serial_input() {
             parse_and_read_n_samples(command_args, &n_channels, measure_times);
 
         }
-        else if (command_name == "adc_n_dt") { // Command: "adc_n_dt;nsamples;dt;", dt in miliseconds            
+        else if (command_name == "adc_n_dt") { // Command: "adc_n_dt;nsamples;dt;", dt in miliseconds
             String command_args = getArgs(input_command);
             parse_read_and_print_n_samples_dt(command_args);
         }
         else if (command_name == "adc_register?") {
+            Serial.println("ACK");
             for (uint8_t i = 0; i < 5; i++) {
               Serial.print(String(i) + " : ");
               adc0.read_and_printRegister();
@@ -409,6 +455,7 @@ void process_serial_input() {
             }
         }
         else if (command_name == "adc_register") { // Command: "adc_register;xxxxxxxx;"
+            Serial.println("ACK");
             String command_args = getArgs(input_command);
             byte register_to_write_ = parse_byte(command_args);
             adc0.setFullRegister(register_to_write_);
@@ -435,18 +482,22 @@ void process_serial_input() {
             measure_SPS(command_args);
         }
         else if (command_name == "measured_times?") {
+            Serial.println("ACK");
             send_measured_times();
         }
         else if (command_name == "profiled_times?") {
+            Serial.println("ACK");
             send_profiled_times();
         }
         else if (command_name == "self_calibrate") {
+            Serial.println("ACK");
             ERROR_t err0 = adc0.calibrate();
             ERROR_t err1 = adc1.calibrate();
             Serial.write((uint8_t*)&err0, sizeof(err0));
             Serial.write((uint8_t*)&err1, sizeof(err1));
         }
         else if (command_name == "reset_adc") {
+            Serial.println("ACK");
             adc0.reset_ADC();
             adc0.setFullRegister(register_to_write);
             adc1.reset_ADC();
