@@ -15,7 +15,7 @@ n_bits = 16
 n_reps = 50
 x_value = 2.3
 
-quantum = 4.028 / 2**n_bits
+quantum = 4.028 / 2**n_bits  # 4.028 V for ADS1115
 stds = np.logspace(-2, 2, n_stds) * quantum
 rmse_non_quant = stds / np.sqrt(n_samples)
 
@@ -29,9 +29,30 @@ for k, std in enumerate(stds):
 
     rmse[k] = np.sqrt(np.mean(errors ** 2))
 
+plt.figure(1)
 plt.loglog(stds / quantum, rmse / rmse_non_quant)
 plt.xlabel("Std of noise / quantum")
 plt.ylabel("RMSE / RMSE_non_quantized(theoretical)")
+
+
+n_bits_24 = 24
+x_value = 2.3
+
+quantum_24 = 4 / 2**24  # 1 V para CS1237?
+stds = np.logspace(-2, 2, n_stds) * quantum_24
+rmse_non_quant = stds / np.sqrt(n_samples)
+
+rmse24 = np.zeros(n_stds)
+for k, std in enumerate(stds):
+    errors = np.zeros(n_reps)
+    for krep in range(n_reps):
+        x_real = np.random.normal(loc=x_value, scale=std, size=n_samples)
+        x_quant = np.round(x_real / quantum_24) * quantum_24
+        errors[krep] = np.mean(x_quant) - x_value
+
+    rmse24[k] = np.sqrt(np.mean(errors ** 2))
+
+plt.loglog(stds / quantum_24, rmse24 / rmse_non_quant)
 
 n_samples_draw = 1000
 lam = 1000

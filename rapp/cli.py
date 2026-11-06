@@ -16,6 +16,7 @@ class CLI:
 
     def __init__(self, args):
         self._args = args
+        self._logging_level = logging.INFO
 
         self._add_parser()
         self._add_subparsers()
@@ -46,7 +47,7 @@ class CLI:
         self.args = self.parser.parse_args(args=self._args or ['--help'])
 
         if self.args.verbose:
-            logging.getLogger().setLevel(logging.DEBUG)
+            self._logging_level = logging.DEBUG
 
         self.command = self.COMMANDS[self.args.command]
 
@@ -57,7 +58,7 @@ class CLI:
         rh = RichHandler(level="NOTSET")
         rh.setFormatter(logging.Formatter(self.LOG_FORMAT))
 
-        logging.basicConfig(level=logging.INFO, format=self.LOG_FORMAT, handlers=[rh])
+        logging.basicConfig(level=self._logging_level, format=self.LOG_FORMAT, handlers=[rh])
 
         for module in self.SUPRESS_LOG:
             logging.getLogger(module).setLevel(logging.ERROR)

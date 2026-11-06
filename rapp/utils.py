@@ -1,12 +1,15 @@
-import os
-import sys
+import decimal
 import json
 import math
+import os
+import re
 import shutil
-import decimal
-
-from time import time
+import sys
 from functools import wraps
+from pathlib import Path
+from time import time
+
+import numpy as np
 
 
 def json_load(path) -> dict:
@@ -123,3 +126,56 @@ def progressbar(it, desc="", size=100, step=1, out=sys.stdout, enable=True):
                 last_time = show(i + 1)
     if enable:
         print("", file=out, flush=True)
+
+
+def sort_files_by_rep(files):
+    """
+    Sort a list of filenames according to the number of rep in their name.
+
+    Parameters
+    ----------
+    files : list
+        List of filenames.
+
+    Returns
+    -------
+    sorted_files : list
+        Sorted list of filenames.
+    """
+    nums = []
+    for file in files:
+        rep_num = re.search(r'rep(\d+)', file).groups()[0]
+        nums.append(int(rep_num))
+    sorted_files = [file for _, file in sorted(zip(nums, files))]
+    return sorted_files
+
+
+def sort_files_by_hwp_and_rep(files):
+    assert isinstance(files, list) and all(isinstance(file, Path) for file in files)
+    hwp_positions = []
+    max_rep = 0
+    mask_files = np.ones((len(files),), dtype=bool)
+    for file in files:
+        output_re = re.search(r'(?:hwp(\d+\.\d+)-)?rep(\d+)', file.name)
+        if output_re is None:
+            mask_files[files.index(file)] = False
+            continue
+        hwp_position, rep = output_re.groups()
+        hwp_position = float(hwp_position)
+        rep = int(rep)
+        if hwp_position not in hwp_positions:
+            hwp_positions.append(float(hwp_position))
+        max_rep = max(max_rep, int(rep))
+    hwp_positions = sorted(hwp_positions)
+    sorted_files = np.empty((len(hwp_positions), max_rep), dtype=object)
+    files = np.array(files)[mask_files]
+    for file in files:
+        hwp_position, rep = re.search(r'(?:hwp(\d+\.\d+)-)?rep(\d+)', file.name).groups()
+        hwp_position = float(hwp_position)
+        rep = int(rep)
+        if hwp_position is None:
+            row = 0
+        else:
+            row = hwp_positions.index(float(hwp_position))
+        sorted_files[row, rep-1] = file
+    return sorted_files, hwp_positions, max_rep

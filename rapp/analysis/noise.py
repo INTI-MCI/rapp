@@ -69,14 +69,14 @@ FILE_PARAMS = {
         "outliers": [-0.001, 0.001],
         "bins": "quantized"
     },
-    "2024-07-15-noise-quartz-1-cycles0-step45-samples760500/hwp68.937-rep1.csv": {
+    "output-data/2024-07-15-noise-quartz-1-cycles0-step45-samples760500/hwp68.937-rep1.csv": {
         "sps": 845,
         "band_stop_freq": [],
         "high_pass_freq": None,
         "outliers": None,
         "bins": "quantized"
     },
-    "2024-07-15-noise-quartz-2-cycles0-step45-samples760500/hwp68.937-rep1.csv": {
+    "output-data/2024-07-15-noise-quartz-2-cycles0-step45-samples760500/hwp68.937-rep1.csv": {
         "sps": 845,
         "band_stop_freq": [],
         "high_pass_freq": None,
@@ -372,10 +372,11 @@ def plot_noise_with_laser_on(output_folder, show=False):
     logger.info("ANALYZING NOISE WITH LASER ON...")
 
     # filename = "continuous-range4V-584nm-samples10000-sps59.csv"
-    filename = "continuous-range4V-632nm-samples100000.csv"
-    # filename = "2024-07-15-noise-quartz-2-cycles0-step45-samples760500/hwp68.937-rep1.csv"
+    # filename = "continuous-range4V-632nm-samples100000.csv"
+    filename = ("output-data/2024-07-15-noise-quartz-2-cycles0-step45-samples760500/"
+                "hwp68.937-rep1.csv")
 
-    filepath = os.path.join(ct.INPUT_DIR, filename)
+    filepath = os.path.join(ct.WORK_DIR, filename)
 
     sps, bstop, hpass, outliers, bins = FILE_PARAMS[filename].values()
 
@@ -567,7 +568,7 @@ def plot_noise_with_signal(output_folder, show=False):
     # filename = "2024-04-13-simple-setup-0s-delay/" \
     #            "min-setup2-2-hwp0-cycles1-step1-samples169-rep2.csv"
 
-    filepath = Path(ct.INPUT_DIR).joinpath(filename)
+    filepath = Path(ct.WORK_DIR).joinpath(filename)
     base_output_fname = Path(output_folder).joinpath(filepath.stem)
 
     measurement = Measurement.from_file(filepath.as_posix())
@@ -596,6 +597,101 @@ def plot_noise_with_signal(output_folder, show=False):
     f.subplots_adjust(wspace=0.0005)
     f.tight_layout()
     f.savefig("{}-signal-and-std.png".format(base_output_fname))
+
+    if show:
+        plt.show()
+
+
+def plot_noise_24_bit_adc(output_folder, show=False):
+    print("")
+    logger.info("ANALYZING ADC NOISE...")
+
+    filename = ("output-data/"
+                "2025-08-27-noise-measurements-high-intensity-4-"
+                "minutes-cycles0.0-step45-samples5000/hwp0.0-rep1.csv")\
+
+    filepath = Path(ct.WORK_DIR).joinpath(filename)
+    # base_output_fname = Path(output_folder).joinpath(filepath.stem)
+
+    measurement = Measurement.from_file(filepath.as_posix())
+    logger.info("Plotting raw data...")
+    f, axs = plt.subplots(1, 2, figsize=(8, 5), subplot_kw=dict(box_aspect=1), sharey=True)
+
+    for i, ax in enumerate(axs):
+        channel_data = measurement.channel_data('CH{}'.format(i)) / (1.2/2**23)
+
+        ax.set_ylabel(ct.LABEL_COUNTS)
+        ax.set_xlabel(ct.LABEL_N_SAMPLE)
+        ax.set_title("Canal {}".format(i))
+        ax.plot(channel_data, '-', color='k')
+        ax.xaxis.set_major_locator(plt.MaxNLocator(3))
+        ax.ticklabel_format(style='sci', scilimits=(0, 0), axis='y')
+
+    f.subplots_adjust(hspace=0)
+    f.tight_layout()
+
+    f1, axs1 = plt.subplots(1, 2, figsize=(8, 5), subplot_kw=dict(box_aspect=1), sharey=True)
+    for i, ax in enumerate(axs1):
+        channel_data = measurement.channel_data('CH{}'.format(i)) / (1.2/2**23)
+        if i == 0:  # Remove peaks from channel 0
+            peaks = channel_data[0::500]
+            logger.debug("Peaks: {}".format(peaks))
+            channel_data_wo_peaks = channel_data[channel_data >= channel_data[3500]]
+            channel_data = channel_data_wo_peaks
+
+        res = stats.normaltest(channel_data)
+        logger.info("Gaussian Test. p-value: {}".format(res.pvalue))
+
+        std = np.std(channel_data)
+        logger.info("Standard deviation: {}".format(std))
+        logger.info("Standard deviation of the mean: {}".format(std / np.sqrt(134)))
+
+        ax.set_ylabel("Ocurrencias")
+        ax.set_xlabel(ct.LABEL_COUNTS)
+        ax.set_title("Canal {}".format(i))
+        ax.hist(channel_data, bins=30, density=False)
+
+    f1.subplots_adjust(hspace=0)
+    f1.tight_layout()
+
+    f2, axs2 = plt.subplots(1, 2, figsize=(8, 5), subplot_kw=dict(box_aspect=1), sharey=True)
+
+    for i, ax in enumerate(axs2):
+        channel_data = measurement.channel_data('CH{}'.format(i)) / (1.2/2**23)
+        if i == 0:
+            channel_data_wo_peaks = channel_data[channel_data >= channel_data[3500]]
+            channel_data = channel_data_wo_peaks
+
+        ax.set_ylabel(ct.LABEL_COUNTS)
+        ax.set_xlabel(ct.LABEL_N_SAMPLE)
+        ax.set_title("Canal {} sin picos".format(i))
+        ax.plot(channel_data, '-', color='k')
+        ax.xaxis.set_major_locator(plt.MaxNLocator(3))
+        ax.ticklabel_format(style='sci', scilimits=(0, 0), axis='y')
+
+    f2.subplots_adjust(hspace=0)
+    f2.tight_layout()
+
+    if show:
+        plt.show()
+
+    # f, axs = plt.subplots(1, 2, figsize=(8, 5), subplot_kw=dict(box_aspect=1), sharey=True)
+    for i, ax in enumerate(axs):
+        channel_data = measurement.channel_data('CH{}'.format(i)) / (1.2/2**23)
+        if i == 0:
+            channel_data_wo_peaks = channel_data[channel_data >= channel_data[3500]]
+            channel_data = channel_data_wo_peaks
+
+        ax.set_ylabel(ct.LABEL_COUNTS)
+        ax.set_xlabel(ct.LABEL_N_SAMPLE)
+        ax.set_title("Canal {}".format(i))
+        ax.hist(channel_data, bins=100, density=False)
+        ax.xaxis.set_major_locator(plt.MaxNLocator(3))
+        ax.ticklabel_format(style='sci', scilimits=(0, 0), axis='y')
+
+    # Hide x labels and tick labels for top plots and y ticks for right plots.
+    # for ax in axs.flat:
+    #     ax.label_outer()
 
     if show:
         plt.show()

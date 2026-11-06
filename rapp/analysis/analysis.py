@@ -16,6 +16,7 @@ ANALYSIS_NAMES = [
     'noise',
     'noise_cos',
     'drift',
+    'adc_noise',
     'OR',
 ]
 
@@ -35,6 +36,9 @@ def main(name, show=False):
 
     if name in ['all', 'noise_cos']:
         noise.plot_noise_with_signal(output_folder, show=show)
+
+    if name in ['all', 'adc_noise']:
+        noise.plot_noise_24_bit_adc(output_folder, show=show)
 
     if name in ['drift']:
         drift.plot_drift(output_folder, show=show)

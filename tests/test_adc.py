@@ -43,3 +43,25 @@ def test_acquire():
     ad.acquire(1)
 
     ad.close()
+
+
+def test_short_adc_read_raises_adc_error():
+    class EmptyReadSerial(mocks.SerialMock):
+        def read(self, n_bytes):
+            return b""
+
+    ad = adc.ADC(EmptyReadSerial(), adc_used="ADS_1232")
+
+    with pytest.raises(adc.ADCError, match="Expected 4 bytes, got 0 bytes"):
+        ad.acquire(1)
+
+
+def test_short_self_calibration_response_raises_adc_error():
+    class EmptyReadSerial(mocks.SerialMock):
+        def read(self, n_bytes):
+            return b""
+
+    ad = adc.ADC(EmptyReadSerial(), adc_used="ADS_1232")
+
+    with pytest.raises(adc.ADCError, match="Expected 2 bytes, got 0 bytes"):
+        ad.self_calibrate()
