@@ -22,8 +22,8 @@ class ArduinoUno_ADC_ADS1232 {
 		
 		void begin(void);
 
-		long readADC();
-        long readADCwProfiler();
+		ERROR_t readADC(long& value);
+        ERROR_t readADCwProfiler(long& value);
 
         ProfilerTimes getProfiler() const;
 

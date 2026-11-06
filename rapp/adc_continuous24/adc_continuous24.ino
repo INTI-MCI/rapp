@@ -94,6 +94,15 @@ void serial_write_24bit(long data) {
     else Serial.write(buffer, 3);
 }
 
+void serial_write_32bit_error(ERROR_t err){
+    uint8_t buffer[4];
+    buffer[0] = 0x80; // Indicate an error with a specific pattern
+    buffer[1] = 0x00;
+    buffer[2] = 0x00;
+    buffer[3] = 0xFF - (uint8_t)err; // Store the error code in the last byte
+    Serial.write(buffer, 4);
+}
+
 void serial_write_32bit(long data) {
     uint8_t buffer[4];
     buffer[0] = data >> 24 & 0xFF;
@@ -141,6 +150,7 @@ void read_n_samples_from_channel(unsigned long n_samples, bool channel, bool mea
     unsigned long elapsedtime2;
 
     measure_times |= PROFILE;
+    ERROR_t err;
 
     if (measure_times){
       starttime = micros();
@@ -151,13 +161,14 @@ void read_n_samples_from_channel(unsigned long n_samples, bool channel, bool mea
     unsigned long i = 0;
     while (i < n_samples) {
         if (PROFILE) {
-          if (channel) data = adc1.readADCwProfiler();
-          else data = adc0.readADCwProfiler();
+          if (channel) err = adc1.readADCwProfiler(data);
+          else err = adc0.readADCwProfiler(data);
         }
         else {
-          if (channel) data = adc1.readADC();
-          else data = adc0.readADC();
+          if (channel) err = adc1.readADC(data);
+          else err = adc0.readADC(data);
         }
+        if (err != NoERROR) serial_write_32bit_error(err);
         if (DEBUG or measure_times) starttime2 = micros(); // Revisar qué se quiere guardar y/o imprimir
         serial_write_32bit(data);
         if (DEBUG or measure_times) {
@@ -286,8 +297,11 @@ bool parse_int(String& command_args, unsigned long& value) {
 
 void parse_read_and_print_n_samples_dt(String command_args) {
   // This function reads n samples every dt miliseconds and prints them in serial monitor
-  unsigned long n_samples, dt_ms;
+  unsigned long n_samples, dt_ms, time_start, total_time = 0;
   bool err_n_samples, err_dt_ms;
+  ERROR_t err_adc0, err_adc1;
+  long data0, data1;
+  long *data_ch0, *data_ch1;
 
   err_n_samples = parse_int(command_args, n_samples);
   if (err_n_samples) {
@@ -302,17 +316,43 @@ void parse_read_and_print_n_samples_dt(String command_args) {
     Serial.println("ACK");
   }
 
+  data_ch0 = (long*)malloc(n_samples * sizeof(long));
+  data_ch1 = (long*)malloc(n_samples * sizeof(long));
+
   for (int i = 0; i < n_samples; i++){
-    long data0 = adc0.readADC();
-    long data1 = adc1.readADC();
-    Serial.print( (String) i+" : " );
+    time_start = millis();
+    err_adc0 = adc0.readADC(data0);
+    data_ch0[i] = data0;
+    delay(dt_ms);
+    total_time += millis() - time_start;
+  }
+  for (int i = 0; i < n_samples; i++){
+    time_start = millis();
+    err_adc1 = adc1.readADC(data1);
+    data_ch1[i] = data1;
+    delay(dt_ms);
+    total_time += millis() - time_start;
+  }
+
+  Serial.print("Average time per sample: ");
+  Serial.print((float)total_time/n_samples/2.0);
+  Serial.println(" ms");
+
+  for (int i = 0; i < n_samples; i++){
+    data0 = data_ch0[i];
+    data1 = data_ch1[i];
+    Serial.print( (String) i+" : ERROR : " );
+    Serial.print((int)err_adc0);
+    Serial.print(", ");
     // serial_write_32bit(data0);
     serialWriteBinary((uint8_t*)&data0, sizeof(data0));
     Serial.print(" d");
     Serial.print(data0);
     Serial.print(", ");
     Serial.print(bits_to_volts(data0));
-    Serial.print(" V | ");
+    Serial.print(" V | ERROR : ");
+    Serial.print((int)err_adc1);
+    Serial.print(", ");
     // serial_write_32bit(data1);
     serialWriteBinary((uint8_t*)&data1, sizeof(data1));
     Serial.print(" d");
@@ -321,8 +361,9 @@ void parse_read_and_print_n_samples_dt(String command_args) {
     Serial.print(bits_to_volts(data1));
     Serial.print(" V");
     Serial.println();
-    delay(dt_ms);
   }
+  free(data_ch0);
+  free(data_ch1);
 }
 
 float bits_to_volts(long value){
@@ -495,6 +536,14 @@ void process_serial_input() {
             ERROR_t err1 = adc1.calibrate();
             Serial.write((uint8_t*)&err0, sizeof(err0));
             Serial.write((uint8_t*)&err1, sizeof(err1));
+        }
+        else if (command_name == "self_calibrate_monitor") {
+            Serial.println("ACK");
+            ERROR_t err0 = adc0.calibrate();
+            ERROR_t err1 = adc1.calibrate();
+            serialWriteHex((uint8_t*)&err0, sizeof(err0));
+            Serial.print(" ");
+            serialWriteHex((uint8_t*)&err1, sizeof(err1));
         }
         else if (command_name == "reset_adc") {
             Serial.println("ACK");

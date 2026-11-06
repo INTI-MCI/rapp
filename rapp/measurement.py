@@ -8,7 +8,7 @@ import pandas as pd
 
 from rapp import constants as ct
 from rapp.signal import signal
-from rapp.signal.phase import get_index_for_periodization, phase_difference
+from rapp.signal.phase import get_index_for_periodization, has_nan_or_zeros, phase_difference
 
 logger = logging.getLogger(__name__)
 
@@ -234,8 +234,8 @@ class Measurement:
         s1 = np.array(data[COLUMN_CH0]['mean'])
         s2 = np.array(data[COLUMN_CH1]['mean'])
 
-        s1u = np.array(ch0_std) / np.sqrt(int(group_size))
-        s2u = np.array(ch1_std) / np.sqrt(int(group_size))
+        s1u = None if int(group_size) <= 1 else np.array(ch0_std) / np.sqrt(int(group_size))
+        s2u = None if int(group_size) <= 1 else np.array(ch1_std) / np.sqrt(int(group_size))
 
         norm_data = self.norm_data()
         if norm and norm_data is not None:
@@ -298,7 +298,10 @@ def process_temperature_data(filepath: Path, filename, hwp_position, raise_error
     else:
         return None
 
-    temperature = temperature[temperature['HWP-POS'] == hwp_position]
+    # hwp_position may not be exactly the same as in the temperature file
+    idx_mas_cercano = (temperature['HWP-POS'].round(2) - round(hwp_position, 2)).abs().idxmin()
+    hwp_cercano = temperature.loc[idx_mas_cercano, 'HWP-POS']
+    temperature = temperature[temperature['HWP-POS'] == hwp_cercano]
     n_reps = temperature[COLUMN_REP].max()
     mean_temps = np.zeros(n_reps)
     max_temps = np.zeros(n_reps)

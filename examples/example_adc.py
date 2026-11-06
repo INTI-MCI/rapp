@@ -1,6 +1,6 @@
 import logging
 import sys
-from datetime import time
+import time
 
 from rapp.adc import ADC
 from rapp.utils import timing
@@ -10,7 +10,7 @@ ADC_LINUX_DEVICE = '/dev/ttyACM0'
 ADC_BAUDRATE = 57600
 ADC_TIMEOUT = 1  # seconds
 ADC_MULTIPLIER_mV = 0.125
-ADC_USED = "ADS_1115"
+ADC_USED = "ADS_1232"
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -50,7 +50,8 @@ def continuous_run(channel, n_samples, dt_mus):
     adc.close()
 
 
-def single_run(n_samples, ch0, ch1, n_runs=1, delay_between_runs=0.2):
+def single_run(n_samples, ch0, ch1, n_runs=1, delay_between_runs=0.0):
+    EN_HEXA = False
     channels_names_tuple = ('CH0', 'CH1')
     logger.info("Instantiating ADC...")
     adc = ADC.build(resolve_adc_device(), baudrate=ADC_BAUDRATE, timeout=ADC_TIMEOUT, adc_used=ADC_USED,
@@ -60,13 +61,15 @@ def single_run(n_samples, ch0, ch1, n_runs=1, delay_between_runs=0.2):
     adc.self_calibrate()
     logger.info("Acquiring...")
     for i in range(n_runs):
-        data, elapsed_time = acquire(adc, n_samples=n_samples)
+        data, elapsed_time = acquire(adc, n_samples=n_samples, hex=EN_HEXA)
 
         if data is None:
             logger.error("No data acquired")
             adc.close()
             return
         for d in data:
+            if EN_HEXA:
+                d = [f"0x{a_d & 0xFFFFFFFF:08X}" for a_d in d]
             logger.info("{} = {}".format(channels_names_tuple, d))
         time.sleep(delay_between_runs)
 

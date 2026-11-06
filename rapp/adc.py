@@ -60,7 +60,14 @@ SUPPORTED_ADCS = {
 
 MESSAGE_CHANNELS = "Both ch0 and ch1 are False. Please set at least one of them as True."
 MESSAGE_SAMPLES = "You must ask for a positive number of samples... Got {}"
-
+MIN_32BIT_INT = -2147483648
+MAX_ERROR_CODE = MIN_32BIT_INT + 10
+ERROR_CODES = {
+    0: 'NoERROR',
+    1: 'Timeout waiting for HIGH',
+    2: 'Timeout waiting for LOW',
+	5: 'DIVIDED_by_ZERO',
+}
 
 class ADCError(Exception):
     pass
@@ -195,7 +202,7 @@ class ADC:
             "Connection opened in {} seconds with {} queries.".format(elapsed_time, queries)
         )
 
-    def acquire(self, n_samples, flush=True):
+    def acquire(self, n_samples, flush=True, hex=False):
         """Acquires voltage measurements.
 
         Args:
@@ -224,13 +231,13 @@ class ADC:
         none_array = np.full(n_samples, None)
 
         if self._ch0:
-            ch0 = self._read_data(n_samples, name='CH0')
+            ch0 = self._read_data(n_samples, name='CH0', hex=hex)
             if len(ch0) != n_samples:
                 return None
         else:
             ch0 = none_array
         if self._ch1:
-            ch1 = self._read_data(n_samples, name='CH1')
+            ch1 = self._read_data(n_samples, name='CH1', hex=hex)
             if len(ch1) != n_samples:
                 return None
         else:
@@ -302,14 +309,19 @@ class ADC:
         except (ADCError, serial_lib.SerialException, AttributeError) as e:
             raise ADCRecoveryError("Could not recover ADC communication: {}".format(e)) from e
 
-    def _read_data(self, n_samples, name=''):
+    def _read_data(self, n_samples, name='', hex=False):
         data = []
         desc = "Measuring {}:".format(name)
 
         if name == 'CH0' or name == 'CH1':
             for _ in track(range(n_samples), description=desc, disable=not self.progressbar):
                 try:
-                    measurement = self._bits_to_volts(self._read_bits())
+                    measurement = self._read_bits()
+                    if MIN_32BIT_INT < measurement <= MAX_ERROR_CODE:
+                        error_code = measurement - MIN_32BIT_INT
+                        raise ADCError("ADC error: {}".format(ERROR_CODES[error_code]))
+                    if not hex:
+                        measurement = self._bits_to_volts(measurement)
                     if measurement is None:
                         break
                     data.append(measurement)
@@ -324,6 +336,7 @@ class ADC:
     def _read_bits(self):
         if self._in_bytes:
             bytes_data = self._read_bytes(self._n_bytes)
+            str_bytes = bytes_data.hex()
             logger.debug('Data in bytes = %s', bytes_data)
             return int.from_bytes(bytes_data, byteorder=self._byte_order, signed=True)
         else:

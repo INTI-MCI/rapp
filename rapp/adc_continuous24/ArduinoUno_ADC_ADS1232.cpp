@@ -4,23 +4,18 @@ void ArduinoUno_ADC_ADS1232::begin(void) {
     ads.begin(pinDOUT_DRDY, pinSCLK, pinPDWN, pinSPEED, _speed);
 }
 
-long ArduinoUno_ADC_ADS1232::readADC() {
-    long value = 0;
+ERROR_t ArduinoUno_ADC_ADS1232::readADC(long& value) {
     ERROR_t err = ads.read(value);
-    if (err != NoERROR) {
-        value = -16383 - long(err); // Return a negative value to indicate an error, with the error code encoded
-    }
-    return value;
+    return err;
 }
 
-long ArduinoUno_ADC_ADS1232::readADCwProfiler() {
+ERROR_t ArduinoUno_ADC_ADS1232::readADCwProfiler(long& value) {
     uint32_t start = micros();
-    long value = 0;
     ERROR_t err = ads.read(value);
     profiler.elapsed_time_read = micros() - start;
     if (profiler.elapsed_time_read > profiler.max_time_read) profiler.max_time_read = profiler.elapsed_time_read;
     if (profiler.elapsed_time_read < profiler.min_time_read) profiler.min_time_read = profiler.elapsed_time_read;
-    return value;
+    return err;
 }
 
 ProfilerTimes ArduinoUno_ADC_ADS1232::getProfiler() const {
