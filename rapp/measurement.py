@@ -176,13 +176,13 @@ class Measurement:
 
         return self._data[[COLUMN_CH0, COLUMN_CH1]]
 
-    def phase_diff(self, norm=False, **kwargs):
+    def phase_diff(self, norm=False, n_samples=None, **kwargs):
         """Calculates phase difference between the measured signals.
 
         Args:
             kwargs: extra arguments for phase.phase_difference function.
         """
-        xs, s1, s2, s1_sigma, s2_sigma = self.average_data(norm=norm)
+        xs, s1, s2, s1_sigma, s2_sigma = self.average_data(norm=norm, n_samples=n_samples)
 
         xs = np.deg2rad(xs)
 
@@ -211,21 +211,25 @@ class Measurement:
 
         return xs, s1, s2, s1_sigma, s2_sigma, res
 
-    def average_data(self, norm: bool = False):
+    def average_data(self, norm: bool = False, n_samples=None):
         """Performs the average of the number of samples per angle.
             Returns the new signal points and their uncertainties.
+            Args:
+                norm: whether to normalize the signals or not.
+                n_samples: number of samples to average. If None, averages all samples.
         """
         _data = self._data.groupby([COLUMN_ANGLE], as_index=False)
+        _data = _data.head(n_samples) if n_samples is not None else _data
 
         try:  # python 3.4
-            group_size = int(np.array(_data.size())[0])
+            group_size = len(_data) if n_samples > 1 else n_samples  # int(np.array(_data.size())[0])
         except TypeError:
             group_size = int(_data.size()['size'][0])
 
-        data = _data.agg({
+        data = _data.groupby(COLUMN_ANGLE).agg({
             COLUMN_CH0: ['mean', 'std'],
             COLUMN_CH1: ['mean', 'std'],
-        })
+            }).reset_index()
 
         ch0_std = data[COLUMN_CH0]['std']
         ch1_std = data[COLUMN_CH1]['std']

@@ -1,6 +1,7 @@
 import os
 import sys
 import logging
+import numpy as np
 
 from pathlib import Path
 from rich.progress import track
@@ -14,48 +15,55 @@ LOG_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 logger = logging.getLogger(__name__)
 
 COLUMN_NAMES = [
-    "CYCLES", "STEP", "SAMPLES", "REPS",
+    "CYCLES", "STEP", "SAMPLES", "REPS", "HWP",
     "CH0 MEAN", "CH0 STD", "CH1 MEAN", "CH1 STD", "DIFF MEAN", "DIFF STD", "DIFF STD STD"
 ]
 
-FOLDERS = [
-    "2024-03-05-repeatability/hwp0",
-    "2024-03-05-repeatability/hwp9",
-    "2024-03-26-no-hwp",
-    "2024-05-20-full-setup-search-for-optimum-cycles1-step1-samples169",
-    "2024-05-21-full-setup-search-for-optimum-cycles2-step1-samples169",
-    "2024-05-22-full-setup-search-for-optimim-cycles1-step0.5-samples169",
-    "2024-05-23-cuarzo-sucio-full-setup",
-    "2024-05-23-full-setup-search-for-optimim-cycles1-step1-samples1268",
-    "2024-05-24-full-setup-norm-exp1-cycles1-step1-samples169",
-    "2024-05-24-full-setup-norm-exp2-cycles2-step1-samples169",
-    "2024-05-24-full-setup-norm-exp3-cycles1-step0.5-samples169",
-    "2024-05-24-full-setup-norm-exp4-cycles1-step1-samples1218",
-    "2024-05-24-full-setup-norm-exp5-cycles2-step2-samples1218",
-    "2024-05-31-full-setup-norm-OD2-exp1-cycles1-step1-samples169",
-    "2024-05-31-full-setup-norm-OD2-exp2-cycles2-step1-samples169",
-    "2024-05-31-full-setup-norm-OD2-exp3-cycles1-step0.5-samples169",
-    "2024-05-31-full-setup-norm-OD2-exp4-cycles1-step1-samples1218",
-    "2024-05-31-full-setup-norm-OD2-exp5-cycles2-step2-samples1218",
-    "2024-06-04-full-setup-norm-quartz-plate-cycles1-step1-samples169",
-    "2024-06-07-full-setup-norm-1-hwp0-cycles1-step1-samples169",
-    "2024-06-07-full-setup-norm-2-hwp0-cycles4-step1-samples169",
-    "2024-06-07-full-setup-norm-3-hwp0-cycles1-step0.25-samples169",
-    "2024-06-10-full-setup-norm-hwp9.8-cycles1-step0.25-samples169",
-    "2024-06-12-full-quartz-1-cycles1-step1-samples169",
-    "2024-06-12-full-quartz-2-cycles3-step1-samples169",
-    "2024-06-12-full-quartz-3-cycles1-step1-samples1218",
-    "2024-06-13-full-quartz-1-cycles1-step1-samples169",
-    "2024-06-13-full-quartz-2-cycles1-step1-samples1218",
-    "2024-06-14-quartz-velocities-1-cycles1-step1-samples169",
-    "2024-06-15-quartz-velocities-2-cycles1-step1-samples169",
-    "2024-06-15-quartz-velocities-3-cycles1-step1-samples169",
-    "2024-06-15-quartz-velocities-4-cycles1-step1-samples169",
-    "2024-06-16-quartz-velocities-5-cycles1-step1-samples169",
-    "2024-06-25-quartz-vel-1-acc-0.5-deacc-0.5-1-cycles1-step1-samples169",
-    "2024-07-05-repeatability-vel3-cycles2-step0.1-samples169"
-]
+#  FOLDERS = [
+#      "2024-03-05-repeatability/hwp0",
+#     "2024-03-05-repeatability/hwp9",
+#     "2024-03-26-no-hwp",
+#     "2024-05-20-full-setup-search-for-optimum-cycles1-step1-samples169",
+#     "2024-05-21-full-setup-search-for-optimum-cycles2-step1-samples169",
+#     "2024-05-22-full-setup-search-for-optimim-cycles1-step0.5-samples169",
+#     "2024-05-23-cuarzo-sucio-full-setup",
+#     "2024-05-23-full-setup-search-for-optimim-cycles1-step1-samples1268",
+#     "2024-05-24-full-setup-norm-exp1-cycles1-step1-samples169",
+#     "2024-05-24-full-setup-norm-exp2-cycles2-step1-samples169",
+#     "2024-05-24-full-setup-norm-exp3-cycles1-step0.5-samples169",
+#     "2024-05-24-full-setup-norm-exp4-cycles1-step1-samples1218",
+#     "2024-05-24-full-setup-norm-exp5-cycles2-step2-samples1218",
+#     "2024-05-31-full-setup-norm-OD2-exp1-cycles1-step1-samples169",
+#     "2024-05-31-full-setup-norm-OD2-exp2-cycles2-step1-samples169",
+#     "2024-05-31-full-setup-norm-OD2-exp3-cycles1-step0.5-samples169",
+#     "2024-05-31-full-setup-norm-OD2-exp4-cycles1-step1-samples1218",
+#     "2024-05-31-full-setup-norm-OD2-exp5-cycles2-step2-samples1218",
+#     "2024-06-04-full-setup-norm-quartz-plate-cycles1-step1-samples169",
+#     "2024-06-07-full-setup-norm-1-hwp0-cycles1-step1-samples169",
+#     "2024-06-07-full-setup-norm-2-hwp0-cycles4-step1-samples169",
+#     "2024-06-07-full-setup-norm-3-hwp0-cycles1-step0.25-samples169",
+#     "2024-06-10-full-setup-norm-hwp9.8-cycles1-step0.25-samples169",
+#     "2024-06-12-full-quartz-1-cycles1-step1-samples169",
+#     "2024-06-12-full-quartz-2-cycles3-step1-samples169",
+#     "2024-06-12-full-quartz-3-cycles1-step1-samples1218",
+#     "2024-06-13-full-quartz-1-cycles1-step1-samples169",
+#     "2024-06-13-full-quartz-2-cycles1-step1-samples1218",
+#     "2024-06-14-quartz-velocities-1-cycles1-step1-samples169",
+#     "2024-06-15-quartz-velocities-2-cycles1-step1-samples169",
+#     "2024-06-15-quartz-velocities-3-cycles1-step1-samples169",
+#     "2024-06-15-quartz-velocities-4-cycles1-step1-samples169",
+#     "2024-06-16-quartz-velocities-5-cycles1-step1-samples169",
+#     "2024-06-25-quartz-vel-1-acc-0.5-deacc-0.5-1-cycles1-step1-samples169",
+#     "2024-07-05-repeatability-vel3-cycles2-step0.1-samples169"
+# ] 
 
+FOLDERS = [
+    r"2026-10-15-riao2026-hwp-cs1237-2-1-cycles1-step1-samples128",
+    r"2026-10-16-riao2026-hwp-cs1237-2-2-cycles1-step1-samples128",
+    r"2026-11-03-riao2026-hwp-ads1115-1-cycles1-step1-samples85",
+    r"2026-11-03-riao2026-hwp-ads1115-2-cycles1-step1-samples85",
+    r"2026-11-05-riao2026-hwp-ads1232-1-cycles1-step1-samples1",
+    ]
 
 def setup_logger():
     logging.basicConfig(level=logging.WARNING, format=LOG_FORMAT)
@@ -69,21 +77,22 @@ def setup_logger():
 def main(folder: Path = None):
     table_file = DataFile(column_names=COLUMN_NAMES, delimiter='\t')
 
-    table_file.open("table-repeatability.csv")
+    table_file.open("table-riao.csv")
 
     folders = []
 
     if folder is None:  # process all.
-        all_folders = [Path("data").joinpath(f) for f in FOLDERS]
+        all_folders = [Path("C:\\Users\\Usuario\\rapp\\workdir\\output-data").joinpath(f) for f in FOLDERS]
         folders.extend(all_folders)
     else:
         folders.append(Path(folder))
 
     for folder in track(folders, description="Generating table rows..."):
         row_nls = phase_diff.phase_difference_from_folder(folder, method='NLS')
-        row_dft = phase_diff.phase_difference_from_folder(folder, method='DFT')[4:]
+        row_dft = phase_diff.phase_difference_from_folder(folder, method='DFT')
         row = row_nls + row_dft
-        table_file.add_row(row)
+        for i in row:
+            table_file.add_row(i)
 
     table_file.close()
 

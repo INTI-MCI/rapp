@@ -1,6 +1,7 @@
 import glob
 import logging
 import os
+import re
 from pathlib import Path
 
 import matplotlib as mpl
@@ -41,6 +42,12 @@ def phase_difference_from_folder(
     setup_log_file(directory_log / "phase_diff.log")
     logger.info("Calculating phase difference for {}...".format(folder))
 
+    measurement_params = re.search(r'(?:cycles(\d+)-)?step(\d+)-samples(\d+)', str(directory_log))
+    cycles, step, samples = measurement_params.groups()
+    cycles = float(cycles)
+    step = float(step)
+    samples = int(samples)
+
     files = sorted([folder / x for x in folder.glob('*.csv')])
     if not files:
         raise ValueError("Folder does not contain measurements!")
@@ -57,7 +64,9 @@ def phase_difference_from_folder(
             measurement = Measurement.from_file(filepath, fill_none=fill_none)
         else:
             measurement.append(Measurement.from_file(filepath, fill_none=fill_none), degrees=True)
-
+        measurement._cycles = cycles
+        measurement._step = step
+        measurement._samples = samples
         new_measurement = (
                 appended_measurements is None or (rep + 1) % appended_measurements == 0
         )
@@ -65,9 +74,9 @@ def phase_difference_from_folder(
         # logger.info("Parameters: {}.".format(measurement.parameters_string()))
         if new_measurement:
             logger.debug("Processing {}...".format(filepath))
-            res = phase_difference(measurement, method, norm=norm, show=False, **kwargs)
+            res = phase_difference(measurement, method, norm=norm, show=False, n_samples=samples, **kwargs)
             results[hwp_position].append(res)
-
+    row = []
     for j, result in enumerate(results):
         logger.info("Showing results for hwp position {}...".format(hwp_pos[j]))
         phase_diffs = []
@@ -127,13 +136,14 @@ def phase_difference_from_folder(
         logger.info("Mean phase difference: {}".format(mean_phase_diff))
         logger.info("STD phase difference: {:.5f} ± {:.5f} (k=1)".format(std_phase_diff, std_std))
 
-        reps = len(files)
+        reps = max_rep  # len(files)
 
-        row = [
+        row_hwp = [
             measurement._cycles,
             measurement._step,
             measurement._samples,
             reps,
+            round(float(hwp_pos[j]), 1),
             mean_phi1,
             std_phi1,
             mean_phi2,
@@ -142,6 +152,7 @@ def phase_difference_from_folder(
             std_phase_diff,
             std_std,
         ]
+        row.append(row_hwp)
 
         temperature0 = process_temperature_data(folder, filename="temperature", hwp_position=hwp_pos[j])
         temperature1 = process_temperature_data(folder, filename="qp-temperature", hwp_position=hwp_pos[j])
@@ -282,19 +293,21 @@ def phase_difference_from_file(
 
     measurement = Measurement.from_file(filepath, fill_none=fill_none)
     logger.info("Parameters: {}.".format(measurement.parameters_string()))
+    samples = re.search(r'(?:samples(\d+)-)?', str(filepath))
+    n_samples = int(samples.groups()) if samples else None
 
     filename = None
     if plot or show:
         filename = "{}.{}".format(filepath.stem, FORMAT)
 
-    phase_difference(measurement, method, norm=norm, filename=filename, show=show, **kwargs)
+    phase_difference(measurement, method, norm=norm, filename=filename, show=show, n_samples=n_samples, **kwargs)
 
 
 def phase_difference(
     measurement: Measurement, method, filename=None, norm=False, show=False, normplot=False,
-    **kwargs
+    n_samples=None, **kwargs
 ):
-    xs, s1, s2, s1err, s2err, res = measurement.phase_diff(method=method, norm=norm, **kwargs)
+    xs, s1, s2, s1err, s2err, res = measurement.phase_diff(method=method, norm=norm, n_samples=n_samples, **kwargs)
 
     logger.debug("Minimum of CH0 signal: {}".format(min(s1)))
     logger.debug("Minimum of CH1 signal: {}".format(min(s2)))
