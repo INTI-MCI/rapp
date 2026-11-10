@@ -27,7 +27,7 @@ SUPPORTED_ADCS = {
         'N_BYTES': 4,
         'BYTE_ORDER': 'big',
         'SAMPLE_RATE': 1280,
-        'NOISE_RMS': 30e-9,  # Provisional: datasheet, gain 1, 10 SPS
+        'NOISE_RMS': 2e-6,  # Provisional: datasheet, gain 1, 10 SPS
         'SIMULATION': {
             'CYCLES': 1,
             'STEP': 1,
@@ -52,7 +52,7 @@ SUPPORTED_ADCS = {
             'CYCLES': 1,
             'STEP': 1,
             'REPS': 12,
-            'SAMPLES': 169,
+            'SAMPLES': 85,
         },
         'GAINS': {
             GAIN_TWOTHIRDS: (6.144, 0.1875),

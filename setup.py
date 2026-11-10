@@ -1,3 +1,4 @@
+
 import setuptools
 from rapp.version import __version__
 

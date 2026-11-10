@@ -108,10 +108,10 @@ def run(
 
 def run_comparison(
     folder,
-    angle_range=(0, 0.6),
-    n_angles=7,
-    method="DFT",
-    max_v=adc.MAXV,
+    angle_range=(0, 30),
+    n_angles=4,
+    method="NLS",
+    #max_v=adc.MAXV,
     dynamic_range=0.7,
     k=0,
     noise=True,
@@ -122,7 +122,7 @@ def run_comparison(
     logger.info("ADC COMPARISON: PHASE DIFFERENCE VS ANGLE")
 
     angles = np.linspace(*angle_range, num=n_angles)
-    amplitude = (max_v * dynamic_range) / 2
+    #amplitude = (max_v * dynamic_range) / 2
 
     errors = {}
 
@@ -130,6 +130,10 @@ def run_comparison(
 
         bits = config["BITS"]
         sample_rate = config["SAMPLE_RATE"]
+        max_v = config["GAINS"][1][0]
+
+        amplitude = (max_v * dynamic_range) / 2
+
         sim_config = config["SIMULATION"]
 
         cycles = sim_config["CYCLES"]
@@ -195,10 +199,12 @@ def run_comparison(
         plot.add_data(
             angles,
             errors[adc_name],
+            marker="o",
+            linestyle="-",
             label=f"{adc_name} ({samples} samples)",
         )
 
-    plot.legend(loc="upper right", fontsize=13)
+    plot.legend(loc="best", fontsize=13)
     plot.the_ax.axhline(y=0, lw=1, ls="dashed")
 
     #yfmt = simulation.get_axis_formatter(power_limits=(-3, -3))
