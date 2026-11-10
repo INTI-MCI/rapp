@@ -46,6 +46,8 @@ def add_to_subparsers(subparsers):
     p.add_argument("--k", type=float, metavar="", help=HELP_DISTORTION)
     p.add_argument("--show", action="store_true", help=ct.HELP_SHOW)
 
+    p.add_argument("--comp", action="store_true", help="Compare supported ADCs.")
+
 
 def run(name=None, config_file=None, work_dir=ct.WORK_DIR, **kwargs):
     output_folder = Path(work_dir).joinpath(ct.OUTPUT_FOLDER_PLOTS, "simulations")
@@ -68,6 +70,9 @@ def run(name=None, config_file=None, work_dir=ct.WORK_DIR, **kwargs):
 
     # Overwrite config with CLI params.
     for k, v in kwargs.items():
+        if k == "comp":
+            continue
+
         for sim, sim_config in config.items():
             sim_config[k] = v
 
@@ -76,7 +81,10 @@ def run(name=None, config_file=None, work_dir=ct.WORK_DIR, **kwargs):
 
     # Execute simulations.
     for sim, config in sims.items():
-        sim.run(output_folder, **config)
+        if kwargs.get("comp", False) and hasattr(sim, "run_comparison"):
+            sim.run_comparison(output_folder, **config)
+        else:
+            sim.run(output_folder, **config)
 
 
 if __name__ == "__main__":

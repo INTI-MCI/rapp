@@ -26,6 +26,14 @@ SUPPORTED_ADCS = {
         'BITS': 24,
         'N_BYTES': 4,
         'BYTE_ORDER': 'big',
+        'SAMPLE_RATE': 1280,
+        'NOISE_RMS': 30e-9,  # Provisional: datasheet, gain 1, 10 SPS
+        'SIMULATION': {
+            'CYCLES': 1,
+            'STEP': 1,
+            'REPS': 12,
+            'SAMPLES': 128,
+        },
         'GAINS': {
             1: (1.24, 1240/2**23),
             2: (0.62, 620/2**23),
@@ -38,6 +46,14 @@ SUPPORTED_ADCS = {
         'BITS': 16,
         'N_BYTES': 2,
         'BYTE_ORDER': 'big',  # little or big
+        'SAMPLE_RATE': 840,
+        'NOISE_RMS': 125e-6,  # ADS1115: gain 1, 860 SPS
+        'SIMULATION': {
+            'CYCLES': 1,
+            'STEP': 1,
+            'REPS': 12,
+            'SAMPLES': 169,
+        },
         'GAINS': {
             GAIN_TWOTHIRDS: (6.144, 0.1875),
             GAIN_ONE: (4.096, 0.125),
@@ -50,6 +66,14 @@ SUPPORTED_ADCS = {
         'BITS': 24,
         'N_BYTES': 4,
         'BYTE_ORDER': 'big',
+        'SAMPLE_RATE': 10,
+        'NOISE_RMS': 450e-9,  # ADS1232: gain 1, 10 SPS
+        'SIMULATION': {
+            'CYCLES': 1,
+            'STEP': 1,
+            'REPS': 12,
+            'SAMPLES': 2,
+        },
         'GAINS': {
             1: (2.49, 2490/2**23),
             2: (1.25, 1250/2**23),
@@ -95,8 +119,8 @@ class ADC:
     ADC_WRITE_TIMEOUT = 2
     TIMEOUT_OPEN = 7
 
-    SAMPLE_RATE = 840
-    SAMPLE_RATE_24 = 1280
+    #SAMPLE_RATE = 840
+    #SAMPLE_RATE_24 = 1280
 
     def __init__(self, serial, adc_used, gain=1, ch0=True, ch1=True, in_bytes=True, progressbar=True,
                  timeout_open=TIMEOUT_OPEN):
@@ -108,9 +132,11 @@ class ADC:
         self.timeout_open = timeout_open
         self.temperature_requested = False
         self.bits = SUPPORTED_ADCS[adc_used]["BITS"]
+        self.sample_rate = SUPPORTED_ADCS[adc_used]["SAMPLE_RATE"]
         self.max_V, self._multiplier_mV = SUPPORTED_ADCS[adc_used]["GAINS"][gain]
         self._n_bytes = SUPPORTED_ADCS[adc_used]["N_BYTES"]
         self._byte_order = SUPPORTED_ADCS[adc_used]["BYTE_ORDER"]
+        self.noise_rms = SUPPORTED_ADCS[adc_used]["NOISE_RMS"]
 
         if not (ch0 or ch1):
             raise ADCError(MESSAGE_CHANNELS)
@@ -283,7 +309,7 @@ class ADC:
 
     def measurement_time(self, samples):
         """Returns the time (in seconds) a measurement will take for given number of samples."""
-        return samples * self.active_channels() / self.SAMPLE_RATE_24
+        return samples * self.active_channels() / self.sample_rate
 
     def close(self):
         self._serial.close()

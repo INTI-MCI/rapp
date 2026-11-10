@@ -51,8 +51,8 @@ class SimulationResult:
         self._us = np.array([r.u for r in results])
 
     def rmse(self):
-        rmse = np.sqrt(np.mean(np.square(abs(self._expected) - abs(self._values))))
-        return np.rad2deg(rmse)
+        errors = self._values - self._expected
+        return np.sqrt(np.nanmean(errors ** 2))
 
     def mean_u(self, degrees=False):
         return round_to_n(np.rad2deg(np.mean(self._us)), 2)

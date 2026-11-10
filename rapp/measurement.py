@@ -107,7 +107,7 @@ class Measurement:
     @classmethod
     def simulate(
         cls, angle, cycles=1, step=1,
-        a0_noise=A0_NOISE, a1_noise=A1_NOISE, a0_k=0, a1_k=0, **kwargs
+        a0_noise=A0_NOISE, a1_noise=A1_NOISE, a0_k=0, a1_k=0, adc_noise=1e-3,**kwargs
     ):
         """Instantiates a Measurement with simulated data.
 
@@ -138,6 +138,10 @@ class Measurement:
 
         _, s2 = signal.harmonic(
             phi=phi, cycles=cycles, fc=fc, noise=a1_noise, k=a1_k, all_positive=True, **kwargs)
+
+        # ADC noise
+        s1 += np.random.normal(0, adc_noise, size=len(s1))
+        s2 += np.random.normal(0, adc_noise, size=len(s2))
 
         # We divide xs by 2 because one cycle of the analyzer contains two cycles of the signal.
         xs = np.rad2deg(xs) / 2
