@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 COLUMN_NAMES = [
     "CYCLES", "STEP", "SAMPLES", "REPS", "HWP",
-    "CH0 MEAN", "CH0 STD", "CH1 MEAN", "CH1 STD", "DIFF MEAN", "DIFF STD", "DIFF STD STD"
+    "CH0 MEAN", "CH0 STD", "CH1 MEAN", "CH1 STD", "DIFF MEAN", "DIFF STD", "DIFF STD STD", "MEAN U_METHOD"
 ]
 
 #  FOLDERS = [
@@ -63,6 +63,7 @@ FOLDERS = [
     r"2026-11-03-riao2026-hwp-ads1115-1-cycles1-step1-samples85",
     r"2026-11-03-riao2026-hwp-ads1115-2-cycles1-step1-samples85",
     r"2026-11-05-riao2026-hwp-ads1232-1-cycles1-step1-samples1",
+    r"2026-11-06-riao2026-hwp-ads1232-2-1-cycles1-step1-samples1"
     ]
 
 def setup_logger():
@@ -82,13 +83,13 @@ def main(folder: Path = None):
     folders = []
 
     if folder is None:  # process all.
-        all_folders = [Path("C:\\Users\\Usuario\\rapp\\workdir\\output-data").joinpath(f) for f in FOLDERS]
+        all_folders = [Path("workdir").joinpath(f) for f in FOLDERS]
         folders.extend(all_folders)
     else:
         folders.append(Path(folder))
 
     for folder in track(folders, description="Generating table rows..."):
-        row_nls = phase_diff.phase_difference_from_folder(folder, method='NLS')
+        row_nls = phase_diff.phase_difference_from_folder(folder, method='NLS', n_harmonics=3, lower_clipping_limit_percentage=0.05)
         row_dft = phase_diff.phase_difference_from_folder(folder, method='DFT')
         row = row_nls + row_dft
         for i in row:

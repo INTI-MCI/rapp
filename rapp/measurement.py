@@ -94,11 +94,14 @@ class Measurement:
             filepath = Path(filepath)
         temperature_file = filepath.parent / "temperature.csv"
         if temperature_file.exists():
-            temperature = pd.read_csv(temperature_file, sep=sep, skip_blank_lines=True,
-                                      comment='#', encoding=ct.ENCONDIG)
-            if 'rep' in filepath.name:
-                rep = int(re.findall(REGEX_NUMBER_AFTER_WORD.format(word="rep"), filepath.name)[0])
-                temperature = temperature[temperature[COLUMN_REP] == rep]
+            try:
+                temperature = pd.read_csv(temperature_file, sep=sep, skip_blank_lines=True,
+                                        comment='#', encoding=ct.ENCONDIG)
+                if 'rep' in filepath.name:
+                    rep = int(re.findall(REGEX_NUMBER_AFTER_WORD.format(word="rep"), filepath.name)[0])
+                    temperature = temperature[temperature[COLUMN_REP] == rep]
+            except:
+                temperature = None
         else:
             temperature = None
 
@@ -295,8 +298,11 @@ def process_temperature_data(filepath: Path, filename, hwp_position, raise_error
         filepath = filepath / "{}.csv".format(filename)
 
     if filepath.exists():
-        temperature = pd.read_csv(filepath, sep=DELIMITER, skip_blank_lines=True,
-                                  comment='#', encoding=ct.ENCONDIG)
+        try:
+            temperature = pd.read_csv(filepath, sep=DELIMITER, skip_blank_lines=True,
+                                    comment='#', encoding=ct.ENCONDIG)
+        except:
+            return None
     elif raise_error:
         ValueError("Temperature file does not exist.")
     else:

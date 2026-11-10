@@ -50,7 +50,7 @@ def phase_difference_from_folder(
     step = float(step)
     samples = int(samples)
 
-    files = sorted([folder / x for x in folder.glob('*.csv')])
+    files = sorted(folder.glob('*.csv'))
     if not files:
         raise ValueError("Folder does not contain measurements!")
 
@@ -154,6 +154,7 @@ def phase_difference_from_folder(
             mean_phase_diff,
             std_phase_diff,
             std_std,
+            np.mean(uncertainties),
         ]
         row.append(row_hwp)
 
