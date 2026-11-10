@@ -23,10 +23,11 @@ FORMAT = "png"
 LOG_FILE_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 
 
-def setup_log_file(filepath):
+def setup_log_file(filepath, level=logging.INFO):
     formatter = logging.Formatter(LOG_FILE_FORMAT)
     fh = logging.FileHandler(filepath, mode='w')
     fh.setFormatter(formatter)
+    fh.setLevel(level)
     logger.addHandler(fh)
 
 
@@ -39,8 +40,9 @@ def phase_difference_from_folder(
     correlation=False, plot=False, show=False, **kwargs
 ):
     directory_log = folder.parent if folder.is_file() else folder
-    setup_log_file(directory_log / "phase_diff.log")
-    logger.info("Calculating phase difference for {}...".format(folder))
+    setup_log_file(directory_log / "phase_diff_info.log")
+    setup_log_file(directory_log / "phase_diff_debug.log", level=logging.DEBUG)
+    logger.info("Calculating phase difference for {} with method {}...".format(folder, method))
 
     measurement_params = re.search(r'(?:cycles(\d+)-)?step(\d+)-samples(\d+)', str(directory_log))
     cycles, step, samples = measurement_params.groups()
@@ -133,8 +135,9 @@ def phase_difference_from_folder(
         else:
             std_std = 0.0
 
-        logger.info("Mean phase difference: {}".format(mean_phase_diff))
+        logger.info("Mean phase difference accross repetitions: {}".format(mean_phase_diff))
         logger.info("STD phase difference: {:.5f} ± {:.5f} (k=1)".format(std_phase_diff, std_std))
+        logger.info("Mean uncertainty of phase difference: {:.5f}".format(np.mean(uncertainties)))
 
         reps = max_rep  # len(files)
 

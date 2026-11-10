@@ -169,6 +169,8 @@ def sine_fit(
                             n_harmonics_ch1=n_harmonics_ch1, cut=cut_signals_index)
         model_cut = partial(model, cut=cut_signals_index)
 
+        if y_sigma is None:
+            abs_sigma = False
         popt, pcov, infodict, mesg, ier = curve_fit(
             model_cut, xs, ys,
             p0=p0,
