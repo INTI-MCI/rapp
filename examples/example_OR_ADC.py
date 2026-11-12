@@ -13,12 +13,14 @@ data = pd.read_csv("C:\\Users\\Usuario\\rapp\\data\\table-riao-final.csv", sep="
 # data['OR'] = optical_rotation
 # data.to_csv("C:\\Users\\Usuario\\rapp\\data\\table-riao-final.csv", sep='\t', index=False)
 
+plt.rcParams.update({'font.size': 16})
+
 plt.figure()
-plt.scatter(data['HWP'][1:7], -data['OR'][1:7], marker='.', label='CS1237')
-plt.scatter(data['HWP'][29:35], -data['OR'][29:35], marker='.', label='ADS1115')
-plt.scatter(data['HWP'][57:63], -data['OR'][57:63], marker='.', label='ADS1232')
+plt.scatter(data['HWP'][1:7], -data['OR'][1:7], marker='o', label='CS1237')
+plt.scatter(data['HWP'][29:35], -data['OR'][29:35], marker='o', label='ADS1115')
+plt.scatter(data['HWP'][57:63], -data['OR'][57:63], marker='o', label='ADS1232')
 plt.plot(data['HWP'][1:7], data['HWP'][1:7], linestyle='-.', color='gray')
-plt.xlabel('HWP OR')
+plt.xlabel('Half Wave Plate Optical Rotation')
 plt.ylabel('Measured Optical Rotation')
 # plt.title('Optical Rotation')
 plt.legend()
@@ -30,6 +32,6 @@ plt.plot(data['HWP'][43:49], -data['OR'][43:49], marker='o', linestyle='-', labe
 plt.plot(data['HWP'][71:77], -data['OR'][71:77], marker='o', linestyle='-', label='ADS1232')
 plt.xlabel('HWP OR')
 plt.ylabel('Measured Optical Rotation')
-plt.title('Optical Rotation')
+# plt.title('Optical Rotation')
 plt.legend()
-# plt.show()
+plt.show()
