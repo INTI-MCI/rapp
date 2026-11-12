@@ -81,7 +81,9 @@ def run(name=None, config_file=None, work_dir=ct.WORK_DIR, **kwargs):
 
     # Execute simulations.
     for sim, config in sims.items():
-        if kwargs.get("comp", False) and hasattr(sim, "run_comparison"):
+        if (kwargs.get("comp", False) or config.get("comp", False)) and hasattr(sim, "run_comparison"):
+            if "comp" in config:
+                del config["comp"]
             sim.run_comparison(output_folder, **config)
         else:
             sim.run(output_folder, **config)

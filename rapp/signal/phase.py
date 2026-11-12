@@ -70,6 +70,9 @@ class PhaseDifferenceResult:
         return self
 
 
+def wrap_angle_rads(angle):
+    return (angle + np.pi) % (2 * np.pi) - np.pi
+
 def cosine_similarity(s1, s2, x=None, period=None):
     if x is not None:
         index = get_index_for_periodization(x, period)
@@ -169,13 +172,22 @@ def sine_fit(
                             n_harmonics_ch1=n_harmonics_ch1, cut=cut_signals_index)
         model_cut = partial(model, cut=cut_signals_index)
 
-        popt, pcov, infodict, mesg, ier = curve_fit(
-            model_cut, xs, ys,
-            p0=p0,
-            sigma=y_sigma,
-            absolute_sigma=abs_sigma,
-            bounds=bounds, full_output=True
-        )
+        phase_diff_indices = np.arange((2 * n_harmonics_ch0 + n_harmonics_ch1), 2 * (n_harmonics_ch0 + n_harmonics_ch1))
+        n_try = 0
+        while True:
+            popt, pcov, infodict, mesg, ier = curve_fit(
+                model_cut, xs, ys,
+                p0=p0,
+                sigma=y_sigma,
+                absolute_sigma=abs_sigma,
+                bounds=bounds, full_output=True
+            )
+            if np.sqrt(np.mean(infodict['fvec'] ** 2)) < 100:
+                break
+            p0[phase_diff_indices] = np.random.rand(n_harmonics_ch1) * 2 * np.pi
+            n_try += 1
+            if n_try > 10:
+                break
 
         us = np.sqrt(np.diag(pcov))
         fity = model(fitx, *popt)
@@ -290,7 +302,7 @@ def phase_difference(
 
         max_amplitude1 = np.max(s1)
         max_amplitude2 = np.max(s2)
-        lower_bounds = [0, phase_lower_bound]
+        lower_bounds = [max(max_amplitude1, max_amplitude2) / 8, phase_lower_bound]
         upper_bounds = [max(max_amplitude1, max_amplitude2), phase_upper_bound]
 
         if n_harmonics_ch0 + n_harmonics_ch1 == 0:
@@ -339,9 +351,9 @@ def phase_difference(
         phi2 = phi1 + phase_diff
         phi2_u = np.sqrt(phase_diff_u ** 2 + phi1_u ** 2)
         if abs(phi2) > np.pi and fix_range:
-            phi2 = (phi2 % np.pi) * -1
+            phi2 = wrap_angle_rads(phi2)
         if abs(phase_diff) > np.pi and fix_range:
-            phase_diff = (phase_diff % np.pi) * -1
+            phase_diff = wrap_angle_rads(phase_diff)
 
         logger.debug("φ2 = ({} ± {})°".format(np.rad2deg(phi2), np.rad2deg(phi2_u)))
 

@@ -3,8 +3,8 @@ import logging
 import numpy as np
 from matplotlib.ticker import ScalarFormatter
 
-from rapp.utils import round_to_n
 from rapp.measurement import Measurement
+from rapp.utils import round_to_n
 
 logger = logging.getLogger(__name__)
 
@@ -13,22 +13,22 @@ np.random.seed(0)
 FORMATS = ["png", "svg"]
 
 METHODS = {
-    "NLS": dict(
-        style="s",
-        ms=4,
-        ls="solid",
-        lw=1,
-        mew=1,
-        color="k",
-    ),
-    "DFT": dict(
-        style="o",
-        ls="dashed",
-        lw=1.5,
-        mfc="None",
-        mew=1,
-        color="k",
-    ),
+    "NLS": {
+        "style": "s",
+        "ms": 4,
+        "ls": "solid",
+        "lw": 1,
+        "mew": 1,
+        "color": "k",
+    },
+    "DFT": {
+        "style": "o",
+        "ls": "dashed",
+        "lw": 1.5,
+        "mfc": "None",
+        "mew": 1,
+        "color": "k",
+    },
 }
 
 
@@ -51,7 +51,10 @@ class SimulationResult:
         self._us = np.array([r.u for r in results])
 
     def rmse(self):
+        # The difference between expected and measured angles where the maximum detectable polarization angle difference is 90°
         errors = self._values - self._expected
+        # Unwrap
+        errors = (errors + 90) % 180 - 90
         return np.sqrt(np.nanmean(errors ** 2))
 
     def mean_u(self, degrees=False):
@@ -67,7 +70,7 @@ def n_simulations(N=1, angle=None, method="NLS", allow_nan=False, **kwargs):
             If a list is provided, must be of length N.
         method: method for phase difference calculation.
 
-        *kwargs: arguments for Measurement.simulate method.
+        **kwargs: arguments for Measurement.simulate method.
 
     Returns:
         SimulationResult: object with N phase difference results.
