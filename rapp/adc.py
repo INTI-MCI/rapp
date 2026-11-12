@@ -72,7 +72,7 @@ SUPPORTED_ADCS = {
             'CYCLES': 1,
             'STEP': 1,
             'REPS': 12,
-            'SAMPLES': 2,
+            'SAMPLES': 1,
         },
         'GAINS': {
             1: (2.49, 2490/2**23),

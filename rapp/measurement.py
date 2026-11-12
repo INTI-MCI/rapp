@@ -238,8 +238,8 @@ class Measurement:
         s1 = np.array(data[COLUMN_CH0]['mean'])
         s2 = np.array(data[COLUMN_CH1]['mean'])
 
-        s1u = np.array(ch0_std) / np.sqrt(int(group_size))
-        s2u = np.array(ch1_std) / np.sqrt(int(group_size))
+        s1u = None if int(group_size) <= 1 else np.array(ch0_std) / np.sqrt(int(group_size))
+        s2u = None if int(group_size) <= 1 else np.array(ch1_std) / np.sqrt(int(group_size))
 
         norm_data = self.norm_data()
         if norm and norm_data is not None:
