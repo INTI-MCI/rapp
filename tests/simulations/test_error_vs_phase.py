@@ -2,12 +2,11 @@ import numpy as np
 
 from rapp.simulations import error_vs_phase
 
-
 np.random.seed(0)
 
 
 def test_run(tmp_path):
-    angles, errors = error_vs_phase.run(folder=tmp_path, samples=10, save=False)
+    angles, errors = error_vs_phase.run(folder=tmp_path, n_bits=16, samples=10, save=False)
 
     for err in errors.values():
         for e in err:
@@ -15,3 +14,9 @@ def test_run(tmp_path):
 
     std = np.std(list(errors.values()))
     assert std < 5e-2
+
+
+if __name__ == "__main__":
+    from pathlib import PosixPath
+    tmp_path = PosixPath('/tmp/pytest-of-pablo/pytest-0/test_run3')
+    test_run(None)

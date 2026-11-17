@@ -1,14 +1,12 @@
 import logging
 
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 
-from rapp import adc
-from rapp import measurement
+from rapp import adc, measurement
 from rapp import constants as ct
 from rapp.analysis.plot import Plot
 from rapp.simulations import simulation
-
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +39,8 @@ def run(
     amplitude = (max_v * dynamic_range) / 2
 
     errors = {}
+    if isinstance(n_bits, int):
+        n_bits = (n_bits,)
     for bits in n_bits:
         logger.info("Method: {}, bits={}, reps={}".format(method, bits, reps))
 
