@@ -58,16 +58,18 @@ COLUMN_NAMES = [
 # ] 
 
 FOLDERS = [
+    r"2026-11-05-riao2026-hwp-ads1232-1-cycles1-step1-samples1",
+    r"2026-11-06-riao2026-hwp-ads1232-2-1-cycles1-step1-samples1",
     r"2026-10-15-riao2026-hwp-cs1237-2-1-cycles1-step1-samples128",
     r"2026-10-16-riao2026-hwp-cs1237-2-2-cycles1-step1-samples128",
     r"2026-11-03-riao2026-hwp-ads1115-1-cycles1-step1-samples85",
     r"2026-11-03-riao2026-hwp-ads1115-2-cycles1-step1-samples85",
-    r"2026-11-05-riao2026-hwp-ads1232-1-cycles1-step1-samples1",
-    r"2026-11-06-riao2026-hwp-ads1232-2-1-cycles1-step1-samples1"
     ]
 
 def setup_logger():
-    logging.basicConfig(level=logging.WARNING, format=LOG_FORMAT)
+    handlers = [logging.StreamHandler()]
+    handlers[0].setLevel(logging.WARNING)
+    logging.basicConfig(level=logging.DEBUG, format=LOG_FORMAT, handlers=handlers)
 
     # Hide logging from external libraries
     external_libs = ['matplotlib', 'PIL']
@@ -76,6 +78,7 @@ def setup_logger():
 
 
 def main(folder: Path = None):
+    setup_logger()
     table_file = DataFile(column_names=COLUMN_NAMES, delimiter='\t')
 
     table_file.open("table-riao.csv")

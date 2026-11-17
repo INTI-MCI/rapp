@@ -23,6 +23,12 @@ FORMAT = "png"
 LOG_FILE_FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 
 
+def reset_log_files():
+    for handler in logger.handlers:
+        if isinstance(handler, logging.FileHandler): # O la condición específica de tu handler de archivo
+            logger.removeHandler(handler)
+        handler.close() # Es una buena práctica cerrar el archivo al removerlo
+
 def setup_log_file(filepath, level=logging.INFO):
     formatter = logging.Formatter(LOG_FILE_FORMAT)
     fh = logging.FileHandler(filepath, mode='w')
@@ -40,6 +46,7 @@ def phase_difference_from_folder(
     correlation=False, plot=False, show=False, **kwargs
 ):
     directory_log = folder.parent if folder.is_file() else folder
+    reset_log_files()
     setup_log_file(directory_log / "phase_diff_info.log")
     setup_log_file(directory_log / "phase_diff_debug.log", level=logging.DEBUG)
     logger.info("Calculating phase difference for {} with method {}...".format(folder, method))
@@ -311,6 +318,7 @@ def phase_difference(
     measurement: Measurement, method, filename=None, norm=False, show=False, normplot=False,
     n_samples=None, **kwargs
 ):
+    kwargs["logger"] = logger
     xs, s1, s2, s1err, s2err, res = measurement.phase_diff(method=method, norm=norm, n_samples=n_samples, **kwargs)
 
     logger.debug("Minimum of CH0 signal: {}".format(min(s1)))

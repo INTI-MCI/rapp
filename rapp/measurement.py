@@ -187,6 +187,18 @@ class Measurement:
         """
         xs, s1, s2, s1_sigma, s2_sigma = self.average_data(norm=norm, n_samples=n_samples)
 
+        if "logger" in kwargs:
+            logger = kwargs["logger"]
+            kwargs.pop("logger")
+
+        if s1_sigma is not None:
+            normalized_sigmas_s1 = s1_sigma / s1
+            normalized_sigmas_s1 = normalized_sigmas_s1[s1 != 0]
+            normalized_sigmas_s2 = s2_sigma / s2
+            normalized_sigmas_s2 = normalized_sigmas_s2[s2 != 0]
+            normalized_sigma = np.sqrt(np.mean(np.concatenate((normalized_sigmas_s1, normalized_sigmas_s2)) ** 2))
+            logger.debug("Normalized sigma: {}".format(normalized_sigma))
+
         xs = np.deg2rad(xs)
 
         res = phase_difference(
