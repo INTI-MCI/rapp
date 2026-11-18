@@ -1,6 +1,6 @@
 import numpy as np
-from rapp.simulations import error_vs_range
 
+from rapp.simulations import error_vs_range
 
 np.random.seed(0)
 

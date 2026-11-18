@@ -1,28 +1,27 @@
-from rapp import adc
-from rapp import mocks
-
 import pytest  # noqa
 import serial
+
+from rapp import adc, mocks
 
 
 def test_adc_init():
     serial_mock = mocks.SerialMock()
-    adc.ADC(serial_mock)
+    adc.ADC(serial_mock, "ADS_1115")
 
 
 def test_build(monkeypatch):
     with pytest.raises(adc.ADCError):
-        adc.ADC.build(dev='BADDEVICE')
+        adc.ADC.build(dev='BADDEVICE', adc_used="ADS_1115")
 
     monkeypatch.setattr(serial, "Serial", lambda *x, **y: mocks.SerialMock())
-    adc.ADC.build()
+    adc.ADC.build(adc_used="ADS_1115")
 
 
 def test_acquire():
     with pytest.raises(adc.ADCError):
-        ad = adc.ADC(mocks.SerialMock(), ch0=False, ch1=False)
+        ad = adc.ADC(mocks.SerialMock(), ch0=False, ch1=False, adc_used="ADS_1115")
 
-    ad = adc.ADC(mocks.SerialMock(), ch0=True, ch1=True)
+    ad = adc.ADC(mocks.SerialMock(), ch0=True, ch1=True, adc_used="ADS_1115")
 
     with pytest.raises(adc.ADCError):
         ad.acquire(0)
@@ -35,11 +34,11 @@ def test_acquire():
 
     for channel in zip(*data):
         for value in channel:
-            print(value)
+            # print(value)
             assert isinstance(value, float)
             assert 0 <= value <= ad.max_V
 
-    ad = adc.ADC(mocks.SerialMock(), in_bytes=False)
+    ad = adc.ADC(mocks.SerialMock(), in_bytes=False, adc_used="ADS_1115")
     ad.acquire(1)
 
     ad.close()
