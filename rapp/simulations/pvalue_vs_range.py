@@ -5,9 +5,8 @@ from scipy import stats
 
 from rapp import adc
 from rapp import constants as ct
-from rapp.signal import signal
 from rapp.analysis.plot import Plot
-
+from rapp.signal import signal
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +33,7 @@ def run(
 
     xs = np.arange(0.001, 0.5, step=0.05)
 
-    max_v, _ = adc.GAINS[adc.GAIN_ONE]
+    max_v, _ = adc.SUPPORTED_ADCS["ADS_1115"]["GAINS"][adc.GAIN_ONE]
     mean_pvalues = []
     for A in xs:
         pvalues = []

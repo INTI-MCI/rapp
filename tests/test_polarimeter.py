@@ -1,17 +1,14 @@
 import os
+from pathlib import Path
 
 import pytest
 
 from rapp import polarimeter
-from rapp.adc import ADCError
+from rapp.adc import ADC, ADCError
+from rapp.data_file import DataFile
+from rapp.mocks import SerialMock
 from rapp.motion_controller import ESP301, ESP301Error
 from rapp.rotary_stage import RotaryStage
-from rapp.data_file import DataFile
-from rapp.adc import ADC
-from rapp.mocks import SerialMock
-
-from pathlib import Path
-
 
 FILE_DELIMITER = "\t"
 
@@ -125,7 +122,7 @@ def test_motion_controller_failure(tmp_path):
     reps = 3
 
     motion_controller_mock = MotionControllerMock(SerialMock())
-    adc = ADC(SerialMock(), ch0=True, ch1=True)
+    adc = ADC(SerialMock(), ch0=True, ch1=True, adc_used="ADS_1115")
 
     motion_controller = ESP301(SerialMock())
 
@@ -140,8 +137,9 @@ def test_motion_controller_failure(tmp_path):
     data_file = DataFile(overwrite=True, delimiter=FILE_DELIMITER, output_dir=output_dir)
 
     temp_file = DataFile(overwrite=True, delimiter=FILE_DELIMITER, output_dir=output_dir)
+    qp_temp_file = DataFile(overwrite=True, delimiter=FILE_DELIMITER, output_dir=output_dir)
 
-    p = polarimeter.Polarimeter(adc, analyzer, hwp, data_file, temp_file, wait=0)
+    p = polarimeter.Polarimeter(adc, analyzer, hwp, data_file, temp_file, qp_temp_file, wait=0)
 
     failures = p.start(samples, reps=reps)
     assert failures == 1
@@ -149,4 +147,8 @@ def test_motion_controller_failure(tmp_path):
     p.close()
 
     files_in_dir = os.listdir(output_dir)
-    assert len(files_in_dir) == 7
+    assert len(files_in_dir) == 8
+
+
+if __name__ == "__main__":
+    pytest.main()
