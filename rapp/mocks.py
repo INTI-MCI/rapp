@@ -8,6 +8,8 @@ class SerialMock:
     def __init__(self, delay=0):
         self.delay = delay
         self.ready = False
+        self.cmd_received = None
+        self.buffer = None
 
     def readline(self):
         if self.ready:
@@ -20,12 +22,24 @@ class SerialMock:
     def write(self, v):
         if v == b'ready?\n':
             self.ready = True
-        pass
+        elif v == b'self_calibrate;\n':
+            self.cmd_received = 'self_calibrate'
+            self.buffer = bytes(4)
 
     def read(self, n_bytes):
         time.sleep(self.delay)
-        value = self._random_value()
-        return int(value).to_bytes(length=n_bytes, byteorder='big')
+        if self.cmd_received == 'self_calibrate':
+            if len(self.buffer) >= n_bytes:
+                value = self.buffer[:n_bytes]
+                self.buffer = self.buffer[n_bytes:]
+            else:
+                value = bytes(0)
+                self.buffer = []
+                self.cmd_received = None
+        else:
+            value = self._random_value()
+            value = int(value).to_bytes(length=n_bytes, byteorder='big')
+        return value
 
     def close(self):
         pass
@@ -34,6 +48,9 @@ class SerialMock:
         pass
 
     def flushInput(self):
+        pass
+
+    def reset_input_buffer(self):
         pass
 
     def _random_value(self):

@@ -4,11 +4,22 @@ import numpy as np
 
 from rapp import constants as ct
 from rapp.utils import create_folder
-from rapp.measurement import Measurement
+from rapp.measurement import Measurement, process_temperature_data
 from rapp.analysis.plot import Plot
 
 
 logger = logging.getLogger(__name__)
+
+
+def plot_temperature(filepath, **kwargs):
+    temperature = process_temperature_data(filepath)
+
+    plot = Plot(ylabel=ct.LABEL_TEMP, xlabel=ct.LABEL_REP, folder=ct.WORK_DIR)
+    plot.set_title("Temperature")
+    plot.add_data(temperature[0], style='-', color='b', lw=1.5, label='Mean')
+    plot.add_data(temperature[1], style=':', color='k', lw=1.5, label='Max')
+    plot.add_data(temperature[2], style=':', color='k', lw=1.5, label='Min')
+    plot.show()
 
 
 def plot_raw_from_file(filepath, work_dir=ct.WORK_DIR, **kwargs):
@@ -32,12 +43,13 @@ def plot_raw(
     plot = Plot(ylabel=ct.LABEL_VOLTAGE, xlabel=ct.LABEL_N_SAMPLE, folder=output_folder)
 
     plot.set_title(measurement.parameters_string())
+    lines = []
 
     if not no_ch0:
-        plot.add_data(s1, style='-', color='k', lw=1.5, label='CH0')
+        lines.append(plot.add_data(s1, style='-', color='k', lw=1.5, label='CH0'))
 
     if not no_ch1:
-        plot.add_data(s2, style='--', color='k', lw=1.5, label='CH1')
+        lines.append(plot.add_data(s2, style='--', color='k', lw=1.5, label='CH1'))
 
     if s3 is not None:
         s3_range = np.max(s3) - np.min(s3)
@@ -45,12 +57,16 @@ def plot_raw(
         s3_normalized = s3 - np.min(s3) * s3_factor
         s3_label = f'NORM \n range={s3_range:.2E}) \n avg={s3.mean():.2E}'
 
-        plot.add_data(s3_normalized, style='.-', lw=1.5, label=s3_label)
+        lines.append(plot.add_data(s3_normalized, style='.-', lw=1.5, label=s3_label))
+
+    ind_temp = [np.where(at == measurement.angles)[0][0] for at in measurement.angle_temp]
+    lines.append(plot.add_data(ind_temp, measurement.temperature, style=':', color='k', lw=1.5,
+                               twin=True, ylabel='Temperatura [°C]', label='Temperatura'))
 
     # plot._ax.hist(s1, bins=4)
     # plot._ax.xaxis.set_major_locator(plt.MaxNLocator(5))
 
-    plot.legend(loc='upper right', fontsize=12, frameon=True)
+    plot.legend(loc='upper right', fontsize=12, frameon=True, handles=lines)
 
     plot.save(filename="{}.png".format(output_filename))
 

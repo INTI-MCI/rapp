@@ -38,7 +38,7 @@ def harmonic(
             angle_precision: deviation of angle around requested value (k=3). (radians)
 
     Returns:
-        The signal as an (xs, ys) tuple.
+        The signal as a (xs, ys) tuple.
     """
     def normalize_sigma(mu, sigma):
         if mu == 0:

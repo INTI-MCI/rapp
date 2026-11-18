@@ -71,10 +71,16 @@ class Plot:
         raise ValueError("Not valid input or wrong dimensions (do not match subplot dimensions).")
 
     def add_data(self, xs, ys=None, style="o", ms=5, mew=0.5, xrad=False, nrow=0, ncol=0,
-                 **kwargs):
+                 twin=False, **kwargs):
         """Adds data to the plot."""
 
-        ax = self._axs[nrow, ncol]
+        if twin:
+            ax = self._axs[nrow, ncol].twinx()
+            if 'ylabel' in kwargs:
+                ax.set_ylabel(kwargs['ylabel'])
+                kwargs.pop('ylabel')
+        else:
+            ax = self._axs[nrow, ncol]
 
         if ys is None:
             ys = xs

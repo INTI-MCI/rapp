@@ -2,7 +2,6 @@ import numpy as np
 
 from rapp.simulations import pvalue_vs_range
 
-
 np.random.seed(0)
 
 

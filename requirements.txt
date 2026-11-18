@@ -9,4 +9,5 @@ pyvisa-sim~=0.6
 
 # package
 schedule~=1.1.0
+latex~=0.7.0
 -e .
