@@ -46,7 +46,7 @@ def run(filepath, appended_measurements=None, instantaneous=False, **kwargs):
 
     if instantaneous:
         if filepath.is_dir():
-            ValueError("Cannot plot instantaneous phase difference from folder.")
+            raise ValueError("Cannot plot instantaneous phase difference from folder.")
         phase_diff.instantaneous_phase_difference(filepath, **kwargs)
         return
     if filepath.is_dir():

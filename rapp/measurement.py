@@ -294,7 +294,7 @@ def process_temperature_data(filepath: Path, filename, hwp_position, raise_error
         temperature = pd.read_csv(filepath, sep=DELIMITER, skip_blank_lines=True,
                                   comment='#', encoding=ct.ENCONDIG)
     elif raise_error:
-        ValueError("Temperature file does not exist.")
+        raise ValueError("Temperature file does not exist.")
     else:
         return None
 

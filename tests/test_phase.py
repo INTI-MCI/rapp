@@ -1,7 +1,7 @@
 import pytest
 import numpy as np
 
-from rapp.signal.phase import phase_difference
+from rapp.signal.phase import phase_difference, sine_fit
 from rapp.signal.signal import harmonic
 
 METHODS = [
@@ -63,3 +63,63 @@ def test_phase_difference():
             assert res.phi2 == pytest.approx(angle2, abs=1e-6)
 
             # plot_res(xs, s1, s2, res)
+
+
+def test_sine_fit_with_lower_clipping_limit():
+    x = np.linspace(0, 2 * np.pi, 100, endpoint=False)
+    xs = np.hstack([x, x])
+    s1 = 1.0 + np.sin(x)
+    s2 = 1.0 + np.sin(x + 0.3)
+    ys = np.hstack([s1, s2])
+
+    popt, _, _, fity = sine_fit(
+        xs,
+        ys,
+        p0=[0.5, 0.5, 0.0, 0.3, 1.0, 1.0],
+        x_sigma=np.full_like(xs, 0.01),
+        y_sigma=np.full_like(xs, 0.01),
+        bounds=(-np.inf, np.inf),
+        lower_clipping_limit_percentage=0.1,
+    )
+
+    assert len(popt) == 6
+    assert len(fity) == len(xs)
+
+
+def test_sine_fit_with_different_harmonics_per_channel():
+    x = np.linspace(0, 2 * np.pi, 100, endpoint=False)
+    xs = np.hstack([x, x])
+    s1 = 1.0 + np.sin(x)
+    s2 = 1.0 + 0.5 * np.sin(x + 0.3) + 0.25 * np.sin(2 * x + 0.2)
+    ys = np.hstack([s1, s2])
+
+    popt, _, _, fity = sine_fit(
+        xs,
+        ys,
+        p0=[0.9, 0.45, 0.2, 0.0, 0.1, 0.2, 1.0, 1.0],
+        bounds=(-np.inf, np.inf),
+        n_harmonics_ch0=1,
+        n_harmonics_ch1=2,
+    )
+
+    assert len(popt) == 8
+    assert np.allclose(fity, ys, atol=0.3)
+
+
+def test_phase_difference_replaces_invalid_sigmas_when_nan_is_allowed():
+    x = np.linspace(0, 2 * np.pi, 100, endpoint=False)
+    s1 = 1.0 + np.sin(x)
+    s2 = 1.0 + np.sin(x + 0.3)
+    s1_sigma = np.full_like(x, 0.01)
+    s1_sigma[0] = 0.0
+    s2_sigma = np.full_like(x, 0.01)
+    s2_sigma[1] = np.nan
+
+    res = phase_difference(
+        x, s1, s2, s1_sigma=s1_sigma, s2_sigma=s2_sigma, allow_nan=True)
+
+    assert np.isfinite(res.value)
+    assert np.isfinite(s1_sigma).all()
+    assert np.isfinite(s2_sigma).all()
+    assert s1_sigma[0] == s1_sigma.max()
+    assert s2_sigma[1] == s2_sigma.max()

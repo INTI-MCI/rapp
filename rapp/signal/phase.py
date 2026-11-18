@@ -252,8 +252,8 @@ def phase_difference(
         if not allow_nan:
             raise ValueError("Got NaN or zero values in y_sigma(s). Use more samples per angle.")
 
-        max_sigma1 = s1_sigma.max()
-        max_sigma2 = s2_sigma.max()
+        max_sigma1 = np.nanmax(s1_sigma)
+        max_sigma2 = np.nanmax(s2_sigma)
         s1_sigma[np.where(np.logical_or(s1_sigma == 0, np.isnan(s1_sigma)))[0]] = max_sigma1
         s2_sigma[np.where(np.logical_or(s2_sigma == 0, np.isnan(s2_sigma)))[0]] = max_sigma2
         # abs_sigma = False

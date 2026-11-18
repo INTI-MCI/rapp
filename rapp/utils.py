@@ -171,7 +171,6 @@ def sort_files_by_hwp_and_rep(files):
     files = np.array(files)[mask_files]
     for file in files:
         hwp_position, rep = re.search(r'(?:hwp(\d+\.\d+)-)?rep(\d+)', file.name).groups()
-        hwp_position = float(hwp_position)
         rep = int(rep)
         if hwp_position is None:
             row = 0
